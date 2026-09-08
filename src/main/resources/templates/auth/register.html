@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<!--
+  Trang dang ky tai khoan.
+
+  Form bind vao RegisterRequest (com.yourapp.ticketpass.user.web.dto.RegisterRequest)
+  duoi ten model attribute "registerRequest" - UserController.registerForm phai dat dung ten nay.
+  POST /register do UserController xu ly, khac voi POST /login (Spring Security xu ly).
+
+  Cac view con lai (index, user/profile, ticket/*, dispute/*, admin/*, reputation/*)
+  se do Prompt 2 bo sung.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dang ky - TicketPass</title>
+</head>
+<body>
+
+<h1>Dang ky tai khoan</h1>
+
+<form method="post" th:action="@{/register}" th:object="${registerRequest}">
+
+    <div>
+        <label for="email">Email</label>
+        <input type="email" id="email" th:field="*{email}" maxlength="255">
+        <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+    </div>
+
+    <div>
+        <label for="password">Mat khau</label>
+        <input type="password" id="password" th:field="*{password}">
+        <span th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+    </div>
+
+    <div>
+        <label for="confirmPassword">Nhap lai mat khau</label>
+        <input type="password" id="confirmPassword" th:field="*{confirmPassword}">
+        <span th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></span>
+    </div>
+
+    <div>
+        <label for="fullName">Ho va ten</label>
+        <input type="text" id="fullName" th:field="*{fullName}" maxlength="150">
+        <span th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></span>
+    </div>
+
+    <div>
+        <label for="phoneNumber">So dien thoai</label>
+        <input type="text" id="phoneNumber" th:field="*{phoneNumber}" maxlength="20">
+        <span th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></span>
+    </div>
+
+    <div>
+        <button type="submit">Dang ky</button>
+    </div>
+
+</form>
+
+<p>Da co tai khoan? <a th:href="@{/login}">Dang nhap</a></p>
+
+</body>
+</html>

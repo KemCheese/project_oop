@@ -1,0 +1,29 @@
+# --- Maven ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+
+# --- VS Code ---
+.vscode/
+
+# --- Eclipse / STS ---
+.settings/
+.classpath
+.project
+
+# --- Log ---
+*.log
+
+# --- Du lieu sinh ra khi chay (khong commit) ---
+data/uploads/
+tessdata/
+
+# --- Cau hinh bi mat / cuc bo (khong commit) ---
+.env
+application-local.properties
+
+# --- macOS ---
+.DS_Store

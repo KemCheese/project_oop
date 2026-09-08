@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!--
+  Trang dang nhap.
+
+  Form submit thang toi POST /login do filter cua Spring Security xu ly
+  (cau hinh formLogin voi loginPage("/login") trong shared/config/SecurityConfig).
+  UserController KHONG khai bao POST /login.
+  Ten hai o nhap bat buoc la "username" va "password" - day la ten mac dinh ma
+  Spring Security doc; o "username" chinh la email dang nhap.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dang nhap - TicketPass</title>
+</head>
+<body>
+
+<h1>Dang nhap</h1>
+
+<!-- Spring Security chuyen huong ve /login?error khi sai thong tin dang nhap -->
+<p th:if="${param.error}">Email hoac mat khau khong dung, hoac tai khoan chua duoc kich hoat.</p>
+
+<!-- /login?logout sau khi dang xuat thanh cong -->
+<p th:if="${param.logout}">Ban da dang xuat.</p>
+
+<!-- /login?registered sau khi dang ky thanh cong -->
+<p th:if="${param.registered}">Dang ky thanh cong. Vui long kiem tra email de kich hoat tai khoan.</p>
+
+<form method="post" action="/login">
+    <div>
+        <label for="username">Email</label>
+        <input type="email" id="username" name="username" required maxlength="255">
+    </div>
+    <div>
+        <label for="password">Mat khau</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+    <div>
+        <button type="submit">Dang nhap</button>
+    </div>
+</form>
+
+<p>Chua co tai khoan? <a th:href="@{/register}">Dang ky</a></p>
+
+</body>
+</html>
