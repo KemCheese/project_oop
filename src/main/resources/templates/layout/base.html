@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!--
+  Layout khung cua toan bo giao dien TicketPass.
+
+  Cach dung o cac view khac:
+      <div th:replace="~{layout/base :: layout('Tieu de trang', ~{::content})}"></div>
+  trong do view con dinh nghia mot the <content>...</content> chua phan than trang.
+
+  Pham vi Prompt 1 chi tao 3 template: layout/base.html, auth/login.html, auth/register.html.
+  Cac view con lai se do Prompt 2 bo sung: index, user/profile, ticket/*, dispute/*,
+  admin/*, reputation/detail, reputation/top.
+-->
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="layout(title, content)" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">TicketPass</title>
+</head>
+<body>
+
+<!-- Thanh dieu huong chung -->
+<header>
+    <h1><a href="/">TicketPass</a></h1>
+    <nav>
+        <a th:href="@{/tickets}">Ve dang ban</a>
+        <a th:href="@{/profile}">Ho so cua toi</a>
+        <a th:href="@{/login}">Dang nhap</a>
+        <!-- Spring Security xu ly POST /logout, controller khong khai bao route nay -->
+        <form th:action="@{/logout}" method="post" style="display:inline">
+            <button type="submit">Dang xuat</button>
+        </form>
+    </nav>
+</header>
+
+<hr>
+
+<!-- Noi dung rieng cua tung trang duoc chen vao day -->
+<main>
+    <div th:replace="${content}"></div>
+</main>
+
+<hr>
+
+<footer>
+    <p>Do an OOP</p>
+</footer>
+
+</body>
+</html>
