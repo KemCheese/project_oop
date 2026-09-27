@@ -5,12 +5,10 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Cấu hình cho khâu nhận dạng chữ trên ảnh vé (OCR), đọc từ tiền tố {@code app.ocr}
- * trong {@code application.properties}.
+ * [DEPRECATED] Cấu hình cho khâu nhận dạng chữ trên ảnh vé (OCR).
+ * Module nay da bi loai bo trong kien truc moi cua san marketplace.
  *
- * <p>Được module verification dùng khi đối chiếu thông tin người bán khai báo với chữ
- * đọc được từ ảnh vé. Nhờ đưa ra file cấu hình, có thể tắt OCR hoặc đổi ngôn ngữ, đổi
- * ngưỡng tin cậy mà không phải biên dịch lại ứng dụng.</p>
+ * <p>Truoc day duoc dung de cau hinh Tesseract OCR.</p>
  *
  * <p>Lớp này được đăng ký qua {@code @ConfigurationPropertiesScan} khai báo ở
  * {@code TicketPassApplication}.</p>

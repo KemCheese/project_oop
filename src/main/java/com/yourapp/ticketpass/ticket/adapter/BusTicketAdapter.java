@@ -9,12 +9,19 @@ import java.time.Duration;
 import org.springframework.stereotype.Component;
 
 /**
- * Adapter cho ve xe khach.
+ * Adapter cho ve xe khach cua cac nha xe tren san marketplace.
  *
- * <p>Cua so khieu nai DU KIEN: 3 gio sau khi ve duoc chuyen, doc tu cau hinh
- * {@code app.dispute.window.bus} o Prompt 2, va luon phai dong truoc {@code eventStartAt}
- * (o day la gio xe xuat ben). Ve xe khach thuong chi la ma dat cho kem so dien thoai,
- * thu tuc chuyen nhuong don gian nhat trong bon loai ve.</p>
+ * <p>LUU Y: Day la ve xe khach duong dai cua cac nha xe (vi du Phuong Trang, Thanh Buoi),
+ * KHONG phai ve xe buyt noi do.</p>
+ *
+ * <p>Truong bat buoc khi dang ve xe khach: hang xe (lua chon trong danh sach co san),
+ * diem xuat phat, diem den, gio chay, so luong cho, ten ghe (so luong cho phai khop
+ * voi so ghe nhap vao), gia ban, anh cong khai (de buyer xem truoc) va anh QR an
+ * (chi mo khoa sau escrow + coc).</p>
+ *
+ * <p>Cua so khieu nai DU KIEN: 3 gio sau khi ve duoc chuyen (anh QR an mo khoa), doc tu
+ * cau hinh {@code app.dispute.window.bus} o Prompt 2, va luon phai dong truoc
+ * {@code eventStartAt} (gio xe xuat ben).</p>
  *
  * <p>Module: ticket</p>
  *

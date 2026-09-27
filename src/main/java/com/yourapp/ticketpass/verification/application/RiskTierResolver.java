@@ -1,4 +1,4 @@
-package com.yourapp.ticketpass.verification.application;
+﻿package com.yourapp.ticketpass.verification.application;
 
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.verification.domain.RiskTier;
@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Phan bac rui ro cho mot ve truoc khi quyet dinh mac do xac thuc can ap dung.
  *
  * <p>Quy tac phan bac da chot:</p>
@@ -31,6 +34,9 @@ import org.springframework.stereotype.Service;
 public class RiskTierResolver {
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Phan bac rui ro theo dung quy tac mo ta o tren.
      *
      * @param salePrice gia ban cua ve
@@ -53,6 +59,9 @@ public class RiskTierResolver {
     }
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Bac rui ro nay co bat buoc admin xem xet bang tay khong.
      *
      * @param riskTier bac rui ro can xet

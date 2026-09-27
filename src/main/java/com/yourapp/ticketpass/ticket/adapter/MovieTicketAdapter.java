@@ -9,12 +9,16 @@ import java.time.Duration;
 import org.springframework.stereotype.Component;
 
 /**
- * Adapter cho ve xem phim.
+ * Adapter cho ve xem phim tren san marketplace.
  *
- * <p>Cua so khieu nai DU KIEN: 2 gio sau khi ve duoc chuyen, doc tu cau hinh
- * {@code app.dispute.window.movie} o Prompt 2, va luon phai dong truoc {@code eventStartAt}
- * vi ve phim thuong duoc mua sat gio chieu. Ve phim bat buoc co thong tin cho ngoi
- * (phong chieu + so ghe) va thuong chuyen qua ma dat cho tren app cua rap.</p>
+ * <p>Truong bat buoc khi dang ve phim: ten phim (nhap chuan dinh dang de he thong tu phan loai),
+ * ten rap (lua chon trong danh sach co san), gio chieu (nhap tung o theo dinh dang co san:
+ * ngay/gio/phut), so luong ve, ghe (so luong ghe phai khop voi so luong ve), gia ban,
+ * anh cong khai (de buyer xem truoc) va anh QR an (chi mo khoa sau escrow + coc).</p>
+ *
+ * <p>Cua so khieu nai DU KIEN: 2 gio sau khi ve duoc chuyen (anh QR an mo khoa), doc tu
+ * cau hinh {@code app.dispute.window.movie} o Prompt 2, va luon phai dong truoc
+ * {@code eventStartAt} vi ve phim thuong duoc su dung ngay.</p>
  *
  * <p>Module: ticket</p>
  *
@@ -53,7 +57,7 @@ public class MovieTicketAdapter implements TicketAdapter {
     public boolean requiresEmailForwardProof() {
         throw new UnsupportedOperationException(
                 "TODO [Nguoi A] Prompt 2: Quyet dinh ve phim co bat buoc email forward tu rap hay khong; "
-                        + "neu co thi VerificationService se doi chieu ma dat cho trong email voi providerOrderCode.");
+                        + "neu co thi doi chieu ma dat cho trong email voi providerOrderCode.");
     }
 
     @Override

@@ -9,11 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Kiem tra dieu kien hop le cua ve o cac moc quan trong: dang ban, mua, va chuyen ve.
+ * Kiem tra dieu kien hop le cua ve khi dang ban tren san marketplace.
  *
  * <p>Service nay khong tu viet luat rieng cho tung loai ve ma uy quyen cho
- * {@link TicketAdapter} tuong ung; phan con lai la cac luat chung cua san nhu quyen so huu,
- * trang thai hien tai, va chong ban trung ma QR.</p>
+ * {@link TicketAdapter} tuong ung; phan con lai la cac luat chung cua san nhu
+ * gia ban hop le, gio su kien o tuong lai, so ghe khop so ve, va quyen so huu.</p>
  *
  * <p>Module: ticket</p>
  *

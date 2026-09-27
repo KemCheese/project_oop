@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 /**
  * Điểm truy vấn thông tin người dùng dành cho các module khác.
  *
- * <p>Khi module {@code ticket}, {@code payment}, {@code dispute} hay {@code verification} cần
+ * <p>Khi module {@code ticket}, {@code payment} hay {@code dispute} cần
  * biết thông tin của một người dùng, họ gọi service này thay vì tự viết query hay tự inject
  * {@code UserJpaRepository}. Nhờ một cửa duy nhất, module {@code user} kiểm soát được dữ liệu
  * nào bị lộ ra ngoài và có thể đổi cấu trúc bảng mà không làm vỡ module khác.</p>

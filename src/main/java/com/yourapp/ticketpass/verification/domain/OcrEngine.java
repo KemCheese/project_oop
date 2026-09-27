@@ -1,6 +1,9 @@
-package com.yourapp.ticketpass.verification.domain;
+﻿package com.yourapp.ticketpass.verification.domain;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Hop dong cho mot bo may OCR (Adapter pattern).
  *
  * <p>Nho interface nay, Prompt 2 co the them {@code CloudVisionOcrEngine} chay tren dich vu dam may
@@ -15,6 +18,9 @@ package com.yourapp.ticketpass.verification.domain;
 public interface OcrEngine {
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Ten dinh danh cua bo may, ghi lai trong nhat ky de biet ket qua den tu dau.
      *
      * @return ten bo may, vi du "TESSERACT"
@@ -22,6 +28,9 @@ public interface OcrEngine {
     String engineName();
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Doc van ban tu anh.
      *
      * @param imageBytes noi dung anh ve dang byte
@@ -31,6 +40,9 @@ public interface OcrEngine {
     OcrExtraction extract(byte[] imageBytes, String language);
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Kiem tra bo may co san sang phuc vu khong.
      *
      * @return true neu bo may da duoc cai dat va cau hinh dung

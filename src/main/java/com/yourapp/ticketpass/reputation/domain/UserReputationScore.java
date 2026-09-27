@@ -23,9 +23,8 @@ import lombok.Setter;
  * điểm khi thua tranh chấp hoặc huỷ listing sau khi người mua đã thanh toán.</p>
  *
  * <p>Theo nguyên tắc kiến trúc số 1, {@code userId} là ID thuần sang module {@code user},
- * không dùng quan hệ JPA. {@code RiskTierResolver} của module {@code verification} cần điểm
- * này để quyết định mức đặt cọc, nhưng nhận vào dưới dạng {@code BigDecimal} chứ
- * <b>không</b> import entity này.</p>
+ * không dùng quan hệ JPA. Truoc day {@code RiskTierResolver} dung diem nay de phan bac rui ro,
+ * nay module do da bi deprecated.</p>
  *
  * <p>Trường {@code version} phục vụ optimistic locking: bản ghi điểm bị nhiều luồng sự kiện
  * cập nhật đồng thời (hoàn tất giao dịch, xử lý tranh chấp, huỷ listing), nên nếu hai

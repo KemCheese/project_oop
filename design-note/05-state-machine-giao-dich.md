@@ -15,7 +15,7 @@ Vì vậy dự án gom toàn bộ luật chuyển trạng thái vào **một cla
 
 | Trạng thái | Ý nghĩa | Tiền của buyer đang ở đâu | Cọc của seller đang ở đâu |
 |---|---|---|---|
-| `LISTED` | Vé đã qua xác thực (hoặc admin đã duyệt) và đang hiển thị công khai trên sàn | Chưa có | Chưa có |
+| `LISTED` | Vé đang hiển thị công khai trên sàn | Chưa có | Chưa có |
 | `PAYMENT_ESCROWED` | Người mua đã thanh toán, tiền nằm trong escrow của sàn | Trong escrow (`EscrowStatus.HELD`) | Chưa có |
 | `DEPOSIT_LOCKED` | Người bán đã khoá cọc 50%, đủ điều kiện để chuyển vé | Trong escrow | Bị khoá (`DepositStatus.LOCKED`) |
 | `TRANSFERRED` | Người bán báo đã chuyển vé, đang chờ người mua xác nhận | Trong escrow | Bị khoá |
@@ -31,7 +31,7 @@ Cùng chín trạng thái đó, nhìn theo góc "ai đẩy vé vào đây và t�
 
 | Trạng thái | Ai gây ra chuyển đổi **vào** trạng thái này | Trạng thái kế tiếp hợp lệ |
 |---|---|---|
-| `LISTED` | Người bán (đăng vé, hệ thống tự duyệt khi bậc LOW/MEDIUM đạt ngưỡng OCR), hoặc admin (duyệt tay khi bậc HIGH) | `PAYMENT_ESCROWED`, `CANCELLED` |
+| `LISTED` | Người bán (đăng vé hợp lệ) | `PAYMENT_ESCROWED`, `CANCELLED` |
 | `PAYMENT_ESCROWED` | Người mua (thanh toán thành công qua MoMo Test) | `DEPOSIT_LOCKED` |
 | `DEPOSIT_LOCKED` | Người bán (khoá cọc thành công qua MoMo Test) | `TRANSFERRED` |
 | `TRANSFERRED` | Người bán (bấm "Đã chuyển vé") | `AWAITING_USE` |
@@ -103,7 +103,7 @@ Toàn bộ vòng đời **không có cạnh quay lui**: không trạng thái nà
 
 | Trạng thái hiện tại | Trạng thái đích cho phép | Ai/cái gì kích hoạt | Class chịu trách nhiệm | Tác dụng phụ |
 |---|---|---|---|---|
-| *(vé mới tạo)* | `LISTED` | Hệ thống tự duyệt khi `RiskTier` là LOW/MEDIUM và OCR đạt ngưỡng; hoặc admin duyệt tay khi bậc HIGH | `ValidateTicketService`, `RiskTierResolver`, `TicketStateMachineService` | Lưu `TicketVerification` với `VerificationStatus`; lưu `qrPayloadHash` và perceptual hash của ảnh vé; vé xuất hiện trên trang danh sách công khai |
+| *(vé mới tạo)* | `LISTED` | Hệ thống tự kiểm tra tính hợp lệ và cho lên sàn | `ValidateTicketService`, `TicketStateMachineService` | Vé xuất hiện trên trang danh sách công khai |
 | `LISTED` | `PAYMENT_ESCROWED` | Người mua, sau khi MoMo Test xác nhận thanh toán thành công | `HoldFundsUseCase` gọi `PaymentGateway.charge(...)`, rồi `TicketStateMachineService.transition(...)` | Tạo `EscrowTransaction` với `EscrowStatus.HELD`, ghi `amount` = giá bán và `buyerFeeAmount`; ghi `buyerId` vào `Ticket`; vé bị gỡ khỏi danh sách mua được để người khác không mua trùng |
 | `PAYMENT_ESCROWED` | `DEPOSIT_LOCKED` | Người bán, sau khi MoMo Test xác nhận thu cọc | `LockDepositUseCase` | Tạo `Deposit` với `DepositStatus.LOCKED`, số tiền bằng 50% giá bán theo BR-04; mở khoá nút "Đã chuyển vé" cho người bán |
 | `DEPOSIT_LOCKED` | `TRANSFERRED` | Người bán bấm "Đã chuyển vé" sau khi thực hiện theo `TransferInstruction` | `TransferTicketService` | Ghi `transferredAt`; sinh `TransferInstruction` tương ứng từ `TicketAdapter` của loại vé và hiển thị cho hai bên; thông báo cho người mua vào xác nhận |

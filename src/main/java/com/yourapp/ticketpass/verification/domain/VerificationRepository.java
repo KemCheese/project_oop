@@ -1,9 +1,12 @@
-package com.yourapp.ticketpass.verification.domain;
+﻿package com.yourapp.ticketpass.verification.domain;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Port luu tru cua module {@code verification}, khai bao o tang domain.
  *
  * <p>Theo nguyen tac Dependency Inversion, tang domain va application chi phu thuoc vao interface nay
@@ -17,6 +20,9 @@ import java.util.Optional;
 public interface VerificationRepository {
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Luu moi hoac cap nhat mot ho so xac thuc.
      *
      * @param verification ho so can luu
@@ -25,6 +31,9 @@ public interface VerificationRepository {
     TicketVerification save(TicketVerification verification);
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Tim ho so xac thuc theo khoa chinh.
      *
      * @param id id cua ho so
@@ -33,6 +42,9 @@ public interface VerificationRepository {
     Optional<TicketVerification> findById(Long id);
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Tim ho so xac thuc cua mot ve.
      *
      * @param ticketId id thuan cua ve
@@ -41,6 +53,9 @@ public interface VerificationRepository {
     Optional<TicketVerification> findByTicketId(Long ticketId);
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Lay cac ho so theo trang thai, phuc vu hang doi duyet cua admin.
      *
      * @param status trang thai can loc
@@ -49,6 +64,9 @@ public interface VerificationRepository {
     List<TicketVerification> findByStatus(VerificationStatus status);
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Lay cac ho so theo bac rui ro.
      *
      * @param riskTier bac rui ro can loc
@@ -57,6 +75,9 @@ public interface VerificationRepository {
     List<TicketVerification> findByRiskTier(RiskTier riskTier);
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Tim ho so theo hash payload QR.
      *
      * @param qrPayloadHash SHA-256 hex cua payload QR
@@ -65,6 +86,9 @@ public interface VerificationRepository {
     Optional<TicketVerification> findByQrPayloadHash(String qrPayloadHash);
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Kiem tra co ve KHAC dang dung cung ma QR khong - day la phep kiem chong ban trung ve.
      *
      * @param qrPayloadHash SHA-256 hex cua payload QR

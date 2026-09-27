@@ -1,4 +1,4 @@
-package com.yourapp.ticketpass.verification.infrastructure;
+﻿package com.yourapp.ticketpass.verification.infrastructure;
 
 import com.yourapp.ticketpass.shared.config.OcrConfig;
 import com.yourapp.ticketpass.verification.domain.OcrEngine;
@@ -7,6 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Hien thuc {@link OcrEngine} chay cuc bo bang Tesseract.
  *
  * <p>Day la adapter mac dinh cua he thong: khong phu thuoc mang, khong ton chi phi goi dich vu ngoai,
