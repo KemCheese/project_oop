@@ -8,7 +8,7 @@ Nhóm gồm ba người. Việc chia theo **module nghiệp vụ** thay vì chia
 
 | Người | Modules | Pattern trọng tâm | Vai trò |
 |---|---|---|---|
-| A | ticket, verification | Adapter, State, Strategy | Vòng đời vé + chống scam đầu vào |
+| A | ticket | Adapter, State, Strategy | Vòng đời vé |
 | B | payment, dispute | Adapter, Strategy | Dòng tiền + xử lý tranh chấp |
 | C | user, reputation, web, shared | Observer, Adapter | Người dùng, uy tín, giao diện, tích hợp hệ thống |
 
@@ -21,7 +21,6 @@ Nhóm gồm ba người. Việc chia theo **module nghiệp vụ** thay vì chia
 | Người | Thư mục sở hữu | Ghi chú |
 |---|---|---|
 | **A** | `src/main/java/com/yourapp/ticketpass/ticket/**` (`domain`, `adapter`, `application`, `infrastructure`, `web`) | Toàn bộ module vé |
-| **A** | `src/main/java/com/yourapp/ticketpass/verification/**` | Toàn bộ module xác thực |
 | **A** | `src/main/resources/templates/ticket/**` | View Thymeleaf của module ticket |
 | **B** | `src/main/java/com/yourapp/ticketpass/payment/**` | Toàn bộ module thanh toán |
 | **B** | `src/main/java/com/yourapp/ticketpass/dispute/**` | Toàn bộ module tranh chấp |
@@ -61,7 +60,7 @@ Lý do siết chặt: `shared/` là chỗ duy nhất cả ba nhánh cùng chạm
 
 Prompt 1 đã dựng xong toàn bộ khung: entity, interface, ký hiệu method, DTO, event, cấu hình. Prompt 2 là **điền phần thân** cho các method đang ném `UnsupportedOperationException`.
 
-### 3.1 Người A — module `ticket`, `verification`
+### 3.1 Người A — module `ticket`
 
 | # | Việc | File / class |
 |---|---|---|
@@ -69,11 +68,7 @@ Prompt 1 đã dựng xong toàn bộ khung: entity, interface, ký hiệu method
 | A2 | Hiện thực state machine của vé: `allowedNextStates` trả tập trạng thái hợp lệ, `assertCanTransition` ném `IllegalTicketTransitionException` khi sai, `transition` thực thi chuyển trạng thái và ghi mốc thời gian. | `ticket/application/TicketStateMachineService` |
 | A3 | Hiện thực kiểm tra điều kiện đăng vé: chọn đúng adapter theo `TicketType`, gom `ValidationResult`, chặn vé quá hạn sử dụng và vé có giá bán vô lý. | `ticket/application/ValidateTicketService` |
 | A4 | Hiện thực luồng chuyển vé: sinh `TransferInstruction` cho seller, xác nhận đã chuyển, đẩy vé sang `TRANSFERRED`, và mở cửa sổ khiếu nại khi buyer xác nhận nhận vé. | `ticket/application/TransferTicketService` |
-| A5 | Hiện thực OCR đối chiếu: gọi `OcrEngine`, so kết quả trích xuất với thông tin seller khai, tính điểm khớp và lưu `TicketVerification`. | `verification/application/OcrVerificationService`, `verification/infrastructure/TesseractOcrEngine` |
-| A6 | Hiện thực chống bán trùng: hash SHA-256 payload QR, đồng thời tính perceptual hash của ảnh vé để bắt trường hợp cùng một ảnh bị đăng lại có chỉnh sửa nhẹ; tra trong DB xem hash đã tồn tại chưa. | `verification/application/QrDuplicateCheckService` |
-| A7 | Hiện thực parse email forward: bóc mã đơn, tên sự kiện, ngày giờ, thông tin ghế từ nội dung email; trả `EmailForwardInfo`; xử lý được ít nhất hai định dạng nhà cung cấp. | `verification/application/EmailForwardParserService` |
-| A8 | Hiện thực phân bậc rủi ro: tổng hợp tín hiệu OCR + trùng QR + email forward + lịch sử người bán, trả `RiskTier` LOW/MEDIUM/HIGH theo quy tắc trong `04-quy-tac-nghiep-vu.md`. | `verification/application/RiskTierResolver` |
-| A9 | Hiện thực controller và view module ticket: đăng vé (có upload ảnh), danh sách vé, chi tiết vé, các nút hành động theo trạng thái. | `ticket/web/TicketController`, `templates/ticket/**` |
+| A5 | Hiện thực controller và view module ticket: đăng vé (có upload ảnh), danh sách vé, chi tiết vé, các nút hành động theo trạng thái. | `ticket/web/TicketController`, `templates/ticket/**` |
 
 ### 3.2 Người B — module `payment`, `dispute`
 
@@ -142,11 +137,7 @@ Những việc dưới đây không thuộc riêng ai, cả ba đều phải tha
 
 | Cần gì | Của ai | Dùng ở đâu |
 |---|---|---|
-| `FileStorageService` | Người C | Lưu ảnh vé và ảnh QR do seller upload. |
-| `QrCodeGenerator` | Người C | Đọc payload từ ảnh QR upload. |
-| `ImageHashUtil` | Người C | Hash SHA-256 payload QR và perceptual hash ảnh vé trong `QrDuplicateCheckService`. |
-| Điểm uy tín người bán (`BigDecimal`) | Người C | `RiskTierResolver` dùng uy tín seller như một tín hiệu khi phân bậc rủi ro. |
-| `OcrConfig` | Người C | Đường dẫn `tessdata`, ngôn ngữ, ngưỡng confidence, cờ bật/tắt OCR. |
+| `FileStorageService` | Người C | Lưu ảnh vé công khai và ảnh QR ẩn do seller upload. |
 
 ### Người C phụ thuộc vào
 

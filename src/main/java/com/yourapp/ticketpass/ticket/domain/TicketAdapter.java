@@ -3,12 +3,12 @@ package com.yourapp.ticketpass.ticket.domain;
 import java.time.Duration;
 
 /**
- * Hop dong Adapter/Strategy cho tung {@link TicketType}.
+ * Hop dong Adapter/Strategy cho tung {@link TicketType} tren san marketplace.
  *
- * <p>Moi loai ve co mot hien thuc rieng trong package
- * {@code com.yourapp.ticketpass.ticket.adapter}. Nho vay, khi san ho tro them mot loai ve moi
- * (vi du ve may bay), ta chi can them mot {@code @Component} moi ma khong sua bat ky service nao
- * dang chay (Open/Closed Principle).</p>
+ * <p>San marketplace ho tro 3 loai ve: MOVIE, BUS, CONCERT. Moi loai co mot hien thuc
+ * rieng trong package {@code com.yourapp.ticketpass.ticket.adapter}. Nho vay, khi san
+ * ho tro them mot loai ve moi (vi du ve may bay), ta chi can them mot {@code @Component}
+ * moi ma khong sua bat ky service nao dang chay (Open/Closed Principle).</p>
  *
  * <p>{@code com.yourapp.ticketpass.ticket.application.TicketStateMachineService} inject
  * {@code List<TicketAdapter>} do Spring cung cap, roi chon adapter phu hop bang cach so khop
@@ -28,7 +28,8 @@ public interface TicketAdapter {
     TicketType supportedType();
 
     /**
-     * Do dai cua so khieu nai tinh tu thoi diem ve duoc chuyen cho nguoi mua.
+     * Do dai cua so khieu nai tinh tu thoi diem ve duoc chuyen cho nguoi mua
+     * (tuc la tu khi anh QR an duoc mo khoa).
      *
      * @return khoang thoi gian nguoi mua con quyen mo tranh chap
      */
@@ -50,14 +51,17 @@ public interface TicketAdapter {
     boolean requiresSeatInfo();
 
     /**
-     * Loai ve nay co bat buoc nop bang chung email forward tu don vi phat hanh hay khong.
+     * [DEPRECATED] Loai ve nay co bat buoc nop email forward hay khong.
+     * Du an da chuyen huong sang mo hinh marketplace, khong con yeu cau
+     * email forward de xac thuc. Method nay giu lai de tuong thich voi code cu.
      *
-     * @return true neu bat buoc co email forward de xac thuc quyen so huu ve
+     * @return luon tra ve false trong phien ban marketplace
      */
     boolean requiresEmailForwardProof();
 
     /**
      * Kiem tra ve co du dieu kien dang ban theo luat rieng cua loai ve nay khong.
+     * Kiem tra format nhap lieu, so luong ghe khop so ve, va cac rang buoc rieng.
      *
      * @param ticket ve can kiem tra
      * @return ket qua kiem tra kem danh sach loi neu khong hop le
@@ -65,10 +69,11 @@ public interface TicketAdapter {
     ValidationResult validateListing(Ticket ticket);
 
     /**
-     * Sinh huong dan chuyen ve phu hop voi loai ve va du lieu cu the cua ve.
+     * Sinh huong dan chuyen ve phu hop voi loai ve.
+     * Tren san marketplace, buoc chuyen ve chinh la san mo khoa anh QR an cho buyer.
      *
      * @param ticket ve can sinh huong dan
-     * @return cac buoc chuyen ve hien thi cho nguoi ban
+     * @return cac buoc huong dan hien thi cho buyer sau khi anh QR duoc mo khoa
      */
     TransferInstruction buildTransferInstruction(Ticket ticket);
 }

@@ -19,7 +19,7 @@ import lombok.Setter;
  * Tài khoản người dùng của sàn pass vé.
  *
  * <p>Entity này thuộc quyền sở hữu của module {@code user}. Theo nguyên tắc kiến trúc số 1,
- * các module khác (ticket, payment, dispute, verification, reputation) chỉ được tham chiếu
+ * các module khác (ticket, payment, dispute, reputation) chỉ được tham chiếu
  * người dùng bằng ID thuần kiểu {@code Long} (ví dụ {@code sellerId}, {@code buyerId},
  * {@code userId}) và <b>KHÔNG</b> được import class này vào field entity của họ. Muốn lấy
  * thông tin người dùng, các module khác gọi
@@ -73,7 +73,7 @@ public class User {
     /** Đã xác minh số điện thoại qua OTP hay chưa. */
     private boolean phoneVerified;
 
-    /** Đã được module {@code verification} duyệt giấy tờ tuỳ thân hay chưa. */
+    /** Đã được duyệt giấy tờ tuỳ thân hay chưa. */
     private boolean identityVerified;
 
     /** Khoá tệp ảnh đại diện trong FileStorageService. */

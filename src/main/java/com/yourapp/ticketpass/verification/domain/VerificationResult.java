@@ -1,4 +1,4 @@
-package com.yourapp.ticketpass.verification.domain;
+﻿package com.yourapp.ticketpass.verification.domain;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Ket qua tong hop cua mot lan xac thuc ve.
  *
  * <p>Day la DTO noi bo ma module {@code ticket} duoc phep import: no chi la value object,

@@ -1,4 +1,4 @@
-package com.yourapp.ticketpass.verification.domain;
+﻿package com.yourapp.ticketpass.verification.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +17,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Ho so xac thuc cua mot ve: ket qua OCR, kiem tra trung ma QR, va bang chung email forward.
  *
  * <p>Theo nguyen tac kien truc so 1, entity nay khong dung quan he JPA: {@code ticketId} va

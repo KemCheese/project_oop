@@ -1,4 +1,4 @@
-package com.yourapp.ticketpass.verification.infrastructure;
+﻿package com.yourapp.ticketpass.verification.infrastructure;
 
 import com.yourapp.ticketpass.verification.domain.RiskTier;
 import com.yourapp.ticketpass.verification.domain.TicketVerification;
@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Hien thuc port {@link VerificationRepository} bang Spring Data JPA.
  *
  * <p>Day la glue code thuan: moi method chi delegate sang {@link TicketVerificationJpaRepository},

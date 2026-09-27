@@ -1,4 +1,4 @@
-package com.yourapp.ticketpass.verification.domain;
+﻿package com.yourapp.ticketpass.verification.domain;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Ket qua doc anh ve bang OCR.
  *
  * <p>{@code fields} chua cac cap khoa - gia tri trich xuat duoc tu anh, vi du {@code eventName},

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Controller MVC cho cac man hinh lien quan den ve.
+ * Controller MVC cho san marketplace ban ve — cac man hinh lien quan den ve.
  *
  * <p>Bang route:</p>
  * <pre>
@@ -24,8 +24,8 @@ import org.springframework.web.multipart.MultipartFile;
  * GET  /tickets/{id}           -&gt; chi tiet ve (view "ticket/detail")
  * GET  /tickets/new            -&gt; form dang ve (view "ticket/create")
  * POST /tickets                -&gt; tao listing (@Valid CreateTicketRequest, MultipartFile ticketImage, MultipartFile qrImage)
- * POST /tickets/{id}/transfer  -&gt; seller danh dau da chuyen ve
- * POST /tickets/{id}/received  -&gt; buyer xac nhan da nhan ve
+ * POST /tickets/{id}/transfer  -&gt; san mo khoa anh QR an cho buyer sau khi seller da khoa coc
+ * POST /tickets/{id}/received  -&gt; buyer xac nhan da nhan ve (da xem duoc anh QR)
  * POST /tickets/{id}/cancel    -&gt; seller huy listing
  * </pre>
  *

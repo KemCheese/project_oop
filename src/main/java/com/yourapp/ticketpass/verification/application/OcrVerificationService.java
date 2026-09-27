@@ -10,16 +10,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Xac thuc ve bang cach doc anh ve va doi chieu voi du lieu nguoi ban tu khai.
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
  *
- * <p>Nguyen tac: van ban OCR doc duoc phai khop voi ten su kien va thong tin cho ngoi ma nguoi ban
- * nhap trong form. Neu do lech vuot qua nguong cho phep - hoac do tin cay OCR thap hon
- * {@code app.ocr.min-confidence} - thi ho so bi day sang {@code MANUAL_REVIEW_REQUIRED} thay vi
- * tu choi ngay, vi anh chup mo hoac ve viet tay van co the la ve that.</p>
+ * <p>Du an da chuyen huong sang mo hinh marketplace (kieu Shopee cho ve).
+ * San bao ve giao dich bang hai lop kinh te (coc 50% + escrow 100%) thay vi
+ * xac thuc ky thuat (OCR, hash QR, email forward). Class nay giu lai de
+ * tuong thich voi code cu nhung KHONG nen duoc su dung.</p>
  *
- * <p>Service khong phu thuoc vao mot bo may OCR cu the ma chi lam viec qua {@link OcrEngine}.</p>
- *
- * <p>Module: verification</p>
+ * <p>Module: verification [DEPRECATED]</p>
  *
  * Chu so huu: Nguoi A
  */

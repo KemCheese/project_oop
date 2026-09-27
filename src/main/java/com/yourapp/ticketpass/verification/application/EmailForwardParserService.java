@@ -1,4 +1,4 @@
-package com.yourapp.ticketpass.verification.application;
+﻿package com.yourapp.ticketpass.verification.application;
 
 import com.yourapp.ticketpass.verification.domain.EmailForwardInfo;
 import com.yourapp.ticketpass.verification.domain.VerificationRepository;
@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Bo tach va doi chieu email xac nhan ve ma nguoi ban forward lai.
  *
  * <p>Email den truc tiep tu don vi phat hanh la bang chung so huu manh nhat ma san co the thu thap
@@ -23,6 +26,9 @@ public class EmailForwardParserService {
     private final VerificationRepository verificationRepository;
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Bo tach noi dung email tho thanh cac truong co cau truc.
      *
      * @param rawEmailSource noi dung email dang tho, gom header va body
@@ -37,6 +43,9 @@ public class EmailForwardParserService {
     }
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Doi chieu thong tin email voi mot ve cu the.
      *
      * @param info thong tin da bo tach tu email

@@ -9,13 +9,17 @@ import java.time.Duration;
 import org.springframework.stereotype.Component;
 
 /**
- * Adapter cho ve concert / su kien am nhac.
+ * Adapter cho ve concert / su kien am nhac tren san marketplace.
  *
- * <p>Cua so khieu nai DU KIEN: 24 gio sau khi ve duoc chuyen, doc tu cau hinh
- * {@code app.dispute.window.concert} o Prompt 2, va luon phai dong truoc {@code eventStartAt}.
- * Ve concert thuong duoc sang tay truoc su kien hang tuan nen cua so dai nhat trong bon loai;
- * day cung la loai ve co gia tri cao va rui ro gia mao lon nhat, nen bat buoc co bang chung
- * email forward tu don vi phat hanh.</p>
+ * <p>Truong bat buoc khi dang ve concert: ten concert (nhap chuan dinh dang), dia diem,
+ * loai ve (chon: Ngoi hoac Dung — neu dung thi hien o nhap Line/Zone, neu ngoi thi hien
+ * o nhap Ghe/Zone), gio bat dau (nhap tung o theo dinh dang co san), so luong ve,
+ * ghe/zone (phai khop voi so luong ve), gia ban, anh cong khai va anh QR an.</p>
+ *
+ * <p>Cua so khieu nai DU KIEN: 24 gio sau khi ve duoc chuyen (anh QR an mo khoa), doc tu
+ * cau hinh {@code app.dispute.window.concert} o Prompt 2, va luon phai dong truoc
+ * {@code eventStartAt}. Ve concert thuong duoc sang tay truoc su kien hang tuan nen
+ * cua so dai nhat trong ba loai ve.</p>
  *
  * <p>Module: ticket</p>
  *

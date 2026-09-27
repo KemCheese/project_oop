@@ -1,4 +1,4 @@
-package com.yourapp.ticketpass.verification.application;
+﻿package com.yourapp.ticketpass.verification.application;
 
 import com.yourapp.ticketpass.shared.util.ImageHashUtil;
 import com.yourapp.ticketpass.shared.util.QrCodeGenerator;
@@ -8,6 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Chong ban trung ve: mot ma ve chi duoc phep ton tai tren san mot lan.
  *
  * <p>Hai lop phong ve bo tro nhau. Lop thu nhat bam payload QR bang SHA-256 roi so khop chinh xac,
@@ -30,6 +33,9 @@ public class QrDuplicateCheckService {
     private final ImageHashUtil imageHashUtil;
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Bam payload QR thanh chuoi SHA-256 hex.
      *
      * @param qrPayload noi dung giai ma duoc tu ma QR
@@ -42,6 +48,9 @@ public class QrDuplicateCheckService {
     }
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Tim ve khac dang dung cung ma QR voi ve dang xet.
      *
      * @param ticketId id ve dang xet, duoc loai tru khoi phep so sanh
@@ -56,6 +65,9 @@ public class QrDuplicateCheckService {
     }
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * Tinh perceptual hash cua mot anh ve.
      *
      * @param imageBytes noi dung anh dang byte
@@ -68,6 +80,9 @@ public class QrDuplicateCheckService {
     }
 
     /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
      * So sanh hai perceptual hash xem co phai cung mot anh khong.
      *
      * @param hashA perceptual hash cua anh thu nhat

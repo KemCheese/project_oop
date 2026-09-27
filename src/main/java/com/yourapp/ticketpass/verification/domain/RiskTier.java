@@ -1,6 +1,9 @@
-package com.yourapp.ticketpass.verification.domain;
+﻿package com.yourapp.ticketpass.verification.domain;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Bac rui ro cua mot ve dang cho xac thuc.
  *
  * <p>Quy tac phan bac da chot:</p>
