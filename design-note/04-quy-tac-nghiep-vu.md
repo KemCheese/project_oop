@@ -37,16 +37,14 @@ Danh mục quy tắc:
 | Điều kiện | Bắt buộc | Ghi chú |
 |---|---|---|
 | Người đăng đã đăng nhập, `UserStatus` là `ACTIVE` | Có | Tài khoản bị khoá không đăng vé được |
-| Chọn đúng một `TicketType` trong `MOVIE`, `CONCERT`, `TRAIN`, `BUS` | Có | Quyết định `TicketAdapter` và cửa sổ khiếu nại |
+| Chọn đúng một `TicketType` trong `MOVIE`, `CONCERT`, `BUS` | Có | Quyết định `TicketAdapter` và cửa sổ khiếu nại |
 | Có `eventStartAt` nằm ở **tương lai** | Có | Vé đã qua giờ sự kiện không còn giá trị chuyển nhượng |
 | Giá bán > 0 | Có | Không cho phép vé 0đ hoặc giá âm |
 | **Giá bán ≤ giá gốc (`salePrice <= originalPrice`)** | Có | **Quy tắc chống đầu cơ, chốt của nhóm.** Xem giải thích bên dưới |
-| **`seatInfo` không rỗng với `MOVIE`, `TRAIN`, `BUS`** | Có (trừ `CONCERT`) | Xem giải thích bên dưới |
-| Upload được ít nhất một ảnh vé | Có | Đầu vào của lớp chống scam thứ nhất (OCR) |
-| Có payload mã QR (upload ảnh QR hoặc dán chuỗi payload) | Có | Đầu vào của lớp chống scam thứ hai (hash chống bán trùng) |
-| Forward email xác nhận từ nhà cung cấp | Không | Thiếu thì vé bị đẩy lên bậc rủi ro HIGH theo BR-02 |
+| **`seatInfo` không rỗng với `MOVIE`, `BUS`** | Có (trừ `CONCERT`) | Xem giải thích bên dưới |
+| Upload được ảnh công khai và ảnh QR ẩn | Có | Anh cong khai cho buyer xem, anh QR an mo khoa sau khi giu tien |
 
-**Lý do.** Hai đầu vào ảnh vé và payload QR là điều kiện cần để chạy được hai lớp chống scam quan trọng nhất. Nếu cho phép đăng vé mà thiếu chúng, sàn không khác gì một hội nhóm Facebook có giao diện đẹp hơn. Yêu cầu `eventStartAt` ở tương lai vừa loại vé hết hạn, vừa là mốc để `computeWindowClose` trong BR-09 hoạt động đúng.
+**Lý do.** Yêu cầu `eventStartAt` ở tương lai vừa loại vé hết hạn, vừa là mốc để `computeWindowClose` trong BR-09 hoạt động đúng. Hai ảnh (công khai và ẩn) phục vụ cơ chế marketplace.
 
 ### BR-01.1 — Giá bán không được vượt quá giá gốc
 
@@ -58,19 +56,19 @@ salePrice <= originalPrice
 
 Người bán vẫn được bán bằng **đúng** giá gốc, nên người pass vé chính đáng không mất gì ngoài phần phí theo BR-07. Đây là đánh đổi có ý thức: sàn chấp nhận ít giao dịch hơn để giữ đúng mục đích ban đầu.
 
-Hạn chế cần lường trước: quy tắc này dựa vào `originalPrice` **do người bán tự khai**, nên khai giá gốc cao hơn thực tế là cách để lách. Đây chính là lý do OCR (lớp chống scam thứ nhất) cũng đối chiếu trường giá in trên ảnh vé khi đọc được, và là lý do vé giá cao bị đẩy lên bậc HIGH theo BR-02 để admin xem tay.
+Hạn chế cần lường trước: quy tắc này dựa vào `originalPrice` **do người bán tự khai**, nên khai giá gốc cao hơn thực tế là cách để lách. Sàn chấp nhận hạn chế này và dựa vào cộng đồng (người mua) để nhận diện giá bất hợp lý.
 
 Quy tắc được điều khiển bằng `app.ticket.allow-markup=false`. Giá trị chốt của dự án là `false`; để ở dạng cấu hình để có thể demo cả hai chế độ khi bảo vệ đồ án.
 
-### BR-01.2 — `seatInfo` bắt buộc với `MOVIE`, `TRAIN`, `BUS`
+### BR-01.2 — `seatInfo` bắt buộc với `MOVIE`, `BUS`
 
-`seatInfo` là bắt buộc với ba loại vé `MOVIE`, `TRAIN`, `BUS`; **không** bắt buộc với `CONCERT`.
+`seatInfo` là bắt buộc với hai loại vé `MOVIE`, `BUS`; **không** bắt buộc với `CONCERT`.
 
-Ba loại đầu luôn có ghế được chỉ định cụ thể (số ghế phòng chiếu, toa và giường tàu, số ghế xe). `seatInfo` chính là thứ người mua đối chiếu khi nhận vé, và là bằng chứng đối chiếu khi có tranh chấp.
+Hai loại đầu luôn có ghế được chỉ định cụ thể (số ghế phòng chiếu, số ghế xe). `seatInfo` chính là thứ người mua đối chiếu khi nhận vé, và là bằng chứng đối chiếu khi có tranh chấp.
 
-Vé concert thì nhiều trường hợp **không có** ghế: vé đứng khu fanzone, vé general admission, vé bán theo khu vực. Bắt buộc `seatInfo` với concert sẽ khiến người bán phải nhập dữ liệu giả để vượt validation — làm dữ liệu bẩn hơn chứ không sạch hơn, và làm hỏng chính việc đối chiếu mà trường này sinh ra để phục vụ. Với concert, người bán khai khu vực hoặc hạng vé, và trường đó cũng được OCR đối chiếu như các trường khác.
+Vé concert thì nhiều trường hợp **không có** ghế: vé đứng khu fanzone, vé general admission, vé bán theo khu vực. Bắt buộc `seatInfo` với concert sẽ khiến người bán phải nhập dữ liệu giả để vượt validation — làm dữ liệu bẩn hơn chứ không sạch hơn. Với concert, người bán khai khu vực hoặc hạng vé.
 
-**Nơi hiện thực.** `ValidateTicketService` kiểm tra các điều kiện định dạng và nghiệp vụ; `TicketType` được dùng để quyết định `seatInfo` có bắt buộc hay không. Validation cấp DTO (không rỗng, số dương, định dạng) chạy trước ở `CreateTicketRequest`, còn các quy tắc liên trường như BR-01.1 thuộc `ValidateTicketService`. Các lớp xác thực chống scam (`OcrVerificationService`, `QrDuplicateCheckService`, `EmailForwardParserService`) chạy tiếp và nạp kết quả cho `RiskTierResolver`. Vi phạm bất kỳ điều kiện bắt buộc nào ném `BusinessRuleViolationException`.
+**Nơi hiện thực.** `ValidateTicketService` kiểm tra các điều kiện định dạng và nghiệp vụ; `TicketType` được dùng để quyết định `seatInfo` có bắt buộc hay không. Validation cấp DTO chạy trước ở `CreateTicketRequest`. Vi phạm bất kỳ điều kiện bắt buộc nào ném `BusinessRuleViolationException`.
 
 **Cấu hình liên quan.**
 
@@ -83,40 +81,10 @@ app.ticket.image-max-size-mb=10
 
 ---
 
-## BR-02 — Phân bậc rủi ro `RiskTier`
+## BR-02 — [DEPRECATED] Phân bậc rủi ro `RiskTier`
 
-**Phát biểu.** Sau khi chạy xác thực, mỗi vé được gán đúng một bậc rủi ro:
-
-| Bậc | Điều kiện | Hệ quả |
-|---|---|---|
-| HIGH | Giá bán ≥ 5.000.000đ, HOẶC chưa xác thực email forward, HOẶC điểm uy tín seller < 60, HOẶC phát hiện QR hash trùng | Bắt buộc admin duyệt tay trước khi vé lên sàn |
-| MEDIUM | 1.000.000đ ≤ giá bán < 5.000.000đ, HOẶC seller có dưới 5 giao dịch thành công | OCR tự động, ngưỡng confidence cao hơn |
-| LOW | Các trường hợp còn lại | Auto-approve nếu OCR confidence ≥ `app.ocr.min-confidence` (mặc định 70) |
-
-**Thứ tự đánh giá.** Các điều kiện được xét theo thứ tự **HIGH trước, rồi MEDIUM, cuối cùng mới LOW**. Chỉ cần thoả **một** điều kiện của HIGH là vé thành HIGH, bất kể các tín hiệu khác tốt đến đâu. Một vé giá 200.000đ nhưng trùng QR hash vẫn là HIGH.
-
-**Lý do.** Bốn tín hiệu của bậc HIGH tương ứng với bốn nguồn rủi ro khác nhau và không thay thế được cho nhau:
-
-- *Giá cao* — thiệt hại nếu scam thành công lớn, đáng để tốn công admin duyệt tay.
-- *Không có email forward* — không chứng minh được vé có nguồn gốc hợp pháp; ảnh vé thì chỉnh sửa được, email của nhà cung cấp thì khó hơn nhiều.
-- *Uy tín thấp* — người bán đã từng thua tranh chấp hoặc huỷ listing sau khi người mua đã trả tiền.
-- *Trùng QR hash* — dấu hiệu trực tiếp của việc bán một vé cho nhiều người, kiểu scam nguy hiểm nhất.
-
-Bậc MEDIUM không chặn vé nhưng siết ngưỡng OCR, vì người bán mới (dưới 5 giao dịch thành công) chưa có lịch sử để đánh giá.
-
-**Nơi hiện thực.** `RiskTierResolver` trong `verification.application`. Nó nhận vào `OcrExtraction`, kết quả `QrDuplicateCheckService`, `EmailForwardInfo`, giá bán và điểm uy tín người bán, rồi trả về `RiskTier`.
-
-**Ví dụ.**
-
-| Giá bán | Email forward | Uy tín seller | Giao dịch thành công | QR trùng | Bậc | Vì sao |
-|---|---|---|---|---|---|---|
-| 250.000đ | Có | 100 | 12 | Không | LOW | Không chạm điều kiện HIGH hay MEDIUM nào |
-| 250.000đ | Có | 100 | 2 | Không | MEDIUM | Dưới 5 giao dịch thành công |
-| 250.000đ | Có | 100 | 12 | **Có** | HIGH | Trùng QR hash |
-| 2.000.000đ | Có | 95 | 20 | Không | MEDIUM | Giá nằm trong khoảng 1.000.000đ–5.000.000đ |
-| 2.000.000đ | **Không** | 95 | 20 | Không | HIGH | Thiếu email forward |
-| 6.500.000đ | Có | 100 | 40 | Không | HIGH | Giá ≥ 5.000.000đ |
-| 400.000đ | Có | **52** | 30 | Không | HIGH | Uy tín dưới 60 |
+**Phát biểu.** *Quy tắc này đã bị loại bỏ.*
+Dự án đã chuyển hướng sang mô hình marketplace, không còn dùng module `verification` để phân bậc rủi ro và xác thực OCR/Hash. Sàn chỉ dựa vào hai lớp bảo vệ kinh tế (Escrow và Cọc). Lớp này được giữ tài liệu lại để đối chiếu nếu cần, nhưng logic không còn chạy trong hệ thống thực.
 
 ---
 
@@ -207,9 +175,9 @@ tổng_phí     = max(hoa_hồng_thô, 5.000đ)          // phí sàn tối thi�
 tổng_phí     = min(tổng_phí, 400.000đ)            // chỉ áp cho bậc 2%
 ```
 
-**Lý do phí tối thiểu 5.000đ.** Mỗi giao dịch đều tốn chi phí cố định của sàn bất kể giá trị: một lượt gọi cổng thanh toán khi nạp escrow, một lượt khi thu cọc, một lượt khi giải ngân, một lượt khi hoàn cọc, cộng chi phí chạy OCR. Vé 60.000đ mà chỉ thu 7% (tức 4.200đ) thì sàn lỗ trên chính giao dịch đó. Phí tối thiểu bảo đảm mỗi giao dịch ít nhất hoà chi phí xử lý.
+**Lý do phí tối thiểu 5.000đ.** Mỗi giao dịch đều tốn chi phí cố định của sàn bất kể giá trị: một lượt gọi cổng thanh toán khi nạp escrow, một lượt khi thu cọc, một lượt khi giải ngân, một lượt khi hoàn cọc. Vé 60.000đ mà chỉ thu 7% (tức 4.200đ) thì sàn lỗ trên chính giao dịch đó. Phí tối thiểu bảo đảm mỗi giao dịch ít nhất hoà chi phí xử lý.
 
-**Lý do trần 400.000đ.** Không có trần thì vé 100.000.000đ phải chịu 2.000.000đ phí — con số này lớn hơn hẳn công sức sàn bỏ ra (vẫn chỉ là bốn lượt gọi cổng thanh toán và một lần OCR), và sẽ đẩy người dùng ra ngoài sàn để giao dịch riêng. Trần 400.000đ giữ phí ở mức hợp lý cho các giao dịch giá trị rất lớn. Trần **chỉ áp cho bậc 2%**: các bậc thấp hơn không thể chạm 400.000đ (giá bán cao nhất của bậc 3% là dưới 10.000.000đ, cho tối đa dưới 300.000đ phí).
+**Lý do trần 400.000đ.** Không có trần thì vé 100.000.000đ phải chịu 2.000.000đ phí — con số này lớn hơn hẳn công sức sàn bỏ ra, và sẽ đẩy người dùng ra ngoài sàn để giao dịch riêng. Trần 400.000đ giữ phí ở mức hợp lý cho các giao dịch giá trị rất lớn. Trần **chỉ áp cho bậc 2%**: các bậc thấp hơn không thể chạm 400.000đ (giá bán cao nhất của bậc 3% là dưới 10.000.000đ, cho tối đa dưới 300.000đ phí).
 
 **Nơi hiện thực.** `CommissionCalculatorService`, hai hằng số nằm trong `CommissionConfig`.
 
@@ -300,7 +268,6 @@ Cấu hình mặc định:
 |---|---|---|
 | MOVIE | 2 giờ | Phải trước giờ chiếu |
 | CONCERT | 24 giờ | Phải trước giờ diễn |
-| TRAIN | 6 giờ | Phải trước giờ khởi hành |
 | BUS | 3 giờ | Phải trước giờ khởi hành |
 
 Thời điểm đóng cửa sổ được tính bằng:
@@ -315,8 +282,8 @@ trong đó `receivedAt` là thời điểm vé chuyển sang `AWAITING_USE`. Hà
 **Lý do cửa sổ khác nhau theo loại vé.** Hai áp lực đối nghịch phải cân bằng: cửa sổ dài bảo vệ người mua tốt hơn, cửa sổ ngắn trả tiền cho người bán nhanh hơn. Điểm cân bằng khác nhau theo đặc tính từng loại vé:
 
 - **Vé phim (2 giờ)** — giá trị thấp, thường mua để dùng ngay trong ngày. Bắt người bán chờ 24 giờ để nhận 200.000đ là vô lý và sẽ khiến không ai muốn bán vé phim trên sàn.
-- **Vé concert (24 giờ)** — giá trị cao nhất trong bốn loại, thường được mua trước sự kiện nhiều ngày. Người mua cần thời gian để kiểm tra kỹ mã QR, đối chiếu với ban tổ chức, thậm chí hỏi lại nơi phát hành. Rủi ro lớn thì đáng để người bán chờ lâu hơn.
-- **Vé tàu (6 giờ)** và **vé xe khách (3 giờ)** — nằm ở giữa. Vé tàu thường được đặt trước xa hơn vé xe khách nên cửa sổ dài gấp đôi.
+- **Vé concert (24 giờ)** — giá trị cao nhất, thường được mua trước sự kiện nhiều ngày. Người mua cần thời gian để kiểm tra kỹ mã QR, đối chiếu với ban tổ chức, thậm chí hỏi lại nơi phát hành. Rủi ro lớn thì đáng để người bán chờ lâu hơn.
+- **Vé xe khách (3 giờ)** — nằm ở giữa.
 
 **Lý do phải chặn tại `eventStartAt`.** Sau khi sự kiện bắt đầu, không còn cách nào xác minh vé có dùng được hay không. Người mua có thể vào cửa bình thường rồi vẫn mở khiếu nại nói vé hỏng, và không ai chứng minh được điều ngược lại. Đóng cửa sổ trước giờ sự kiện loại bỏ hoàn toàn kiểu lạm dụng này. Đây là lý do `computeWindowClose` lấy mốc **sớm hơn** chứ không phải muộn hơn.
 
@@ -332,7 +299,6 @@ trong đó `receivedAt` là thời điểm vé chuyển sang `AWAITING_USE`. Hà
 | MOVIE | 08/09 10:00 | 08/09 21:00 | 08/09 12:00 | **08/09 12:00** | Cửa sổ 2 giờ sớm hơn |
 | CONCERT | 10/12 09:00 | 20/12 20:00 | 11/12 09:00 | **11/12 09:00** | Cửa sổ 24 giờ sớm hơn |
 | CONCERT | 19/12 15:00 | 20/12 20:00 | 20/12 15:00 | **20/12 15:00** | Cửa sổ 24 giờ sớm hơn |
-| TRAIN | 08/09 20:00 | 09/09 06:00 | 09/09 02:00 | **09/09 02:00** | Cửa sổ 6 giờ sớm hơn |
 | BUS | 08/09 05:00 | 08/09 07:00 | 08/09 08:00 | **08/09 07:00** | `eventStartAt` sớm hơn |
 
 ---
@@ -397,8 +363,8 @@ Kiểm tra tính đúng đắn: ở mọi dòng, `founder_cut + buyer_compensati
 
 **Lý do thiết kế thang điểm.**
 
-- *Khởi tạo 100, không phải 0.* Người dùng mới chưa làm gì sai thì không có lý do bị nghi ngờ. Bắt đầu từ 0 sẽ khiến mọi người mới đều rơi vào bậc rủi ro HIGH theo BR-02 (ngưỡng 60), làm tắc nghẽn hàng đợi duyệt tay của admin ngay từ ngày đầu. Rủi ro của người bán mới đã được xử lý bằng tín hiệu riêng "dưới 5 giao dịch thành công" ở bậc MEDIUM.
-- *Bất đối xứng mạnh giữa thưởng và phạt.* Thua tranh chấp bị trừ 15 điểm, trong khi hoàn tất một giao dịch chỉ được 2 điểm — cần **8 giao dịch sạch** mới bù lại được một lần thua. Đây là chủ ý: một lần lừa đảo gây thiệt hại lớn hơn nhiều so với lợi ích của một giao dịch trơn tru, nên chi phí phục hồi uy tín phải cao tương ứng. Từ 100 điểm, chỉ cần **thua 3 lần** là xuống 55, dưới ngưỡng 60 và bị buộc admin duyệt tay mọi vé sau đó.
+- *Khởi tạo 100, không phải 0.* Người dùng mới chưa làm gì sai thì không có lý do bị nghi ngờ. Bắt đầu từ 0 sẽ khiến điểm của họ thấp và không được cộng đồng tin tưởng.
+- *Bất đối xứng mạnh giữa thưởng và phạt.* Thua tranh chấp bị trừ 15 điểm, trong khi hoàn tất một giao dịch chỉ được 2 điểm — cần **8 giao dịch sạch** mới bù lại được một lần thua. Đây là chủ ý: một lần lừa đảo gây thiệt hại lớn hơn nhiều so với lợi ích của một giao dịch trơn tru, nên chi phí phục hồi uy tín phải cao tương ứng. Từ 100 điểm, chỉ cần **thua 3 lần** là xuống 55.
 - *Huỷ listing sau khi có người trả tiền bị trừ 10.* Hành vi này chưa chắc là lừa đảo, nhưng nó khiến tiền của người mua bị kẹt trong escrow và phải chạy quy trình hoàn tiền. Mức phạt nhẹ hơn thua tranh chấp nhưng vẫn nặng hơn nhiều so với phần thưởng một giao dịch thành công.
 - *Thắng tranh chấp chỉ +1.* Thắng tranh chấp nghĩa là bạn không sai, chứ không phải bạn làm tốt hơn bình thường. Thưởng lớn sẽ tạo động cơ méo mó là cố tình đẩy giao dịch vào tranh chấp.
 
@@ -414,7 +380,7 @@ Kiểm tra tính đúng đắn: ở mọi dòng, `founder_cut + buyer_compensati
 | 3 | Hoàn tất giao dịch #2 | +2 | 87 |
 | 4 | Thua tranh chấp #2 | −15 | 72 |
 | 5 | Huỷ listing sau khi người mua đã trả tiền | −10 | 62 |
-| 6 | Thua tranh chấp #3 | −15 | 47 → **dưới 60, mọi vé đăng sau đều là HIGH theo BR-02** |
+| 6 | Thua tranh chấp #3 | −15 | 47 |
 | 7 | Thắng tranh chấp #4 | +1 | 48 |
 
 ---
@@ -489,12 +455,12 @@ app.ticket.min-hours-before-event=1
 app.ticket.max-images=5
 app.ticket.image-max-size-mb=10
 
-# BR-02 - Phan bac rui ro
-app.risk.high-price-threshold=5000000
-app.risk.medium-price-threshold=1000000
-app.risk.min-reputation=60
-app.risk.min-successful-transactions=5
-app.ocr.min-confidence=70
+# [DEPRECATED] BR-02 - Phan bac rui ro (khong con su dung)
+# app.risk.high-price-threshold=5000000
+# app.risk.medium-price-threshold=1000000
+# app.risk.min-reputation=60
+# app.risk.min-successful-transactions=5
+# app.ocr.min-confidence=70
 
 # BR-04 - Coc cua nguoi ban
 app.deposit.percent=50
@@ -519,7 +485,6 @@ app.tax.taxable-threshold=5000000
 # BR-09 - Cua so khieu nai va thoi han phan hoi
 app.dispute.window.movie-hours=2
 app.dispute.window.concert-hours=24
-app.dispute.window.train-hours=6
 app.dispute.window.bus-hours=3
 app.dispute.seller-response-hours=24
 app.dispute.scheduler.cron=0 */5 * * * *
@@ -639,7 +604,6 @@ Quy ước biên đã chốt: thời điểm `windowCloseAt` **vẫn được t�
 | `eventStartAt` cách hiện tại dưới mức tối thiểu | `eventStartAt = now + 30 phút`, ngưỡng 1 giờ | Từ chối |
 | Không có ảnh vé | danh sách ảnh rỗng | Từ chối |
 | Vé phim thiếu `seatInfo` | `MOVIE`, `seatInfo = null` | Từ chối |
-| Vé tàu thiếu `seatInfo` | `TRAIN`, `seatInfo = null` | Từ chối |
 | Vé xe khách thiếu `seatInfo` | `BUS`, `seatInfo = null` | Từ chối |
 | Vé concert thiếu `seatInfo` | `CONCERT`, `seatInfo = null` | **Hợp lệ** |
 
@@ -649,7 +613,7 @@ Quy ước biên đã chốt: thời điểm `windowCloseAt` **vẫn được t�
 |---|---|---|
 | Cộng điểm khi đang ở mức tối đa | `score = 100`, giao dịch hoàn tất | `score = 100`, không vượt 100 |
 | Trừ điểm xuống dưới 0 | `score = 10`, thua tranh chấp `-15` | `score = 0`, không âm |
-| Ba lần thua đẩy xuống dưới ngưỡng BR-02 | `score = 100`, thua 3 lần | `score = 55`, và `RiskTierResolver` trả `HIGH` |
+| Ba lần thua mất 45 điểm | `score = 100`, thua 3 lần | `score = 55` |
 | Listener chỉ chạy sau commit | event publish trong transaction bị rollback | Điểm không thay đổi |
 
 ### Nhóm 10 — Khấu thuế (BR-08)
@@ -667,6 +631,6 @@ Quy ước biên đã chốt: thời điểm `windowCloseAt` **vẫn được t�
 
 | Tài liệu | Nội dung |
 |---|---|
-| [00-tong-quan-du-an.md](00-tong-quan-du-an.md) | Bài toán, phạm vi, năm lớp chống scam. |
+| [00-tong-quan-du-an.md](00-tong-quan-du-an.md) | Bài toán, phạm vi, mo hinh marketplace. |
 | [01-kien-truc-he-thong.md](01-kien-truc-he-thong.md) | Cây package, chiều phụ thuộc, bốn nguyên tắc scalability. |
 | [05-state-machine-giao-dich.md](05-state-machine-giao-dich.md) | Chín trạng thái, sơ đồ chuyển đổi, các chuyển đổi bị cấm và lý do. |

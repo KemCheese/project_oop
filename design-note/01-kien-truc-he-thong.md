@@ -40,11 +40,8 @@ com.yourapp.ticketpass
  │    ├── application     TransferTicketService, ValidateTicketService, TicketStateMachineService
  │    ├── infrastructure  TicketJpaRepository, TicketRepositoryImpl
  │    └── web             TicketController, dto/
- ├── verification
- │    ├── domain          TicketVerification, VerificationStatus, RiskTier, VerificationResult,
- │    │                   OcrExtraction, EmailForwardInfo, OcrEngine (interface), VerificationRepository (interface)
- │    ├── application     OcrVerificationService, QrDuplicateCheckService, EmailForwardParserService, RiskTierResolver
- │    └── infrastructure  TesseractOcrEngine, TicketVerificationJpaRepository, VerificationRepositoryImpl
+ ├── verification [DEPRECATED]
+ │    ├── (Toan bo module nay da bi deprecated do du an chuyen sang mo hinh marketplace)
  ├── payment
  │    ├── domain          EscrowTransaction, Deposit, EscrowStatus, DepositStatus, CommissionTier,
  │    │                   PaymentGateway (interface), PaymentRequest, PaymentResult,
@@ -156,7 +153,6 @@ flowchart TD
     user["user"]
     shared["shared"]
 
-    ticket --> verification
     ticket --> payment
     dispute --> payment
     dispute --> ticket
@@ -165,7 +161,6 @@ flowchart TD
     dispute -.->|"DisputeResolvedEvent"| reputation
 
     ticket --> shared
-    verification --> shared
     payment --> shared
     dispute --> shared
     reputation --> shared
@@ -177,7 +172,7 @@ flowchart TD
 
 Diễn giải sơ đồ:
 
-- `ticket` gọi trực tiếp `verification` khi đăng vé, vì phải biết ngay vé có được lên sàn hay không, và gọi trực tiếp các use case tiền của `payment`, vì phải biết ngay tiền đã vào escrow hay chưa.
+- `ticket` gọi trực tiếp các use case tiền của `payment`, vì phải biết ngay tiền đã vào escrow hay chưa. (Module `verification` truoc day duoc goi de xac thuc, nay da bi deprecated).
 - `dispute` gọi trực tiếp `payment` để hoàn tiền và tịch thu cọc, và gọi `ticket` (qua `TicketStateMachineService`) để đổi trạng thái vé sau phán quyết.
 - `reputation` **chỉ nghe event**, không ai gọi nó trực tiếp. Nhờ vậy, nếu module uy tín lỗi thì giao dịch tiền vẫn hoàn tất đúng.
 - `user` không gọi module nào. Các module khác chỉ tham chiếu người dùng bằng `Long userId`; khi cần hiển thị tên thì tầng `web` truy vấn `UserQueryService`.
@@ -202,8 +197,7 @@ Ký hiệu: **OK** được phép import; **EVT** chỉ được nhận thông t
 Giải thích các ô dễ gây tranh luận:
 
 - **`payment` không import module nào.** Đây là quy tắc cứng nhất. `payment` chỉ nhận vào ID cùng số tiền, và trả ra `PaymentResult` cùng các breakdown trong `shared.dto`. Nhờ đó module tiền kiểm thử được hoàn toàn độc lập và không bao giờ là nguyên nhân của phụ thuộc vòng.
-- **`verification` không import `ticket`.** Chiều gọi là `ticket` gọi `verification`, không phải ngược lại. `verification` nhận thông tin vé qua tham số (`ticketId`, loại vé, giá bán, thông tin người bán khai) chứ không truy vấn entity `Ticket`.
-- **`verification` cần điểm uy tín của người bán** để phân bậc rủi ro, nhưng không được import `reputation`. Điểm uy tín được **truyền vào** `RiskTierResolver` như một tham số do tầng gọi cung cấp. Nhờ vậy `RiskTierResolver` là hàm thuần, dễ viết unit test cho toàn bộ tổ hợp điều kiện.
+- **Module `verification` đã bị deprecated.** Các quy tắc về import của nó được bỏ qua.
 - **`dispute` được import `ticket` một cách hạn chế**, chỉ hai thứ: `TicketStateMachineService` để đổi trạng thái sau phán quyết, và `TicketRepository` để đọc loại vé cùng `eventStartAt` phục vụ tính cửa sổ khiếu nại. Không được import entity `Ticket` vào entity `Dispute`.
 - **`shared` không import gì.** Nếu một class trong `shared` cần biết về `Ticket` thì class đó không thuộc `shared`.
 
@@ -337,7 +331,7 @@ Lưu ý `AFTER_COMMIT`: listener chỉ chạy khi transaction gốc đã commit 
 
 **Nguyên tắc là gì.** Ảnh vé, ảnh QR, ảnh và video bằng chứng khiếu nại đều được lưu qua interface `shared.storage.FileStorageService`. Giai đoạn học dùng `LocalFileStorageAdapter` ghi xuống thư mục `./data/uploads`. **Không có dòng business logic nào được gọi `new File(...)`, `Files.write(...)`, `FileOutputStream` hay `Paths.get(...)` trực tiếp.**
 
-**Tại sao.** Nơi lưu file là chi tiết hạ tầng dễ thay đổi nhất trong toàn hệ thống: máy cá nhân lưu ổ đĩa, deploy lên server dùng volume, scale ngang phải dùng S3 hoặc MinIO vì nhiều instance không chia sẻ được ổ đĩa cục bộ. Nếu đường dẫn nằm rải rác trong use case, mỗi lần đổi là một lần sửa hàng chục file và bỏ sót ở đâu đó. Ngoài ra, viết test cho `OcrVerificationService` sẽ phải thật sự tạo file trên ổ đĩa và dọn dẹp sau đó — chậm và dễ để lại rác.
+**Tại sao.** Nơi lưu file là chi tiết hạ tầng dễ thay đổi nhất trong toàn hệ thống: máy cá nhân lưu ổ đĩa, deploy lên server dùng volume, scale ngang phải dùng S3 hoặc MinIO vì nhiều instance không chia sẻ được ổ đĩa cục bộ. Nếu đường dẫn nằm rải rác trong use case, mỗi lần đổi là một lần sửa hàng chục file và bỏ sót ở đâu đó. Ngoài ra, viết test cho `TransferTicketService` sẽ phải thật sự tạo file trên ổ đĩa và dọn dẹp sau đó — chậm và dễ để lại rác.
 
 **Hệ quả nếu vi phạm.** Ứng dụng chỉ chạy được trên đúng một máy có đúng cấu trúc thư mục đó; test phụ thuộc hệ thống file nên chạy trên máy giảng viên có thể fail; và khi chạy hai instance sau load balancer, ảnh upload lên instance A không đọc được từ instance B.
 
@@ -354,8 +348,8 @@ public interface FileStorageService {
 
 ```java
 // SAI — business logic biết đường dẫn vật lý
-public class OcrVerificationService {
-    public void verify(MultipartFile image) throws IOException {
+public class TransferTicketService {
+    public void createListing(MultipartFile image) throws IOException {
         Path path = Paths.get("D:/uploads/tickets/" + image.getOriginalFilename());
         Files.write(path, image.getBytes());      // dính chặt vào ổ đĩa và vào máy của một người
     }
@@ -366,18 +360,17 @@ public class OcrVerificationService {
 // ĐÚNG — chỉ biết interface
 @Service
 @RequiredArgsConstructor
-public class OcrVerificationService {
+public class TransferTicketService {
     private final FileStorageService fileStorage;
-    private final OcrEngine ocrEngine;
 
-    public OcrExtraction verify(byte[] image, String filename) {
+    public void createListing(byte[] image, String filename) {
         StoredFileRef ref = fileStorage.store(image, filename, "tickets");
-        return ocrEngine.extract(fileStorage.read(ref));
+        // luu ref vao database
     }
 }
 ```
 
-Đổi sang S3 chỉ là thêm `S3FileStorageAdapter implements FileStorageService` và đổi một dòng `@Bean` trong config. `OcrVerificationService` không sửa một ký tự nào.
+Đổi sang S3 chỉ là thêm `S3FileStorageAdapter implements FileStorageService` và đổi một dòng `@Bean` trong config. `TransferTicketService` không sửa một ký tự nào.
 
 ### Nguyên tắc 4 — Session mặc định của Spring Security là đủ, nhưng phải biết giới hạn
 
@@ -452,7 +445,6 @@ Liệt kê rõ ràng để hội đồng thấy đây là những giới hạn �
 | `TaxWithholdingService` là stub | Không phản ánh luật thuế thật | Thay bằng tích hợp dịch vụ thuế; interface giữ nguyên |
 | `MomoTestGatewayAdapter` chỉ chạy sandbox | Không xử lý tiền thật, không có đối soát | Thêm adapter cổng thật + tiến trình đối soát định kỳ |
 | Không có bảng sổ cái kế toán riêng | Khó truy vết dòng tiền theo thời gian | Thêm bảng ledger append-only ghi từng bút toán |
-| Tesseract chạy đồng bộ trong request | Upload ảnh lớn làm request chậm | Đẩy OCR sang hàng đợi bất đồng bộ, trạng thái `PENDING_VERIFICATION` |
 | `AutoCompleteScheduler` chạy trên mọi instance | Nhiều instance sẽ chạy trùng job | Dùng ShedLock hoặc Quartz với khoá phân tán |
 | Ma trận phụ thuộc module (mục 4.2) chỉ được bảo đảm bằng code review | Một lần sơ suất là đủ tạo phụ thuộc sai hướng, và loại lỗi này thường chỉ lộ ra khi đã lan rộng | Thêm ArchUnit vào test scope với ba rule: `domain` không phụ thuộc `infrastructure`, `payment` không phụ thuộc module nghiệp vụ nào, `shared` không phụ thuộc module nào |
 
@@ -460,6 +452,6 @@ Liệt kê rõ ràng để hội đồng thấy đây là những giới hạn �
 
 | Tài liệu | Nội dung |
 |---|---|
-| [00-tong-quan-du-an.md](00-tong-quan-du-an.md) | Bài toán, phạm vi, luồng nghiệp vụ tổng quan, năm lớp chống scam. |
+| [00-tong-quan-du-an.md](00-tong-quan-du-an.md) | Bài toán, phạm vi, luồng nghiệp vụ tổng quan, mo hinh marketplace. |
 | [04-quy-tac-nghiep-vu.md](04-quy-tac-nghiep-vu.md) | Bảng hoa hồng, phí tối thiểu, cọc, công thức tịch thu, thuế, phân bậc rủi ro, cửa sổ khiếu nại, điểm uy tín. |
 | [05-state-machine-giao-dich.md](05-state-machine-giao-dich.md) | Chín trạng thái của vé, sơ đồ chuyển đổi, bảng chuyển trạng thái hợp lệ và các chuyển đổi bị cấm. |

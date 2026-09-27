@@ -9,7 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Use case chinh cua module {@code ticket}: dang ve va dieu phoi ve di qua cac moc cua giao dich.
+ * Use case chinh cua module {@code ticket} tren san marketplace: dang ve va dieu phoi
+ * ve di qua cac moc cua giao dich.
+ *
+ * <p>Tren san marketplace, khi seller da khoa coc, san tu dong mo khoa anh QR an cho buyer.
+ * Day la buoc "chuyen ve" - buyer nhan duoc ma QR ve that de su dung.</p>
  *
  * <p>CHU THICH QUAN TRONG ve rang buoc giua cac module: cac method {@code markXxx} duoc module
  * {@code payment} va {@code dispute} goi DONG BO trong cung mot transaction. Day la ngoai le co y

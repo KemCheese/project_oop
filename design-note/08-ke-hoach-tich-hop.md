@@ -68,8 +68,8 @@ Dữ liệu chuẩn dùng cho kịch bản: **vé CONCERT, giá bán 2.000.000đ
 |---|---|---|
 | 1 | Đăng ký 3 tài khoản: `seller@test.com`, `buyer@test.com`, `admin@test.com`. Tài khoản admin nâng vai `ADMIN` bằng câu SQL trực tiếp. | 3 bản ghi trong bảng `users`, mật khẩu đã băm BCrypt, mỗi tài khoản có một bản ghi điểm uy tín khởi tạo. |
 | 2 | Đăng nhập bằng `seller@test.com`. | Vào được trang chủ, thanh điều hướng hiện tên người dùng và nút "Đăng vé". |
-| 3 | Seller đăng vé loại **CONCERT**, giá bán **2.000.000đ**, có upload ảnh vé và ảnh mã QR, **không** forward email xác nhận. | Ảnh được lưu qua `FileStorageService` vào `data/uploads`, DB có bản ghi `tickets` và `ticket_verifications`. |
-| 4 | Hệ thống chạy xác thực: OCR ảnh vé, hash payload QR, kiểm tra trùng. | `RiskTierResolver` gán risk tier **MEDIUM** (OCR khớp, QR không trùng, nhưng thiếu email forward nên không đạt LOW). |
+| 3 | Seller đăng vé loại **CONCERT**, giá bán **2.000.000đ**, upload đủ ảnh công khai và ảnh QR ẩn. | Ảnh được lưu qua `FileStorageService`, DB có bản ghi `tickets`. |
+| 4 | Hệ thống kiểm tra hợp lệ, bỏ qua xác thực kỹ thuật. | Vé được tạo. |
 | 5 | Vé lên sàn. | Trạng thái vé là **`LISTED`**, vé xuất hiện ở trang chủ và trang danh sách vé. |
 | 6 | Đăng nhập `buyer@test.com`, mở chi tiết vé, bấm mua và thanh toán qua MoMo Test Environment. | Chuyển hướng sang trang sandbox MoMo, thanh toán thành công, quay về `return-url`. Bản ghi `escrow_transactions` số tiền 2.000.000đ, trạng thái `HELD`. Vé sang **`PAYMENT_ESCROWED`**. |
 | 7 | Seller khoá cọc **1.000.000đ** (50% giá bán). | Bản ghi `deposits` số tiền 1.000.000đ, trạng thái `LOCKED`. Vé sang **`DEPOSIT_LOCKED`**. |
@@ -149,8 +149,7 @@ Một module chỉ được coi là **xong** khi thoả **toàn bộ** các mụ
 
 | Module | Tiêu chí bổ sung |
 |---|---|
-| `ticket` | Cả 9 trạng thái vé đều tới được trong thực tế; mọi chuyển đổi sai đều bị `IllegalTicketTransitionException` chặn; cả 4 adapter sinh ra hướng dẫn chuyển vé **khác nhau**, không phải copy một bản. |
-| `verification` | Chạy được cả khi `app.ocr.enabled=false` (bỏ qua OCR, không sập); phát hiện được vé đăng trùng mã QR; vé thiếu email forward bị đẩy lên bậc rủi ro cao hơn. |
+| `ticket` | Cả 9 trạng thái vé đều tới được trong thực tế; mọi chuyển đổi sai đều bị `IllegalTicketTransitionException` chặn; cả 3 adapter sinh ra hướng dẫn chuyển vé **khác nhau**, không phải copy một bản. |
 | `payment` | Cả 4 bậc hoa hồng đều có test; phí tối thiểu và trần hoa hồng có test; công thức tịch thu cọc có test trường hợp cọc nhỏ hơn phí tối thiểu; `ReleaseFundsUseCase` publish đúng event. |
 | `dispute` | Cả 4 `DisputeWindowPolicy` cho ra số giờ khác nhau theo cấu hình; không mở được khiếu nại ngoài cửa sổ; scheduler không tự hoàn tất vé đang có tranh chấp mở; `ReviewDisputeUseCase` publish đúng event. |
 | `user` | Không đăng ký được email trùng; mật khẩu lưu dưới dạng băm BCrypt; trang admin chặn được tài khoản `USER`; đăng nhập sai không lộ thông tin tài khoản có tồn tại hay không. |
@@ -164,10 +163,10 @@ Một module chỉ được coi là **xong** khi thoả **toàn bộ** các mụ
 
 | Tuần | Mục tiêu chính | Người A (`ticket`, `verification`) | Người B (`payment`, `dispute`) | Người C (`user`, `reputation`, `shared`, giao diện) | Mốc cuối tuần |
 |---|---|---|---|---|---|
-| **1** | Scaffold và hợp đồng module — **đã hoàn thành ở Prompt 1** | Khung entity, enum, interface của `ticket`, `verification` | Khung entity, use case, policy của `payment`, `dispute` | Khung `shared`, `user`, `reputation`, cấu hình, layout | Dự án build được, mọi ký hiệu method đã chốt trong `02-hop-dong-module.md`, tag `week-1-scaffold` |
-| **2** | Domain và repository chạy thật | Entity `Ticket`, `TicketVerification`, enum trạng thái, repository, migration bảng vé | Entity `EscrowTransaction`, `Deposit`, `Dispute`, repository, migration bảng tiền | Entity `User`, `UserReputationScore`, `SecurityConfig`, `RegisterUserUseCase`, `UserDetailsServiceImpl` | Đăng ký, đăng nhập chạy được; lưu và đọc được dữ liệu ba nhóm bảng; tag `week-2-integration` |
-| **3** | Use case chính của từng module | 4 adapter loại vé, `TicketStateMachineService`, `ValidateTicketService` | `CommissionCalculatorService`, `ForfeitDepositPolicy`, `TaxWithholdingService`, `HoldFundsUseCase`, `LockDepositUseCase` | `LocalFileStorageAdapter`, `QrCodeGenerator`, `ImageHashUtil`, `UserProfileService` | Đăng được vé có ảnh; tính đúng hoa hồng và cọc bằng unit test; tag `week-3-integration` |
-| **4** | Tích hợp thanh toán và khiếu nại | `OcrVerificationService`, `QrDuplicateCheckService`, `EmailForwardParserService`, `RiskTierResolver`, `TransferTicketService` | `MomoTestGatewayAdapter`, `ReleaseFundsUseCase`, `RefundBuyerUseCase`, 4 `DisputeWindowPolicy`, `FileDisputeUseCase`, `RespondToDisputeUseCase`, `ReviewDisputeUseCase`, `AutoCompleteScheduler` | `UpdateReputationUseCase` (2 listener), `ReputationController`, ghép uy tín vào `UserProfileResponse` | **Chạy trọn kịch bản end-to-end lần đầu**, cả nhánh tự hoàn tất lẫn nhánh tranh chấp; tag `week-4-integration` |
+| **1** | Scaffold và hợp đồng module — **đã hoàn thành ở Prompt 1** | Khung entity, enum, interface của `ticket` | Khung entity, use case, policy của `payment`, `dispute` | Khung `shared`, `user`, `reputation`, cấu hình, layout | Dự án build được, mọi ký hiệu method đã chốt trong `02-hop-dong-module.md`, tag `week-1-scaffold` |
+| **2** | Domain và repository chạy thật | Entity `Ticket`, enum trạng thái, repository, migration bảng vé | Entity `EscrowTransaction`, `Deposit`, `Dispute`, repository, migration bảng tiền | Entity `User`, `UserReputationScore`, `SecurityConfig`, `RegisterUserUseCase`, `UserDetailsServiceImpl` | Đăng ký, đăng nhập chạy được; lưu và đọc được dữ liệu ba nhóm bảng; tag `week-2-integration` |
+| **3** | Use case chính của từng module | 3 adapter loại vé, `TicketStateMachineService`, `ValidateTicketService` | `CommissionCalculatorService`, `ForfeitDepositPolicy`, `TaxWithholdingService`, `HoldFundsUseCase`, `LockDepositUseCase` | `LocalFileStorageAdapter`, `UserProfileService` | Đăng được vé có ảnh; tính đúng hoa hồng và cọc bằng unit test; tag `week-3-integration` |
+| **4** | Tích hợp thanh toán và khiếu nại | `TransferTicketService` | `MomoTestGatewayAdapter`, `ReleaseFundsUseCase`, `RefundBuyerUseCase`, 4 `DisputeWindowPolicy`, `FileDisputeUseCase`, `RespondToDisputeUseCase`, `ReviewDisputeUseCase`, `AutoCompleteScheduler` | `UpdateReputationUseCase` (2 listener), `ReputationController`, ghép uy tín vào `UserProfileResponse` | **Chạy trọn kịch bản end-to-end lần đầu**, cả nhánh tự hoàn tất lẫn nhánh tranh chấp; tag `week-4-integration` |
 | **5** | Giao diện và kiểm thử | `TicketController` + view module ticket, test cho state machine và các adapter | `DisputeReviewController` + view module dispute, test cho toàn bộ công thức tiền gồm 3 trường hợp biên | Layout, `index.html`, `GlobalExceptionHandler` + trang lỗi, trang hồ sơ và uy tín | Bấm được toàn bộ luồng qua giao diện, không cần can thiệp DB (trừ thủ thuật rút ngắn cửa sổ khiếu nại); tag `week-5-integration` |
 | **6** | Hoàn thiện tài liệu và tập bảo vệ | Điền phần A trong `09-oop-design-patterns.md`, hoàn tất nhật ký | Điền phần B, chạy và ghi lại kết quả 3 trường hợp biên | Điền phần C, rà lại README, chuẩn bị dữ liệu demo sạch | Merge `develop` vào `main`, tag `v1.0`, chạy thử buổi demo đủ hai nhánh kịch bản trong thời lượng cho phép |
 
@@ -175,4 +174,4 @@ Một module chỉ được coi là **xong** khi thoả **toàn bộ** các mụ
 
 - **Tuần 4 là tuần rủi ro nhất.** Đây là lúc tiền, vé và uy tín phải khớp nhau lần đầu. Nên dành thêm thời gian và chấp nhận rằng buổi tích hợp tuần 4 sẽ dài hơn các tuần khác.
 - **Không dồn giao diện xuống tuần cuối.** Người C nên dựng layout và trang chủ từ tuần 2 để hai người kia có chỗ bấm thử, thay vì chỉ test qua log.
-- Nếu tới cuối tuần 4 mà chưa chạy được end-to-end, cắt giảm phạm vi theo thứ tự ưu tiên sau: bỏ OCR (`app.ocr.enabled=false`), bỏ parse email forward, bỏ perceptual hash — giữ bằng được luồng escrow, cọc, tranh chấp và uy tín, vì đó mới là phần thể hiện thiết kế hướng đối tượng của đồ án.
+- Nếu tới cuối tuần 4 mà chưa chạy được end-to-end, cắt giảm phạm vi theo thứ tự ưu tiên: giữ bằng được luồng escrow, cọc, tranh chấp và uy tín, vì đó mới là phần thể hiện thiết kế hướng đối tượng của đồ án.

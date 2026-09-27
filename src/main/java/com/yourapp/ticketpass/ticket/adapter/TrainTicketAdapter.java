@@ -9,12 +9,12 @@ import java.time.Duration;
 import org.springframework.stereotype.Component;
 
 /**
- * Adapter cho ve tau hoa.
+ * [DEPRECATED] Adapter cho ve tau hoa - da bi loai bo khoi pham vi du an.
  *
- * <p>Cua so khieu nai DU KIEN: 6 gio sau khi ve duoc chuyen, doc tu cau hinh
- * {@code app.dispute.window.train} o Prompt 2, va luon phai dong truoc {@code eventStartAt}
- * (o day la gio tau chay). Ve tau gan voi giay to tuy than nen viec chuyen nhuong phai qua
- * thu tuc doi ten hanh khach; neu khong doi duoc ten thi ve coi nhu khong the su dung.</p>
+ * <p>Du an da chuyen huong sang mo hinh marketplace (kieu Shopee cho ve),
+ * chi ho tro 3 loai ve: MOVIE, BUS (ve xe khach), CONCERT.
+ * Loai ve TRAIN da bi loai bo. Class nay giu lai de tuong thich nhung
+ * KHONG nen duoc su dung trong code moi. Xem 00-tong-quan-du-an.md.</p>
  *
  * <p>Module: ticket</p>
  *

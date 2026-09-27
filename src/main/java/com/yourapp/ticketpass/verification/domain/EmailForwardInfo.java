@@ -1,4 +1,4 @@
-package com.yourapp.ticketpass.verification.domain;
+﻿package com.yourapp.ticketpass.verification.domain;
 
 import java.time.Instant;
 import java.util.List;
@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
+ * [DEPRECATED] Module verification da bi loai bo khoi pham vi du an.
+ * Du an chuyen huong sang mo hinh marketplace. Xem 00-tong-quan-du-an.md.
+ *
  * Thong tin bo tach duoc tu email xac nhan ve ma nguoi ban forward lai.
  *
  * <p>Email forward la bang chung manh nhat cho thay nguoi ban thuc su so huu ve, vi no den truc tiep

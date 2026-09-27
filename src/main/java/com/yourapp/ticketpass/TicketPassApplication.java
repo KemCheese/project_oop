@@ -12,10 +12,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * <ul>
  *   <li>{@code @SpringBootApplication}: bật auto-configuration và quét component từ
  *       package gốc {@code com.yourapp.ticketpass} trở xuống (tất cả các module con:
- *       ticket, verification, payment, dispute, user, reputation, shared).</li>
+ *       ticket, payment, dispute, user, reputation, shared).</li>
  *   <li>{@code @ConfigurationPropertiesScan}: đăng ký các lớp cấu hình gắn
  *       {@code @ConfigurationProperties} nằm trong {@code shared.config}
- *       (OcrConfig, PaymentGatewayConfig, CommissionConfig, TaxConfig) mà không cần
+ *       (PaymentGatewayConfig, CommissionConfig, TaxConfig) mà không cần
  *       thêm {@code @EnableConfigurationProperties} thủ công cho từng lớp.</li>
  *   <li>{@code @EnableScheduling}: bật cơ chế chạy tác vụ theo lịch, cần cho
  *       {@code dispute.scheduler.AutoCompleteScheduler} (tự động hoàn tất giao dịch

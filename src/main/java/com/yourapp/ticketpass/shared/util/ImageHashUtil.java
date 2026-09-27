@@ -16,8 +16,7 @@ import org.springframework.stereotype.Component;
  * </ul>
  *
  * <p>Độ giống nhau giữa hai mã băm tri giác được đo bằng {@code hammingDistance}: khoảng
- * cách càng nhỏ thì hai ảnh càng giống. Module verification sẽ chọn một ngưỡng để quyết
- * định có cảnh báo nghi vấn hay không.</p>
+ * cách càng nhỏ thì hai ảnh càng giống. Cong cu nay duoc giu lai cho viec doi chieu sau nay.</p>
  *
  * <p>Module sở hữu: shared.</p>
  * <p>Chủ sở hữu theo phân công: Người C.</p>

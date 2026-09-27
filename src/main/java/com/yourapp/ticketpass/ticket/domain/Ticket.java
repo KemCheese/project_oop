@@ -18,7 +18,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Entity trung tam cua san pass ve: mot ve dang duoc rao ban hoac dang trong mot giao dich.
+ * Entity trung tam cua san marketplace ban ve: mot ve dang duoc rao ban hoac dang trong mot giao dich.
+ *
+ * <p>San TicketPass hoat dong theo mo hinh marketplace (kieu Shopee cho ve).
+ * Moi ve co hai loai anh: anh cong khai (ticketImageStorageKey) de buyer xem truoc khi mua,
+ * va anh QR an (qrImageStorageKey) chi duoc mo khoa cho buyer sau khi san xac nhan giu tien
+ * trong escrow va seller da khoa coc.</p>
  *
  * <p>Ve thuoc so huu cua module {@code ticket}. Theo nguyen tac kien truc so 1,
  * moi tham chieu sang ban ghi khac deu la ID thuan kieu {@code Long}, khong dung quan he JPA:
@@ -88,23 +93,23 @@ public class Ticket {
     @Column(length = 100)
     private String providerName;
 
-    /** Ma don hang tai don vi phat hanh, dung de doi chieu voi email forward. */
+    /** Ma don hang tai don vi phat hanh (tuy chon, seller tu khai). */
     @Column(length = 120)
     private String providerOrderCode;
 
-    /** Khoa file anh ve trong FileStorageService. */
+    /** Khoa file anh cong khai trong FileStorageService (buyer xem truoc khi mua). */
     @Column(length = 500)
     private String ticketImageStorageKey;
 
-    /** Khoa file anh ma QR trong FileStorageService. */
+    /** Khoa file anh QR AN trong FileStorageService (chi mo khoa cho buyer sau escrow + coc). */
     @Column(length = 500)
     private String qrImageStorageKey;
 
-    /** SHA-256 hex cua payload QR, khoa chong ban trung ve. */
+    /** [DEPRECATED] SHA-256 hex cua payload QR - khong con dung de chong ban trung. */
     @Column(length = 64)
     private String qrPayloadHash;
 
-    /** Huong dan chuyen ve da duoc sinh theo loai ve, luu duoi dang text dai. */
+    /** Huong dan chuyen ve sinh theo loai ve, dung de hien thi cho buyer sau khi anh QR an duoc mo khoa. */
     @Column(columnDefinition = "TEXT")
     private String transferInstruction;
 
