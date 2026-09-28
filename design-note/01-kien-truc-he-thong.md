@@ -74,8 +74,7 @@ com.yourapp.ticketpass
       │                   DisputeResolvedEvent, DisputeOutcome
       ├── dto/            CommissionBreakdown, TaxWithholding, ForfeitBreakdown
       ├── config/         SecurityConfig, OcrConfig, PaymentGatewayConfig, CommissionConfig, TaxConfig
-      ├── exception/      GlobalExceptionHandler, BusinessRuleViolationException, ResourceNotFoundException
-      └── util/           QrCodeGenerator, ImageHashUtil
+      └── exception/      GlobalExceptionHandler, BusinessRuleViolationException, ResourceNotFoundException
 ```
 
 Bảy module nghiệp vụ (`ticket`, `verification`, `payment`, `dispute`, `reputation`, `user`) cộng với một module hạ tầng dùng chung (`shared`). Không có package "utils" toàn cục chứa mọi thứ: mỗi helper phải thuộc về một module có ý nghĩa nghiệp vụ, riêng `shared` chỉ chứa những thứ **thực sự** được ít nhất hai module dùng chung.
