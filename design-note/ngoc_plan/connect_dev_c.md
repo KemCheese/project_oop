@@ -88,7 +88,7 @@ Dưới đây là chi tiết 12 nhiệm vụ (được quy định tại Mục 3
   - Cấu hình logout: xóa session, chuyển hướng về `/`.
   - Bean [`PasswordEncoder`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/shared/config/SecurityConfig.java#L80): cung cấp `BCryptPasswordEncoder`.
 
-### Task C5 — Nạp người dùng cho Spring Security (`UserDetailsServiceImpl`)
+### Task C5 — Nạp người dùng cho Spring Security (`UserDetailsServiceImpl`) ✅ DONE (2026-09-28)
 - **File tác động:** [`src/main/java/com/yourapp/ticketpass/user/infrastructure/UserDetailsServiceImpl.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/user/infrastructure/UserDetailsServiceImpl.java)
 - **Nghiệp vụ cần làm:**
   - `loadUserByUsername(String email)`: Tra cứu `userRepository.findByEmail(email)`. Nếu không thấy -> ném `UsernameNotFoundException`.
@@ -107,6 +107,10 @@ Dưới đây là chi tiết 12 nhiệm vụ (được quy định tại Mục 3
     6. **Khởi tạo điểm uy tín ban đầu:** Tạo bản ghi [`UserReputationScore`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/reputation/domain/UserReputationScore.java) với `userId = user.getId()`, `score = 100.00`, các counter = 0 (gọi sang `reputationRepository` hoặc use case uy tín).
     7. Trả về [`UserProfileResponse`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/user/web/dto/UserProfileResponse.java).
   - `verifyEmail(Long userId, String token)`: Kiểm tra token kích hoạt, chuyển `emailVerified = true`, đổi trạng thái sang `ACTIVE`.
+- **⚠️ LƯU Ý QUAN TRỌNG TỪ TASK C5 (đã hoàn thành):**
+  - **Ràng buộc UserStatus ↔ đăng nhập:** `UserDetailsServiceImpl` (C5) ánh xạ `UserStatus` sang cờ Spring Security như sau: `ACTIVE` → cho phép đăng nhập; `PENDING_VERIFICATION`/`SUSPENDED` → `enabled=false` (Spring ném `DisabledException`); `BANNED` → `accountNonLocked=false` (Spring ném `LockedException`). Do đó, nếu C6 tạo user với `status = PENDING_VERIFICATION`, user **không thể đăng nhập** cho đến khi gọi `verifyEmail()` chuyển sang `ACTIVE`. Nếu cần auto-active cho demo/test, phải set `status = ACTIVE` ngay khi đăng ký.
+  - **Field bắt buộc khi tạo User:** `email` (unique, dùng làm username đăng nhập), `passwordHash` (BCrypt qua `PasswordEncoder.encode()`), `role` (dùng để gán authority `"ROLE_" + role.name()`), `status` (quyết định user có login được không).
+  - **Gọi xuyên module sang reputation:** Khi khởi tạo `UserReputationScore`, chỉ truyền `userId` (Long) — tuân thủ Nguyên tắc 1 (không JPA relation xuyên module). Nên gọi `reputationRepository.save(...)` trực tiếp thay vì qua `UpdateReputationUseCase` vì đây là thao tác đồng bộ trong cùng transaction đăng ký (không phải side-effect → không dùng event).
 
 ### Task C7 — Xem và cập nhật hồ sơ, avatar, ngân hàng (`UserProfileService`)
 - **File tác động:** [`src/main/java/com/yourapp/ticketpass/user/application/UserProfileService.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/user/application/UserProfileService.java)
