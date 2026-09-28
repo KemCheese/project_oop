@@ -35,8 +35,7 @@ public class ValidateTicketService {
      */
     public ValidationResult validateForListing(Ticket ticket) {
         throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Chay cac luat chung truoc (salePrice > 0, eventStartAt o tuong lai, "
-                        + "qrPayloadHash chua ton tai theo ticketRepository.existsByQrPayloadHash de chan ban trung ve), "
+                "TODO [Nguoi A] Prompt 2: Chay cac luat chung truoc (salePrice > 0, eventStartAt o tuong lai), "
                         + "sau do goi adapter.validateListing(ticket) cua loai ve tuong ung va gop toan bo loi lai "
                         + "thanh mot ValidationResult duy nhat.");
     }

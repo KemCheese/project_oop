@@ -53,11 +53,9 @@ public class TransferTicketService {
     public TicketResponse createListing(CreateTicketRequest request, Long sellerId) {
         throw new UnsupportedOperationException(
                 "TODO [Nguoi A] Prompt 2: Map CreateTicketRequest sang entity Ticket, gan sellerId va status LISTED, "
-                        + "giai ma anh QR bang qrCodeGenerator.decodeFromImage roi tinh qrPayloadHash bang "
-                        + "qrCodeGenerator.hashPayload, goi validateTicketService.validateForListing va nem "
-                        + "BusinessRuleViolationException neu khong hop le, sinh transferInstruction qua adapter, "
-                        + "luu bang ticketRepository.save, cuoi cung map sang TicketResponse voi URL anh lay tu "
-                        + "fileStorageService.");
+                        + "goi validateTicketService.validateForListing va nem BusinessRuleViolationException neu khong hop le, "
+                        + "sinh transferInstruction qua adapter, luu bang ticketRepository.save, cuoi cung map sang "
+                        + "TicketResponse voi URL anh lay tu fileStorageService.");
     }
 
     /**

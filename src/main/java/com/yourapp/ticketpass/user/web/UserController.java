@@ -58,9 +58,7 @@ public class UserController {
      */
     @GetMapping("/login")
     public String loginForm(Model model) {
-        throw new UnsupportedOperationException(
-                "TODO [Người C] Prompt 2: trả về view \"auth/login\"; template tự đọc tham số "
-                        + "?error và ?logout để hiển thị thông báo nên method chỉ cần return tên view.");
+        return "auth/login";
     }
 
     /**
@@ -71,10 +69,8 @@ public class UserController {
      */
     @GetMapping("/register")
     public String registerForm(Model model) {
-        throw new UnsupportedOperationException(
-                "TODO [Người C] Prompt 2: đưa một RegisterRequest rỗng vào model dưới tên "
-                        + "\"registerRequest\" (đúng tên th:object trong auth/register.html) rồi "
-                        + "trả về view \"auth/register\".");
+        model.addAttribute("registerRequest", new RegisterRequest());
+        return "auth/register";
     }
 
     /**

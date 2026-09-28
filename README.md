@@ -1,341 +1,411 @@
-# TicketPass — Sàn pass vé điện tử
+# TicketPass — Sàn Giao Dịch Vé Điện Tử (Ticket Marketplace)
 
-TicketPass là một web application viết bằng Java Spring Boot, đóng vai trò sàn trung gian để **pass (chuyển nhượng, mua bán lại) vé điện tử** cho bốn loại vé: vé phim, vé concert, vé tàu và vé xe khách.
+TicketPass là một web application viết bằng **Java 17 / Spring Boot 3.3.4**, đóng vai trò **sàn trung gian giao dịch chuyển nhượng (pass lại) vé điện tử** theo mô hình marketplace dành cho ba loại vé chính: **vé xem phim (`MOVIE`)**, **vé concert / âm nhạc (`CONCERT`)**, và **vé xe khách (`BUS`)**.
 
-Sàn giải quyết bài toán của việc pass vé trên các hội nhóm Facebook và Zalo hiện nay: người mua phải trả tiền trước khi có bất kỳ bằng chứng nào về chất lượng vé, và không có ai đứng giữa để đòi lại tiền. TicketPass đảo ngược cấu trúc rủi ro đó bằng cách xác thực vé nhiều lớp ngay khi đăng, giữ tiền người mua trong escrow, bắt người bán khoá cọc, và cho phép khiếu nại có thời hạn.
+Dự án giải quyết bài toán nhức nhối của việc pass vé tự phát trên các hội nhóm Facebook và Zalo: người mua phải chuyển tiền trước khi có bất kỳ bằng chứng nào về chất lượng vé, người bán sau khi nhận tiền có thể biến mất hoặc chuyển vé đã sử dụng, và không có bất kỳ cơ chế nào đứng giữa để bảo vệ quyền lợi hai bên. 
 
-Đây là **đồ án môn Lập trình hướng đối tượng (OOP)**, thực hiện bởi nhóm 3 người. Ngoài mục tiêu nghiệp vụ, đồ án tập trung áp dụng có lý do bốn design pattern trọng tâm — **Adapter, State, Strategy, Observer** — mỗi pattern giải một vấn đề thật trong hệ thống chứ không nhồi vào cho đủ số lượng.
+TicketPass đảo ngược cấu trúc rủi ro đó bằng **mô hình bảo vệ kinh tế 2 lớp cốt lõi**:
+1. **Ký quỹ 100% của người mua (`PAYMENT_ESCROWED`)**: Tiền mua vé được sàn giữ trong escrow qua cổng MoMo Sandbox, chỉ giải ngân cho người bán sau khi người mua xác nhận nhận vé và hết cửa sổ khiếu nại hợp lệ.
+2. **Khóa cọc 50% của người bán (`DEPOSIT_LOCKED`)**: Người bán bắt buộc phải khóa cọc 50% giá bán trước khi mã vé được giao. Nếu người bán gian lận và thua tranh chấp, toàn bộ tiền cọc sẽ bị tịch thu (vừa bù đắp phí sàn, vừa bồi thường thiệt hại cho người mua). Gian lận chắc chắn sẽ bị lỗ tiền thật.
+3. **Cơ chế ảnh hai lớp**: Người bán đăng tải **ảnh công khai** (thông tin sự kiện, rạp/nhà xe, vị trí ghế...) để người mua duyệt trước khi mua, và **ảnh QR ẩn** (mã vé/barcode vào cửa thật) chỉ được sàn tự động mở khóa cho người mua sau khi cả hai điều kiện trên được thỏa mãn.
+
+Đây là **đồ án môn Lập trình hướng đối tượng (OOP)**. Dự án tập trung áp dụng đúng đắn và chặt chẽ bốn design pattern trọng tâm — **Adapter, State, Strategy, Observer** — giải quyết trực tiếp các bài toán nghiệp vụ thực tế trong hệ thống.
 
 ---
 
 ## 1. Tính năng chính
 
-- **Bốn loại vé** — vé phim, vé concert, vé tàu, vé xe khách. Mỗi loại có điều kiện đăng bán, hướng dẫn chuyển nhượng và cửa sổ khiếu nại riêng.
-- **Xác thực chống scam nhiều lớp** khi đăng vé:
-  - OCR ảnh vé (Tesseract) rồi đối chiếu với thông tin người bán tự khai.
-  - Hash payload mã QR để phát hiện một vé bị bán trùng cho nhiều người.
-  - Parse email xác nhận đơn hàng do người bán forward từ nhà cung cấp.
-  - Phân bậc rủi ro LOW / MEDIUM / HIGH; vé rủi ro cao bắt buộc admin duyệt tay.
-- **Escrow và cọc** — người mua trả 100% giá bán vào escrow của sàn, người bán phải khoá cọc 50% giá bán trước khi được chuyển vé. Tiền chỉ về tay người bán sau khi hết thời hạn khiếu nại.
-- **Hoa hồng theo bậc giá vé** — tra bảng (không luỹ tiến), có phí tối thiểu và trần hoa hồng, chia đôi giữa người mua và người bán.
-- **Khiếu nại có cửa sổ thời gian theo loại vé** — người mua nộp bằng chứng, người bán phản hồi, admin phán quyết; buyer thắng thì được hoàn escrow và nhận bồi thường từ cọc bị tịch thu.
-- **Điểm uy tín** — tự động cộng/trừ sau mỗi giao dịch hoàn tất hoặc mỗi phán quyết tranh chấp, cập nhật qua domain event.
+- **Hỗ trợ 3 loại vé marketplace**:
+  - **Vé xem phim (`MOVIE`)**: Tên phim, rạp (chọn danh sách), suất chiếu, số lượng vé, số ghế cụ thể.
+  - **Vé concert (`CONCERT`)**: Tên concert, địa điểm, hình thức (ngồi/đứng), khu vực (Line/Zone/Ghế), giờ bắt đầu, số lượng vé.
+  - **Vé xe khách (`BUS`)**: Hãng xe, tuyến đường (điểm xuất phát - điểm đến), giờ khởi hành, số lượng chỗ, tên ghế.
+  *(Lưu ý: Vé tàu hỏa `TRAIN` đã được đánh dấu deprecated để tinh gọn phạm vi).*
+- **Cơ chế bảo vệ kinh tế 2 lớp (Escrow 100% + Cọc 50%)**:
+  - Người mua trả 100% giá bán vào Escrow của sàn qua MoMo Test Sandbox.
+  - Người bán khóa cọc 50% giá bán để kích hoạt chuyển vé.
+- **Cơ chế hiển thị ảnh 2 lớp**:
+  - **Ảnh công khai**: Buyer xem trước khi quyết định mua.
+  - **Ảnh QR ẩn**: Mã vào cửa thật, chỉ mở khóa cho buyer sau khi hoàn tất thanh toán escrow và người bán đã khóa cọc.
+- **Cửa sổ khiếu nại (Dispute Window) có thời hạn theo loại vé**:
+  - Phim: 2 giờ; Xe khách: 3 giờ; Concert: 24 giờ.
+  - Luôn tự động cắt trước thời điểm sự kiện bắt đầu (`eventStartAt`).
+- **Tự động hoàn tất và giải ngân (`AUTO_COMPLETE`)**:
+  - Tiến trình scheduler tự động quét và hoàn tất các giao dịch hết cửa sổ khiếu nại mà không có tranh chấp.
+  - Tự động hoàn cọc cho seller, tính phí hoa hồng sàn, khấu trừ thuế stub và giải ngân tiền vé.
+- **Quy trình xử lý tranh chấp & phán quyết (`DISPUTE_UNDER_REVIEW`)**:
+  - Người mua mở khiếu nại kèm bằng chứng (ảnh, tài liệu).
+  - Người bán có thời hạn (24 giờ) gửi phản hồi phản biện.
+  - Admin xem xét hồ sơ và phán quyết: Hoàn tiền 100% escrow + bồi thường từ cọc bị tịch thu nếu buyer thắng; hoặc giải ngân + hoàn cọc nếu seller thắng.
+- **Tính hoa hồng sàn minh bạch theo bậc giá vé**:
+  - Bảng phí từ 7% xuống 2% (không lũy tiến), phí tối thiểu 5.000đ, trần hoa hồng 400.000đ, chia đều 50/50 giữa buyer và seller.
+- **Hệ thống Điểm uy tín người dùng (Reputation Score)**:
+  - Khởi tạo 100.00 điểm, cập nhật tự động sau mỗi giao dịch thành công (+2) hoặc tranh chấp (thua -15, thắng +1) thông qua Spring Domain Events.
+
+> **Ghi chú về module `verification` (OCR, QR duplicate hash, email forward):** Module này hiện được đánh dấu **DEPRECATED** trong codebase khi dự án chuyển hướng tập trung vào mô hình marketplace bảo vệ bằng đòn bẩy kinh tế (cọc + escrow) và cơ chế ảnh hai lớp.
 
 ---
 
 ## 2. Công nghệ sử dụng
 
-| Thành phần | Công nghệ |
-|---|---|
-| Ngôn ngữ | Java 17 |
-| Framework | Spring Boot 3.3.x |
-| Build tool | Maven, kèm Maven Wrapper (`mvnw`) |
-| Cơ sở dữ liệu | MySQL 8 |
-| Cơ sở dữ liệu cho test | H2 in-memory |
-| ORM | Spring Data JPA (Hibernate) |
-| Migration schema | Flyway |
-| Web layer | Spring Web MVC + Thymeleaf (server-side rendering) |
-| Bảo mật | Spring Security (session-based) |
-| OCR | Tesseract qua thư viện tess4j |
-| Mã QR | zxing |
-| Thanh toán | MoMo Test Environment (sandbox) |
-| Giảm boilerplate | Lombok |
+| Thành phần | Công nghệ | Vai trò / Chi tiết |
+|---|---|---|
+| **Ngôn ngữ** | Java 17 | Nền tảng hướng đối tượng chính |
+| **Framework** | Spring Boot 3.3.4 | Khung ứng dụng backend, IoC/DI container |
+| **Build tool** | Maven (`.\mvnw`) | Quản lý phụ thuộc và đóng gói ứng dụng qua Maven Wrapper |
+| **Cơ sở dữ liệu** | MySQL 8.x | Database chính cho môi trường phát triển và chạy thật |
+| **Database cho Test** | H2 Database (in-memory) | Chạy kiểm thử tự động độc lập, không phụ thuộc MySQL |
+| **ORM / Data Access** | Spring Data JPA (Hibernate 6) | Ánh xạ đối tượng, cấu hình `ddl-auto=validate` |
+| **Database Migration** | Flyway | Quản lý phiên bản schema DB (`V1__init_schema.sql` là source of truth) |
+| **Giao diện Web** | Spring Web MVC + Thymeleaf | Server-side rendering (SSR), layout phân quyền với `thymeleaf-extras-springsecurity6` |
+| **Bảo mật** | Spring Security | Xác thực form login (session-based), phân quyền vai trò `USER` và `ADMIN` |
+| **Cổng thanh toán** | MoMo Test Environment | Môi trường Sandbox thử nghiệm thanh toán Escrow và khóa cọc |
+| **Lưu trữ file** | Local File Storage Adapter | Lưu trữ ảnh công khai, ảnh QR ẩn và bằng chứng khiếu nại (`./data/uploads`) |
+| **Thư viện tiện ích** | Lombok | Giảm boilerplate code (getter, setter, constructor) |
+| **Thư viện bổ trợ** | ZXing, Tess4j (Tesseract) | Tùy chọn legacy cho mã QR và OCR trong module verification |
 
 ---
 
 ## 3. Yêu cầu môi trường
 
-| Phần mềm | Phiên bản | Cách kiểm tra |
+| Phần mềm | Phiên bản | Lệnh kiểm tra trong terminal |
 |---|---|---|
-| JDK | 17 | `java -version` |
-| MySQL | 8.x | `mysql --version` |
-| Git | bất kỳ bản gần đây | `git --version` |
+| **JDK** | 17 (khuyến nghị Eclipse Temurin 17) | `java -version` |
+| **MySQL** | 8.x | `mysql --version` |
+| **Git** | Bất kỳ phiên bản gần đây | `git --version` |
 
-**Không cần cài Maven.** Repo đã có sẵn Maven Wrapper (`mvnw`, `mvnw.cmd`, thư mục `.mvn/`), nên chỉ cần gõ `.\mvnw` là wrapper tự tải đúng phiên bản Maven mà cả nhóm dùng chung. Đây cũng là lý do trong toàn bộ tài liệu này mọi lệnh đều viết `.\mvnw` chứ không phải `mvn`.
-
-Tesseract là **tuỳ chọn**, chỉ cần khi muốn chạy thử tính năng OCR — xem mục 9.
+> **Không cần cài đặt Maven:** Repo đã tích hợp sẵn Maven Wrapper (`mvnw`, `mvnw.cmd`, `.mvn/`). Mọi lệnh build/chạy đều sử dụng `.\mvnw` (trên PowerShell/CMD Windows) để đảm bảo đồng nhất phiên bản Maven cho cả nhóm.
 
 ---
 
-## 4. Cài đặt JDK 17 trên Windows
+## 4. Cài đặt môi trường trên Windows
 
-1. Tải bộ cài JDK 17:
-   - **Eclipse Temurin 17 (khuyến nghị, miễn phí)**: https://adoptium.net/temurin/releases/?version=17 — chọn `Windows`, `x64`, gói `.msi`.
-   - Hoặc **Oracle JDK 17**: https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html
-2. Chạy file `.msi` và cài theo mặc định. Đường dẫn cài thường là `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot`.
-3. Đặt biến môi trường `JAVA_HOME`:
-   - Nhấn phím Windows, gõ `Edit the system environment variables`, mở lên.
-   - Bấm **Environment Variables** → mục **System variables** → **New**.
-   - `Variable name`: `JAVA_HOME`
-   - `Variable value`: đường dẫn thư mục JDK, ví dụ `C:\Program Files\Eclipse Adoptium\jdk-17.0.11-hotspot` (trỏ tới thư mục gốc của JDK, **không** trỏ tới thư mục `bin`).
-4. Thêm vào `PATH`:
-   - Trong **System variables**, chọn dòng `Path` → **Edit** → **New**.
-   - Nhập `%JAVA_HOME%\bin`.
-   - Bấm OK ở tất cả các cửa sổ.
-5. **Mở một cửa sổ PowerShell mới** (cửa sổ đang mở sẽ không nhận biến môi trường mới) và kiểm tra:
+### 4.1 Cài đặt JDK 17
+1. Tải bộ cài đặt: [Eclipse Temurin 17 (LTS)](https://adoptium.net/temurin/releases/?version=17) — chọn gói `.msi` (Windows x64).
+2. Chạy file cài đặt với các thiết lập mặc định (thường nằm tại `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot`).
+3. Đặt biến môi trường hệ thống `JAVA_HOME`:
+   - Mở cửa sổ **System Properties** → **Environment Variables**.
+   - Tại mục **System variables**, nhấn **New**:
+     - `Variable name`: `JAVA_HOME`
+     - `Variable value`: `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot` (trỏ tới thư mục gốc của JDK, **không** trỏ vào `bin`).
+   - Chọn biến `Path` → **Edit** → thêm dòng `%JAVA_HOME%\bin`.
+4. Mở cửa sổ **PowerShell mới** và kiểm tra:
+   ```powershell
+   java -version
+   $env:JAVA_HOME
+   ```
 
-```powershell
-java -version
-$env:JAVA_HOME
-```
+### 4.2 Cài đặt MySQL 8 và tạo Database
+1. Cài đặt MySQL Server 8.x thông qua [MySQL Installer](https://dev.mysql.com/downloads/installer/). Ghi nhớ mật khẩu tài khoản `root`.
+2. Đảm bảo dịch vụ MySQL đang chạy (kiểm tra trong `services.msc`).
+3. Mở MySQL Command Line hoặc MySQL Workbench, đăng nhập `root` và tạo database với encoding `utf8mb4`:
+   ```sql
+   CREATE DATABASE ticketpass CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
 
-Kết quả mong đợi của `java -version` là một dòng bắt đầu bằng `openjdk version "17.` hoặc `java version "17.`. Nếu ra phiên bản 8, 11 hay 21 thì máy đang dùng JDK khác — kiểm tra lại thứ tự các mục trong `Path`.
+### 4.3 Cấu hình an toàn với `application-local.properties`
+Để tránh xung đột mật khẩu DB hoặc vô tình commit thông tin nhạy cảm (mật khẩu cá nhân, MoMo sandbox key) lên Git:
+1. Tạo file `src/main/resources/application-local.properties` (file này **đã nằm trong `.gitignore`**):
+   ```properties
+   # Cấu hình tài khoản MySQL máy bạn
+   spring.datasource.username=root
+   spring.datasource.password=mat_khau_mysql_may_ban
+
+   # MoMo Sandbox credentials (nếu có tài khoản riêng)
+   app.payment.momo.access-key=CHANGE_ME
+   app.payment.momo.secret-key=CHANGE_ME
+   ```
+2. Ứng dụng sẽ tự động ghi đè các thiết lập này khi chạy với profile `local`.
 
 ---
 
-## 5. Cài đặt MySQL 8 và tạo database
+## 5. Khởi chạy ứng dụng
 
-1. Tải **MySQL Installer for Windows**: https://dev.mysql.com/downloads/installer/
-2. Chạy bộ cài, chọn setup type **Developer Default** hoặc **Server only**.
-3. Ở bước **Accounts and Roles**, đặt mật khẩu cho tài khoản `root` và **ghi nhớ mật khẩu này** — sẽ cần ở bước cấu hình.
-4. Hoàn tất cài đặt, đảm bảo dịch vụ **MySQL80** đang chạy (mở `services.msc` để kiểm tra).
-5. Mở MySQL Command Line Client hoặc MySQL Workbench, đăng nhập bằng `root`, rồi tạo database:
+Mở **PowerShell** tại thư mục gốc của project:
 
-```sql
-CREATE DATABASE ticketpass CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-Bảng mã `utf8mb4` là bắt buộc, vì tên sự kiện và nội dung khiếu nại có tiếng Việt có dấu (và cả emoji nếu người dùng nhập vào).
-
-6. Sửa thông tin kết nối trong `src/main/resources/application.properties` cho khớp máy mình:
-
-```properties
-spring.datasource.username=root
-spring.datasource.password=<mật khẩu root của máy bạn>
-```
-
-### Khuyến nghị: dùng `application-local.properties` thay vì sửa trực tiếp
-
-Sửa thẳng mật khẩu vào `application.properties` rồi lỡ commit là nguyên nhân phổ biến nhất khiến máy người khác trong nhóm đột nhiên không kết nối được DB. Cách an toàn hơn:
-
-1. Tạo file `src/main/resources/application-local.properties` — file này **đã có trong `.gitignore`** nên sẽ không bị commit:
-
-```properties
-spring.datasource.username=root
-spring.datasource.password=mat_khau_rieng_cua_may_ban
-```
-
-2. Chạy ứng dụng với profile `local`:
-
+### 5.1 Biên dịch và chạy ứng dụng
 ```powershell
+# Biên dịch và tải dependencies
+.\mvnw clean install
+
+# Khởi chạy Spring Boot với profile local
 .\mvnw spring-boot:run "-Dspring-boot.run.profiles=local"
 ```
+Truy cập ứng dụng tại trình duyệt: **http://localhost:8080**
 
----
+### Lưu ý quan trọng về lần chạy đầu tiên:
+- **Flyway tự động khởi tạo dữ liệu**: Script `src/main/resources/db/migration/V1__init_schema.sql` sẽ tự động tạo đầy đủ các bảng (`users`, `tickets`, `escrow_transactions`, `deposits`, `disputes`, `user_reputation_scores`...). **Không cần chạy script tạo bảng thủ công**.
+- **Chế độ `ddl-auto=validate`**: Hibernate chỉ kiểm tra khớp giữa Entity và Schema cơ sở dữ liệu. Không tự ý chỉnh sửa file migration đã merge để tránh lỗi sai lệch checksum của Flyway.
 
-## 6. Clone và chạy lần đầu
-
-Mở **PowerShell** và chạy lần lượt:
-
-```powershell
-.\mvnw clean install
-.\mvnw spring-boot:run
-```
-
-Sau đó mở trình duyệt vào địa chỉ: **http://localhost:8080**
-
-Ghi chú về lần chạy đầu tiên:
-
-- **Flyway sẽ tự tạo toàn bộ bảng** từ file `src/main/resources/db/migration/V1__init_schema.sql`. Không cần tự tạo bảng bằng tay, chỉ cần database `ticketpass` đã tồn tại và rỗng.
-- Cấu hình đang để `spring.jpa.hibernate.ddl-auto=validate`, nghĩa là Hibernate **chỉ đối chiếu** entity với schema có sẵn chứ không tự sửa database. Nếu migration và entity lệch nhau thì ứng dụng sẽ **không khởi động** và báo `Schema-validation` — xem mục 12.
-- `.\mvnw clean install` lần đầu sẽ tải khá nhiều thư viện, mất vài phút tuỳ tốc độ mạng. Các lần sau nhanh hơn nhiều.
-
----
-
-## 7. Chạy test
-
+### 5.2 Chạy bộ kiểm thử (Tests)
 ```powershell
 .\mvnw test
 ```
-
-Test dùng **H2 in-memory** với `ddl-auto=create-drop` và **Flyway tắt**, cấu hình trong `src/test/resources/application.properties`. Nghĩa là:
-
-- **Không cần cài MySQL** để chạy test — máy chấm bài chỉ cần JDK 17 là chạy được toàn bộ test.
-- Database được tạo mới rồi xoá sạch sau mỗi lần chạy, nên test không phụ thuộc vào dữ liệu còn sót từ lần chạy trước.
-- Test **không** động tới database MySQL thật, cứ chạy thoải mái.
+- Bộ kiểm thử sử dụng **H2 in-memory database** với Flyway tạm tắt và tự động giải phóng sau khi chạy.
+- **Không cần bật MySQL để chạy test**. Máy chấm bài hay CI/CD chỉ cần có JDK 17 là có thể chạy pass toàn bộ test suite.
 
 ---
 
-## 8. Cài Tesseract cho tính năng OCR (tuỳ chọn)
+## 6. Cấu hình tích hợp
 
-OCR chỉ cần khi muốn chạy thử lớp xác thực ảnh vé. Nếu chưa cần, bỏ qua mục này và xem phần tắt OCR ở cuối.
-
-1. Tải bộ cài **Tesseract for Windows** (bản UB Mannheim): https://github.com/UB-Mannheim/tesseract/wiki
-2. Cài đặt, và trong bước chọn thành phần nhớ tick thêm gói ngôn ngữ **Vietnamese**.
-3. Tạo thư mục `tessdata/` ở **thư mục gốc của project** (ngang hàng với `pom.xml`), rồi copy hai file dữ liệu ngôn ngữ vào đó:
-   - `vie.traineddata`
-   - `eng.traineddata`
-
-   Hai file này nằm trong thư mục `tessdata` của bản Tesseract vừa cài (thường là `C:\Program Files\Tesseract-OCR\tessdata`). Nếu thiếu, tải trực tiếp tại https://github.com/tesseract-ocr/tessdata
-
-4. Cấu trúc sau khi copy:
-
-```
-ticketpass/
-├── pom.xml
-└── tessdata/
-    ├── eng.traineddata
-    └── vie.traineddata
-```
-
-Thư mục `tessdata/` đã nằm trong `.gitignore` (file dữ liệu ngôn ngữ khá nặng, không commit).
-
-5. Cấu hình liên quan trong `application.properties`:
-
+### 6.1 Cổng thanh toán MoMo Test Environment (Sandbox)
+MoMo Test Sandbox được tích hợp thông qua `PaymentGateway` (`MomoTestGatewayAdapter`). Mọi giao dịch chỉ mang tính mô phỏng, **hoàn toàn không phát sinh tiền thật**.
 ```properties
-app.ocr.tessdata-path=./tessdata
-app.ocr.language=vie+eng
-app.ocr.min-confidence=70
-```
-
-### Tạm bỏ qua OCR khi phát triển
-
-Nếu chưa muốn cài Tesseract, đặt:
-
-```properties
-app.ocr.enabled=false
-```
-
-Khi đó bước OCR bị bỏ qua, ứng dụng vẫn chạy bình thường và các lớp chống scam còn lại (hash QR, email forward, phân bậc rủi ro) vẫn hoạt động.
-
----
-
-## 9. Cấu hình MoMo Test Environment
-
-Thanh toán dùng **MoMo Test Environment (sandbox)**. Đây là môi trường thử nghiệm — **không dùng tiền thật, không phát sinh giao dịch thật**.
-
-1. Lấy thông tin sandbox từ tài liệu MoMo Test: https://developers.momo.vn/v3/vi/docs/payment/onboarding/test-instructions
-2. Điền vào `application.properties` (hoặc `application-local.properties`):
-
-```properties
-app.payment.momo.partner-code=<partner code từ tài liệu MoMo Test>
-app.payment.momo.access-key=<access key từ tài liệu MoMo Test>
-app.payment.momo.secret-key=<secret key từ tài liệu MoMo Test>
+app.payment.momo.gateway-name=MOMO_TEST
 app.payment.momo.endpoint=https://test-payment.momo.vn/v2/gateway/api/create
+app.payment.momo.partner-code=MOMO_TEST_PARTNER
+app.payment.momo.access-key=CHANGE_ME
+app.payment.momo.secret-key=CHANGE_ME
 app.payment.momo.return-url=http://localhost:8080/payment/momo/return
 app.payment.momo.ipn-url=http://localhost:8080/payment/momo/ipn
 ```
 
-Hai key `access-key` và `secret-key` mặc định đang để giá trị `CHANGE_ME`; chưa thay thì mọi yêu cầu thanh toán sẽ bị MoMo từ chối vì sai chữ ký.
-
-> **Không commit key thật lên Git.** Để chúng trong `application-local.properties` (đã có trong `.gitignore`). Dù là key sandbox thì thói quen này vẫn nên giữ.
-
-Ghi chú: `ipn-url` trỏ về `localhost` nên MoMo sandbox không gọi ngược vào máy bạn được. Khi phát triển, luồng thanh toán được xác nhận qua `return-url` sau khi trình duyệt quay lại.
+### 6.2 Cấu hình lưu trữ File (Ảnh công khai & Ảnh QR ẩn)
+Ảnh vé công khai, ảnh QR ẩn và tài liệu bằng chứng được quản lý qua `FileStorageService` (`LocalFileStorageAdapter`):
+```properties
+app.storage.local.base-dir=./data/uploads
+app.storage.local.public-url-prefix=/files
+spring.servlet.multipart.max-file-size=25MB
+spring.servlet.multipart.max-request-size=60MB
+```
+Thư mục `./data/uploads` sẽ tự động được tạo khi có yêu cầu upload file.
 
 ---
 
-## 10. Cấu trúc thư mục
+## 7. Luồng nghiệp vụ & Vòng đời vé (State Machine)
+
+### 7.1 Sơ đồ 9 trạng thái của vé
+Vòng đời của mỗi vé được quản lý nghiêm ngặt bởi `TicketStateMachineService` với 9 trạng thái:
+
+```
+                  ┌──────────────────────┐
+                  │        LISTED        │  (Người bán đăng vé thành công)
+                  └──────────┬───────────┘
+                             │  [Buyer thanh toán 100% qua MoMo]
+                             ▼
+                  ┌──────────────────────┐
+                  │   PAYMENT_ESCROWED   │  (Sàn giữ tiền trong Escrow)
+                  └──────────┬───────────┘
+                             │  [Seller khóa cọc 50%]
+                             ▼
+                  ┌──────────────────────┐
+                  │    DEPOSIT_LOCKED    │  (Đã khóa cọc bảo đảm)
+                  └──────────┬───────────┘
+                             │  [Sàn tự động mở khóa ảnh QR ẩn cho Buyer]
+                             ▼
+                  ┌──────────────────────┐
+                  │     TRANSFERRED      │  (Đã giao vé)
+                  └──────────┬───────────┘
+                             │  [Buyer xác nhận đã nhận vé]
+                             ▼
+                  ┌──────────────────────┐
+                  │     AWAITING_USE     │  (Cửa sổ khiếu nại bắt đầu đếm)
+                  └──────┬────────┬──────┘
+                         │        │
+  [Hết hạn khiếu nại,   │        │ [Buyer mở khiếu nại trong thời hạn]
+   không có tranh chấp] │        ▼
+                         │    ┌─────────────────────────┐
+                         │    │  DISPUTE_UNDER_REVIEW   │  (Admin thụ lý khiếu nại)
+                         │    └────┬───────────────┬────┘
+                         │         │               │
+                         │   [Buyer thắng]   [Seller thắng]
+                         │         ▼               ▼
+                         │    ┌──────────┐   ┌──────────┐
+                         │    │ RESOLVED │   │ RESOLVED │
+                         │    │  _BUYER  │   │ _SELLER  │
+                         │    │  _WINS   │   │  _WINS   │
+                         │    └──────────┘   └──────────┘
+                         ▼
+             ┌────────────────────────┐
+             │     AUTO_COMPLETE      │  (Giải ngân cho seller + hoàn cọc + cộng điểm uy tín)
+             └────────────────────────┘
+```
+
+### 7.2 Luồng giao dịch mua bán thành công (Sequence Diagram)
+```mermaid
+sequenceDiagram
+    actor Seller as Người bán
+    actor Buyer as Người mua
+    participant San as Sàn TicketPass
+    participant MoMo as MoMo Test Sandbox
+
+    Seller->>San: Đăng vé (khai thông tin + upload Ảnh công khai & Ảnh QR ẩn)
+    San->>San: Validate dữ liệu (giá > 0, eventStartAt tương lai, ghế khớp SL)
+    San-->>Seller: Vé lên sàn ở trạng thái LISTED
+
+    Buyer->>San: Chọn vé và yêu cầu mua
+    San->>MoMo: Tạo yêu cầu thanh toán 100% giá bán
+    MoMo-->>San: Xác nhận thanh toán thành công
+    San->>San: HoldFundsUseCase giữ tiền trong Escrow -> Chuyển sang PAYMENT_ESCROWED
+
+    San-->>Seller: Thông báo yêu cầu khóa cọc 50%
+    Seller->>San: Thực hiện khóa cọc
+    San->>MoMo: Thu cọc 50%
+    MoMo-->>San: Xác nhận cọc đã khóa
+    San->>San: LockDepositUseCase -> Chuyển sang DEPOSIT_LOCKED
+
+    San->>San: Tự động mở khóa ảnh QR ẩn cho Buyer
+    San-->>Buyer: Hiển thị ảnh QR vé -> Chuyển sang TRANSFERRED
+
+    Buyer->>San: Xác nhận đã nhận được vé
+    San->>San: Chuyển sang AWAITING_USE (Bắt đầu đếm ngược cửa sổ khiếu nại)
+
+    Note over San: Hết cửa sổ khiếu nại mà không có khiếu nại nào mở ra
+    San->>San: AutoCompleteScheduler kích hoạt
+    San->>San: Tính hoa hồng sàn và khấu trừ thuế mock
+    San->>MoMo: Giải ngân tiền vé cho Seller + Hoàn lại 100% tiền cọc
+    San->>San: Chuyển sang AUTO_COMPLETE
+    San->>San: Publish TicketTransactionCompletedEvent
+    San->>San: UpdateReputationUseCase tự động +2 điểm uy tín cho cả hai bên
+    San-->>Seller: Thông báo giao dịch hoàn tất thành công
+    San-->>Buyer: Thông báo giao dịch hoàn tất thành công
+```
+
+---
+
+## 8. Các quy tắc nghiệp vụ trọng tâm (Business Rules)
+
+### 8.1 Bảng hoa hồng sàn (Commission Tiers)
+Sàn thu hoa hồng theo bảng tra giá vé (không lũy tiến), chia đều 50/50 giữa người mua và người bán:
+| Bậc giá vé | Điều kiện giá bán | Tỷ lệ hoa hồng | Ghi chú |
+|---|---|:---:|---|
+| `UNDER_1M` | Dưới 1.000.000 VNĐ | **7%** | Phí tối thiểu: **5.000 VNĐ** |
+| `UNDER_5M` | Từ 1.000.000 đến dưới 5.000.000 VNĐ | **5%** | Chia đôi: Buyer chịu 50%, Seller chịu 50% |
+| `UNDER_10M` | Từ 5.000.000 đến dưới 10.000.000 VNĐ | **3%** | |
+| `FROM_10M` | Từ 10.000.000 VNĐ trở lên | **2%** | Trần hoa hồng tối đa: **400.000 VNĐ** |
+
+### 8.2 Cửa sổ khiếu nại theo loại vé (Dispute Window)
+Cửa sổ khiếu nại bắt đầu đếm khi buyer bấm xác nhận đã nhận vé (`AWAITING_USE`):
+- **Vé xem phim (`MOVIE`)**: **2 giờ** (thường dùng ngay trong ngày).
+- **Vé xe khách (`BUS`)**: **3 giờ**.
+- **Vé concert (`CONCERT`)**: **24 giờ** (giá trị cao, cần thời gian kiểm tra kỹ với ban tổ chức).
+- **Quy tắc chặn an toàn:** Cửa sổ khiếu nại **luôn kết thúc trước thời điểm bắt đầu sự kiện (`eventStartAt`)** để ngăn chặn lạm dụng (người mua đi xem xong rồi mới mở khiếu nại).
+- **Hạn phản hồi của seller:** Khi có khiếu nại, seller có tối đa **24 giờ** để gửi bằng chứng phản biện.
+
+### 8.3 Công thức tịch thu cọc khi người bán gian lận (Dispute Buyer Wins)
+Khi admin kết luận người bán gian lận (vé giả, vé đã quét, thông tin sai lệch):
+- Tiền escrow: **Hoàn lại 100% cho người mua**.
+- Tiền cọc 50% của người bán bị tịch thu và chia theo công thức:
+  - Phí xử lý của sàn (`founder_cut`) = `max(5.000 VNĐ, 7% * tổng tiền cọc)` (chặn không vượt quá tổng cọc).
+  - Bồi thường cho người mua (`buyer_compensation`) = `tổng tiền cọc - founder_cut`.
+  - Người mua nhận: `100% Escrow + buyer_compensation`.
+
+### 8.4 Hệ thống thang điểm uy tín (Reputation Score)
+- Điểm khởi tạo cho tài khoản mới: **100.00** điểm (thang điểm 0 - 100).
+- **Giao dịch hoàn tất thành công (`AUTO_COMPLETE`)**: **+2.00** điểm (cộng cho cả buyer và seller).
+- **Thắng tranh chấp (`RESOLVED_SELLER_WINS` hoặc buyer thắng)**: **+1.00** điểm.
+- **Tự ý hủy vé sau khi người mua đã thanh toán escrow**: **-10.00** điểm.
+- **Thua tranh chấp do gian lận**: **-15.00** điểm.
+- *Thiết kế mang tính răn đe bất đối xứng:* Cần 8 giao dịch sạch (+2) mới bù lại được 1 lần gian lận (-15). Điểm uy tín được lắng nghe và cập nhật bất đồng bộ an toàn qua Spring Domain Events.
+
+---
+
+## 9. Cấu trúc thư mục & Kiến trúc mã nguồn
+
+Dự án áp dụng phong cách kiến trúc **Clean / Hexagonal Architecture** chia theo từng module nghiệp vụ:
 
 ```
 project_oop/
-├── mvnw, mvnw.cmd, .mvn/          # Maven Wrapper - không cần cài Maven riêng
-├── pom.xml                        # Khai báo dependency và cấu hình build
-├── design-note/                   # Toàn bộ tài liệu thiết kế (xem mục 12)
-│   └── dev-logs/                  # Nhật ký phát triển của từng người
+├── mvnw, mvnw.cmd, .mvn/          # Maven Wrapper
+├── pom.xml                        # Khai báo dependency và build cấu hình
+├── design-note/                   # 10 tài liệu phân tích & thiết kế chi tiết
+│   └── dev-logs/                  # Nhật ký phát triển cá nhân của từng thành viên
 └── src/
     ├── main/
     │   ├── java/com/yourapp/ticketpass/
     │   │   ├── TicketPassApplication.java   # Điểm khởi động Spring Boot
-    │   │   ├── ticket/         # Vé: vòng đời vé, 4 adapter loại vé, state machine, chuyển nhượng
-    │   │   ├── verification/   # Xác thực vé đầu vào: OCR, hash QR, email forward, phân bậc rủi ro
-    │   │   ├── payment/        # Dòng tiền: escrow, cọc, hoa hồng, thuế, giải ngân, hoàn tiền, cổng MoMo
-    │   │   ├── dispute/        # Tranh chấp: mở khiếu nại, bằng chứng, phản hồi, phán quyết, tự hoàn tất
-    │   │   ├── reputation/     # Điểm uy tín người dùng, cập nhật qua domain event
-    │   │   ├── user/           # Người dùng: đăng ký, đăng nhập, phân quyền, hồ sơ
-    │   │   └── shared/         # Hạ tầng dùng chung: config, dto, event, exception, storage, util
+    │   │   ├── ticket/         # Module Vé: 3 adapter loại vé, state machine, chuyển nhượng
+    │   │   ├── payment/        # Module Thanh toán: Escrow, cọc, hoa hồng, thuế, MoMo sandbox
+    │   │   ├── dispute/        # Module Tranh chấp: Mở khiếu nại, phản hồi, phán quyết, auto scheduler
+    │   │   ├── reputation/     # Module Uy tín: Điểm uy tín, lịch sử, listener domain events
+    │   │   ├── user/           # Module Người dùng: Đăng ký, đăng nhập, phân quyền, hồ sơ
+    │   │   ├── shared/         # Hạ tầng dùng chung: Config, DTO, Events, Exceptions, Storage, Utils
+    │   │   └── verification/   # [DEPRECATED] Module xác thực kỹ thuật (OCR, QR hash)
     │   └── resources/
-    │       ├── application.properties   # Cấu hình chạy thật (MySQL)
-    │       ├── db/migration/            # Script Flyway - schema là source of truth
-    │       ├── templates/               # View Thymeleaf, chia theo module
-    │       └── static/                  # CSS, JS, ảnh
+    │       ├── application.properties           # Cấu hình chính của hệ thống
+    │       ├── application-local.properties     # Cấu hình cá nhân máy local (gitignored)
+    │       ├── db/migration/V1__init_schema.sql # Flyway migration tạo toàn bộ bảng DB
+    │       ├── templates/                       # View giao diện Thymeleaf (SSR)
+    │       │   ├── layout/base.html             # Layout khung dùng chung
+    │       │   └── auth/                        # Trang login, register
+    │       └── static/                          # CSS, JS, hình ảnh
     └── test/
-        ├── java/                        # Unit test và integration test
-        └── resources/
-            └── application.properties   # Cấu hình test (H2 in-memory, Flyway tắt)
+        ├── java/                                # Bộ kiểm thử đơn vị & tích hợp
+        └── resources/application.properties     # Cấu hình kiểm thử (H2 in-memory)
 ```
 
-Mỗi module nghiệp vụ (`ticket`, `verification`, `payment`, `dispute`, `reputation`, `user`) đều được chia thành các lớp con giống nhau:
+Mỗi module nghiệp vụ (`ticket`, `payment`, `dispute`, `user`, `reputation`) đều được tổ chức phân lớp độc lập:
+- `domain`: Chứa các Entity, Enum, và Interface Port (`TicketRepository`, `PaymentGateway`...). **Không phụ thuộc Spring Framework**.
+- `adapter`: Hiện thực cụ thể của các port kết nối ra bên ngoài (`MovieTicketAdapter`, `MomoTestGatewayAdapter`...).
+- `application`: Use Cases và Services điều phối nghiệp vụ (`HoldFundsUseCase`, `TicketStateMachineService`...). Nơi quản lý transaction (`@Transactional`).
+- `infrastructure`: Hiện thực repository (`*RepositoryImpl`) kết hợp Spring Data JPA (`*JpaRepository`).
+- `web`: Controllers và DTOs request/response phục vụ giao diện người dùng.
 
-| Lớp | Vai trò |
-|---|---|
-| `domain` | Entity, enum, và các interface port (`TicketRepository`, `PaymentGateway`, `OcrEngine`...). Không phụ thuộc Spring. |
-| `adapter` | Hiện thực cụ thể của các port hướng ra ngoài (`MovieTicketAdapter`, `MomoTestGatewayAdapter`). |
-| `application` | Use case và service điều phối nghiệp vụ. Đây là nơi đặt `@Transactional`. |
-| `infrastructure` | Hiện thực repository (`*RepositoryImpl`) và các Spring Data repository (`*JpaRepository`). |
-| `web` | Controller và DTO request/response. Không bao giờ trả entity ra ngoài. |
+### 4 Nguyên tắc kiến trúc cốt lõi:
+1. **Liên kết module bằng ID thuần (`Long`)**: Tuyệt đối không dùng JPA `@ManyToOne` hay `@OneToMany` xuyên module (ví dụ: `Ticket` chỉ lưu `Long sellerId`, `Long escrowTransactionId`). Loại bỏ hoàn toàn lazy loading xuyên module và cyclic dependency.
+2. **Side-effects đi qua Domain Event**: Module `payment` publish `TicketTransactionCompletedEvent`, module `reputation` lắng nghe bằng `@TransactionalEventListener(phase = AFTER_COMMIT)`. Nếu module uy tín lỗi thì tiền vẫn giải ngân an toàn.
+3. **Trừu tượng hóa lưu trữ file**: Không bao giờ thao tác trực tiếp với đường dẫn ổ đĩa vật lý trong business logic; mọi file đều đi qua interface `FileStorageService`.
+4. **Quản lý Session Spring Security**: Kiểm soát xác thực dựa trên session với hai vai trò tối giản `ROLE_USER` và `ROLE_ADMIN`.
 
 ---
 
-## 11. Xử lý sự cố thường gặp
+## 10. Design Patterns trọng tâm (Môn OOP)
 
-| Triệu chứng | Nguyên nhân | Cách xử lý |
+Dự án hiện thực bốn design pattern trọng tâm nhằm giải quyết các bài toán thiết kế cụ thể:
+
+| Pattern | Nơi áp dụng trong code | Vấn đề thực tế giải quyết |
 |---|---|---|
-| App không start, log báo `Schema-validation: missing table [xxx]` hoặc `missing column` | Flyway chưa chạy, hoặc entity JPA đã lệch so với schema trong file migration. Vì `ddl-auto=validate` nên Hibernate từ chối khởi động thay vì tự sửa DB. | Kiểm tra database `ticketpass` đã có bảng chưa và bảng `flyway_schema_history` ghi nhận gì. Nếu cần khởi động tạm để debug, đổi `spring.jpa.hibernate.ddl-auto=none`, xem chênh lệch ở đâu, **sửa file migration cho khớp entity** rồi trả lại `validate`. Không để `none` hay `update` lâu dài. |
-| `Access denied for user 'root'@'localhost'` | Sai mật khẩu MySQL trong cấu hình. | Sửa `spring.datasource.password` trong `application.properties` (hoặc `application-local.properties`) cho đúng mật khẩu `root` của máy mình. Kiểm tra lại bằng cách đăng nhập MySQL thủ công với chính mật khẩu đó. |
-| `Unknown database 'ticketpass'` | Chưa tạo database. | Chạy `CREATE DATABASE ticketpass CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;` — xem mục 5. |
-| Biên dịch lỗi `cannot find symbol: method getXxx()` dù entity có `@Getter`/`@Data` | IDE chưa bật annotation processing nên Lombok không sinh getter/setter. | IntelliJ IDEA: `Settings → Build, Execution, Deployment → Compiler → Annotation Processors` → tick **Enable annotation processing**, rồi cài plugin Lombok và restart. Eclipse/STS: chạy `lombok.jar` để cài vào IDE. Nếu `.\mvnw clean install` chạy được mà chỉ IDE báo đỏ thì chắc chắn là lỗi cấu hình IDE, không phải lỗi code. |
-| `.\mvnw` báo `JAVA_HOME not found` hoặc `The JAVA_HOME environment variable is not defined correctly` | Chưa đặt `JAVA_HOME`, hoặc đặt trỏ nhầm vào thư mục `bin`. | Đặt lại `JAVA_HOME` trỏ tới **thư mục gốc** của JDK 17 theo mục 4, rồi **mở PowerShell mới** và kiểm tra bằng `$env:JAVA_HOME`. |
-| PowerShell báo `mvnw : The term 'mvnw' is not recognized` | Gõ thiếu tiền tố `.\`. PowerShell không tự chạy file trong thư mục hiện tại. | Gõ `.\mvnw` (có dấu chấm và dấu gạch chéo ngược), và chắc chắn đang đứng ở thư mục gốc project. |
-| Ứng dụng chạy nhưng upload ảnh vé bị lỗi | Chưa có thư mục lưu file, hoặc file vượt giới hạn dung lượng. | Thư mục `data/uploads` được tạo tự động; nếu lỗi quyền ghi thì kiểm tra `app.storage.local.base-dir`. File tối đa 25MB theo `spring.servlet.multipart.max-file-size`. |
-| OCR báo lỗi không tìm thấy `tessdata` | Chưa cài Tesseract hoặc chưa copy file `.traineddata`. | Làm theo mục 8, hoặc tạm đặt `app.ocr.enabled=false`. |
+| **Adapter** | • `ticket/domain/TicketAdapter` (`MovieTicketAdapter`, `ConcertTicketAdapter`, `BusTicketAdapter`)<br>• `payment/domain/PaymentGateway` (`MomoTestGatewayAdapter`)<br>• `shared/storage/FileStorageService` (`LocalFileStorageAdapter`) | • Chuẩn hóa xử lý các loại vé khác nhau về chung một giao diện thống nhất.<br>• Giúp hệ thống dễ dàng thay đổi cổng thanh toán (từ MoMo sang VNPay, ZaloPay) hoặc lưu trữ file (từ Local sang AWS S3) mà không sửa business logic. |
+| **State** | • `ticket/domain/TicketStatus`<br>• `ticket/application/TicketStateMachineService`<br>• `ticket/domain/IllegalTicketTransitionException` | Tập trung hóa toàn bộ logic và điều kiện chuyển đổi trạng thái giao dịch (9 trạng thái) vào một nơi duy nhất. Ngăn chặn triệt để tình trạng nhảy cóc trạng thái hoặc cập nhật sai luồng. |
+| **Strategy** | • `dispute/domain/DisputeWindowPolicy`<br>• `payment/application/CommissionCalculatorService`<br>• `payment/application/ForfeitDepositPolicy` | • Cho phép thay đổi thuật toán tính cửa sổ khiếu nại tùy biến theo từng loại vé (2h, 3h, 24h).<br>• Linh hoạt điều chỉnh bảng hoa hồng và cách phân chia cọc phạt mà không làm ảnh hưởng đến các service gọi. |
+| **Observer** | • `shared/event/TicketTransactionCompletedEvent`<br>• `shared/event/DisputeResolvedEvent`<br>• `reputation/application/UpdateReputationUseCase` | Giảm khớp nối (loose coupling) giữa luồng thanh toán tiền bạc và luồng tính điểm uy tín. Giúp hệ thống mở rộng thêm các tính năng như gửi email, gửi thông báo mà không sửa mã nguồn của module thanh toán. |
 
 ---
 
-## 12. QUAN TRỌNG — Đọc trước khi code
+## 11. Xử lý sự cố thường gặp (Troubleshooting)
 
-> ### Trước khi viết dòng code đầu tiên, hãy mở [`design-note/00-tong-quan-du-an.md`](design-note/00-tong-quan-du-an.md) và đọc hết.
->
-> Dự án này có nhiều quy tắc nghiệp vụ ràng buộc lẫn nhau: trạng thái vé, công thức tính tiền, cửa sổ khiếu nại, cách chia cọc bị tịch thu. Lao vào code trước khi hiểu bức tranh tổng thể gần như chắc chắn sẽ dẫn tới việc phải viết lại. **Toàn bộ thiết kế đã được chốt sẵn trong `design-note/` — nhiệm vụ khi code là hiện thực đúng thiết kế đó, không phải tự nghĩ ra thiết kế mới.**
+| Triệu chứng lỗi | Nguyên nhân | Cách khắc phục |
+|---|---|---|
+| Ứng dụng không khởi động: `Schema-validation: missing table` hoặc `missing column` | Hibernate bật `ddl-auto=validate` và phát hiện sai lệch giữa Entity và schema database MySQL, hoặc Flyway chưa chạy. | Kiểm tra DB `ticketpass` đã được tạo chưa. Kiểm tra bảng `flyway_schema_history`. Nếu cần debug, tạm đặt `spring.jpa.hibernate.ddl-auto=none`, kiểm tra trường bị thiếu và đối chiếu lại file migration `V1__init_schema.sql`. |
+| `Access denied for user 'root'@'localhost'` | Sai tài khoản hoặc mật khẩu MySQL trong file cấu hình. | Cập nhật chính xác `spring.datasource.password` trong file `application-local.properties` cho khớp với mật khẩu máy bạn. |
+| `Unknown database 'ticketpass'` | Chưa tạo cơ sở dữ liệu `ticketpass`. | Đăng nhập MySQL và chạy lệnh: `CREATE DATABASE ticketpass CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`. |
+| Lỗi biên dịch: `cannot find symbol: method getXxx()` dù class có `@Getter` / `@Data` | IDE chưa bật tính năng **Annotation Processing** của Lombok. | **IntelliJ IDEA**: Vào `Settings` → `Build, Execution, Deployment` → `Compiler` → `Annotation Processors` → Tích chọn **Enable annotation processing** và cài đặt Lombok plugin, sau đó Restart IDE. |
+| Lỗi `JAVA_HOME not found` hoặc `variable is not defined correctly` | Chưa cấu hình hoặc cấu hình sai biến môi trường `JAVA_HOME`. | Đặt lại biến `JAVA_HOME` trỏ đúng vào thư mục gốc của JDK 17 (không trỏ vào thư mục `bin`), sau đó **tắt và mở lại cửa sổ PowerShell mới**. |
+| PowerShell báo `mvnw : The term 'mvnw' is not recognized` | Gõ thiếu tiền tố `.\` khi chạy file script trên PowerShell. | Luôn gõ có tiền tố: `.\mvnw` và đảm bảo terminal đang đứng ở thư mục gốc chứa file `mvnw.cmd`. |
+| Lỗi khi upload ảnh vé: Multipart exception | Kích thước file vượt quá cấu hình tối đa hoặc thiếu quyền ghi thư mục. | File tối đa 25MB (`spring.servlet.multipart.max-file-size`). Thư mục `./data/uploads` sẽ tự sinh; kiểm tra quyền ghi của user hệ thống. |
 
-### Mười tài liệu trong `design-note/`
+---
 
-| Tài liệu | Nội dung |
+## 12. Tài liệu thiết kế kỹ thuật (`design-note/`)
+
+Toàn bộ chi tiết kỹ thuật, hợp đồng giao tiếp giữa các module và quy ước đã được lưu trữ đầy đủ trong thư mục `design-note/`:
+
+| Tài liệu | Nội dung chi tiết |
 |---|---|
-| [`00-tong-quan-du-an.md`](design-note/00-tong-quan-du-an.md) | **Đọc đầu tiên.** Mục tiêu đồ án, bài toán thực tế, phạm vi trong/ngoài, các vai, luồng nghiệp vụ 7 bước, năm lớp chống scam, tech stack. |
-| [`01-kien-truc-he-thong.md`](design-note/01-kien-truc-he-thong.md) | Kiểu kiến trúc, cây package, quy tắc phụ thuộc giữa layer và module, bốn nguyên tắc kiến trúc bắt buộc, danh sách nợ kỹ thuật đã biết. |
-| [`02-hop-dong-module.md`](design-note/02-hop-dong-module.md) | **Hợp đồng bắt buộc giữa ba người.** Mọi interface, ký hiệu method, DTO và event mà module này cung cấp cho module kia. |
-| [`03-database-schema.md`](design-note/03-database-schema.md) | Sơ đồ ERD và mô tả các bảng, đánh dấu quyền sở hữu của từng bảng theo module. |
-| [`04-quy-tac-nghiep-vu.md`](design-note/04-quy-tac-nghiep-vu.md) | Toàn bộ quy tắc nghiệp vụ đánh mã BR-xx: bảng hoa hồng, phí tối thiểu, trần hoa hồng, cọc, công thức tịch thu, thuế, phân bậc rủi ro, cửa sổ khiếu nại, điểm uy tín. |
-| [`05-state-machine-giao-dich.md`](design-note/05-state-machine-giao-dich.md) | Chín trạng thái của vé, sơ đồ chuyển đổi, ma trận chuyển đổi hợp lệ, các bất biến và ai gọi gì ở mỗi bước. |
-| [`06-quy-uoc-code-va-git.md`](design-note/06-quy-uoc-code-va-git.md) | Quy ước đặt tên, quy ước code (`BigDecimal` cho tiền, `Instant` cho thời gian...), nhánh Git, format commit message, cách xử lý ba loại xung đột merge hay gặp. |
-| [`07-phan-cong-cong-viec.md`](design-note/07-phan-cong-cong-viec.md) | Ai làm module nào, ai sở hữu thư mục nào, danh sách việc cụ thể của từng người, và phụ thuộc giữa ba người. |
-| [`08-ke-hoach-tich-hop.md`](design-note/08-ke-hoach-tich-hop.md) | Quy trình buổi tích hợp hằng tuần, kịch bản chạy thử end-to-end bắt buộc, ba trường hợp biên phải kiểm thử, Definition of Done, lịch 6 tuần. |
-| [`09-oop-design-patterns.md`](design-note/09-oop-design-patterns.md) | Bảng trống để mỗi người tự điền sau khi code xong: pattern đã dùng, nguyên tắc OOP, lý do áp dụng. Dùng khi bảo vệ đồ án. |
-
-### `02-hop-dong-module.md` là hợp đồng, không phải gợi ý
-
-Ba người code song song trên ba nhánh khác nhau. Điều duy nhất khiến cách làm này không sụp đổ là **mọi interface, ký hiệu method, DTO và event dùng chung đã được chốt trước và không ai được tự ý đổi.**
-
-Chỉ cần một người đổi kiểu trả về của một method dùng chung là nhánh của hai người kia không build được ở buổi tích hợp gần nhất, và cả buổi sẽ trôi vào việc gỡ lỗi thay vì chạy thử hệ thống.
-
-Muốn đổi bất cứ thứ gì trong hợp đồng:
-
-1. **Ghi đề xuất vào [`02-hop-dong-module.md`](design-note/02-hop-dong-module.md)** — đổi gì, vì sao cần, ảnh hưởng tới ai.
-2. **Báo cả nhóm.**
-3. Chỉ khi cả nhóm đồng ý mới sửa.
-
-**Không tự ý sửa rồi báo sau.**
-
-### Nhật ký phát triển
-
-Mỗi người ghi nhật ký của mình trong [`design-note/dev-logs/`](design-note/dev-logs/):
-
-- [`nhat-ky-nguoi-a.md`](design-note/dev-logs/nhat-ky-nguoi-a.md)
-- [`nhat-ky-nguoi-b.md`](design-note/dev-logs/nhat-ky-nguoi-b.md)
-- [`nhat-ky-nguoi-c.md`](design-note/dev-logs/nhat-ky-nguoi-c.md)
-
-Ghi mỗi ngày làm việc một dòng. Cột "Quyết định thiết kế" dùng trực tiếp khi bảo vệ đồ án, nên phải ghi **lý do** chứ không chỉ ghi việc đã làm.
+| [`00-tong-quan-du-an.md`](design-note/00-tong-quan-du-an.md) | **Tài liệu đọc đầu tiên.** Tổng quan bài toán, mục tiêu đồ án OOP, phạm vi trong/ngoài, luồng mua bán 7 bước, cơ chế bảo vệ kinh tế. |
+| [`01-kien-truc-he-thong.md`](design-note/01-kien-truc-he-thong.md) | Kiến trúc phân lớp Clean/Hexagonal, ma trận import giữa các module, 4 nguyên tắc bất khả xâm phạm. |
+| [`02-hop-dong-module.md`](design-note/02-hop-dong-module.md) | **Hợp đồng giao tiếp giữa các module.** Định nghĩa các interface port, DTO và Domain Events dùng chung. |
+| [`03-database-schema.md`](design-note/03-database-schema.md) | Sơ đồ ERD, mô tả chi tiết các bảng và quyền sở hữu bảng của từng module. |
+| [`04-quy-tac-nghiep-vu.md`](design-note/04-quy-tac-nghiep-vu.md) | Danh sách quy tắc nghiệp vụ BR-01 đến BR-11: công thức hoa hồng, cọc, tịch thu cọc, thuế, thang điểm uy tín, cửa sổ khiếu nại. |
+| [`05-state-machine-giao-dich.md`](design-note/05-state-machine-giao-dich.md) | Chi tiết 9 trạng thái của vé, bảng ma trận chuyển đổi hợp lệ và các bất biến giao dịch. |
+| [`06-quy-uoc-code-va-git.md`](design-note/06-quy-uoc-code-va-git.md) | Quy ước đặt tên, kiểu dữ liệu (`BigDecimal`, `Instant`), quy trình Git branch, merge conflict resolution. |
+| [`07-phan-cong-cong-viec.md`](design-note/07-phan-cong-cong-viec.md) | Phân công module, danh mục file sở hữu và danh sách nhiệm vụ của từng thành viên. |
+| [`08-ke-hoach-tich-hop.md`](design-note/08-ke-hoach-tich-hop.md) | Kịch bản kiểm thử End-to-End, quy trình tích hợp hằng tuần, 3 trường hợp biên quan trọng. |
+| [`09-oop-design-patterns.md`](design-note/09-oop-design-patterns.md) | Bảng tổng kết các design pattern và nguyên lý OOP dùng để bảo vệ đồ án trước hội đồng. |
 
 ---
 
-## 13. Phân công nhóm
+## 13. Phân công nhóm & Nhật ký phát triển
 
-| Người | Modules | Pattern trọng tâm | Nhánh Git |
-|---|---|---|---|
-| **A** | `ticket`, `verification` | Adapter, State, Strategy | `feature/ticket-verification` |
-| **B** | `payment`, `dispute` | Adapter, Strategy | `feature/payment-dispute` |
-| **C** | `user`, `reputation`, `web`, `shared` | Observer, Adapter | `feature/user-reputation-web` |
+Dự án được xây dựng bởi nhóm 3 thành viên, phân chia theo **module nghiệp vụ toàn trình (vertical slice)** để tối ưu hóa tính độc lập và hạn chế tối đa xung đột mã nguồn:
 
-Ngoài ba nhánh trên còn có `develop` (nhánh tích hợp, cả ba merge vào đây hằng tuần) và `main` (nhánh ổn định, chỉ merge từ `develop` khi đã chạy được end-to-end).
+| Thành viên | Nhánh Git | Module phụ trách | Design Pattern trọng tâm | Nhiệm vụ chính |
+|---|---|---|---|---|
+| **Hoàng Thế Ngọc** (`ngocht`) | `ngocht` | `ticket` | Adapter, State, Strategy | Vòng đời vé, 3 adapter loại vé (`Movie`, `Concert`, `Bus`), State Machine 9 trạng thái, kiểm tra điều kiện đăng vé, chuyển nhượng vé. |
+| **Minh Tuấn** (`MinhTuan`) | `MinhTuan` | `payment`, `dispute` | Adapter, Strategy | Dòng tiền: Escrow, khóa cọc 50%, tính hoa hồng, khấu trừ thuế stub, giải ngân, MoMo Sandbox adapter, quy trình khiếu nại và tự động hoàn tất. |
+| **Hà Linh** (`Halinh`) | `Halinh` | `user`, `reputation`, `web`, `shared` | Observer, Adapter | Quản lý người dùng, Spring Security session, lưu file, tính điểm uy tín qua Domain Events, giao diện Thymeleaf và xử lý ngoại lệ toàn cục. |
 
-Chi tiết ai sở hữu thư mục nào, danh sách việc cụ thể và phụ thuộc giữa ba người: xem [`design-note/07-phan-cong-cong-viec.md`](design-note/07-phan-cong-cong-viec.md).
+### Nhật ký phát triển cá nhân (Dev Logs)
+Mỗi thành viên cập nhật tiến độ công việc và lý do đưa ra các quyết định thiết kế tại:
+- [`nhat-ky-nguoi-a.md`](design-note/dev-logs/nhat-ky-nguoi-a.md) — Module `ticket`
+- [`nhat-ky-nguoi-b.md`](design-note/dev-logs/nhat-ky-nguoi-b.md) — Module `payment`, `dispute`
+- [`nhat-ky-nguoi-c.md`](design-note/dev-logs/nhat-ky-nguoi-c.md) — Module `user`, `reputation`, `web`, `shared`
