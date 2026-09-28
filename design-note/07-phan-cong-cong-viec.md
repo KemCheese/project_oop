@@ -8,9 +8,9 @@ Nhóm gồm ba người. Việc chia theo **module nghiệp vụ** thay vì chia
 
 | Người | Modules | Pattern trọng tâm | Vai trò |
 |---|---|---|---|
-| A | ticket | Adapter, State, Strategy | Vòng đời vé |
+| A | ticket, web (giao diện toàn sàn) | Adapter, State, Strategy | Vòng đời vé, toàn bộ giao diện Thymeleaf, layout & styling CSS |
 | B | payment, dispute | Adapter, Strategy | Dòng tiền + xử lý tranh chấp |
-| C | user, reputation, web, shared | Observer, Adapter | Người dùng, uy tín, giao diện, tích hợp hệ thống |
+| C | user, reputation, shared (backend) | Observer, Adapter | Người dùng, uy tín, backend hạ tầng dùng chung, tích hợp hệ thống |
 
 ---
 
@@ -20,16 +20,15 @@ Nhóm gồm ba người. Việc chia theo **module nghiệp vụ** thay vì chia
 
 | Người | Thư mục sở hữu | Ghi chú |
 |---|---|---|
-| **A** | `src/main/java/com/yourapp/ticketpass/ticket/**` (`domain`, `adapter`, `application`, `infrastructure`, `web`) | Toàn bộ module vé |
-| **A** | `src/main/resources/templates/ticket/**` | View Thymeleaf của module ticket |
+| **A** | `src/main/java/com/yourapp/ticketpass/ticket/**` (`domain`, `adapter`, `application`, `infrastructure`, `web`), `user/web/HomeController.java` | Toàn bộ module vé và controller trang chủ |
+| **A** | `src/main/resources/templates/layout/**`, `templates/auth/**`, `templates/error/**`, `templates/index.html`, `templates/ticket/**` | Toàn bộ view Thymeleaf: layout, auth, error, index, ticket |
+| **A** | `src/main/resources/static/**` | CSS, JS, ảnh toàn sàn |
 | **B** | `src/main/java/com/yourapp/ticketpass/payment/**` | Toàn bộ module thanh toán |
 | **B** | `src/main/java/com/yourapp/ticketpass/dispute/**` | Toàn bộ module tranh chấp |
 | **B** | `src/main/resources/templates/dispute/**` | View Thymeleaf của module dispute |
-| **C** | `src/main/java/com/yourapp/ticketpass/user/**` | Toàn bộ module người dùng |
+| **C** | `src/main/java/com/yourapp/ticketpass/user/**` (ngoại trừ `HomeController.java`) | Toàn bộ backend module người dùng |
 | **C** | `src/main/java/com/yourapp/ticketpass/reputation/**` | Toàn bộ module uy tín |
 | **C** | `src/main/java/com/yourapp/ticketpass/shared/**` (`config`, `dto`, `event`, `exception`, `storage`, `util`) | Hạ tầng dùng chung |
-| **C** | `src/main/resources/templates/layout/**`, `templates/auth/**`, `templates/error/**`, `templates/index.html` | Layout, trang đăng nhập/đăng ký, trang lỗi, trang chủ |
-| **C** | `src/main/resources/static/**` | CSS, JS, ảnh |
 | **C** | `src/main/java/com/yourapp/ticketpass/TicketPassApplication.java` | Class khởi động |
 
 ### File dùng chung — phải báo nhóm trước khi sửa
@@ -69,6 +68,7 @@ Prompt 1 đã dựng xong toàn bộ khung: entity, interface, ký hiệu method
 | A3 | Hiện thực kiểm tra điều kiện đăng vé: chọn đúng adapter theo `TicketType`, gom `ValidationResult`, chặn vé quá hạn sử dụng và vé có giá bán vô lý. | `ticket/application/ValidateTicketService` |
 | A4 | Hiện thực luồng chuyển vé: sinh `TransferInstruction` cho seller, xác nhận đã chuyển, đẩy vé sang `TRANSFERRED`, và mở cửa sổ khiếu nại khi buyer xác nhận nhận vé. | `ticket/application/TransferTicketService` |
 | A5 | Hiện thực controller và view module ticket: đăng vé (có upload ảnh), danh sách vé, chi tiết vé, các nút hành động theo trạng thái. | `ticket/web/TicketController`, `templates/ticket/**` |
+| A6 | Hiện thực layout Thymeleaf dùng chung (`base.html`), trang chủ (`index.html`), các trang auth (`login.html`, `register.html`), trang lỗi (`error/error.html`), và CSS/JS toàn sàn (`static/**`). | `templates/layout/**`, `templates/index.html`, `templates/auth/**`, `templates/error/**`, `static/**` |
 
 ### 3.2 Người B — module `payment`, `dispute`
 
@@ -102,8 +102,8 @@ Prompt 1 đã dựng xong toàn bộ khung: entity, interface, ký hiệu method
 | C7 | Hiện thực xem/cập nhật hồ sơ và tài khoản ngân hàng nhận tiền, có kiểm tra dữ liệu đầu vào. | `user/application/UserProfileService` |
 | C8 | Hiện thực hai listener cập nhật uy tín: `@TransactionalEventListener` cho `TicketTransactionCompletedEvent` (cộng điểm cả hai bên) và cho `DisputeResolvedEvent` (trừ điểm bên thua), đảm bảo idempotent để không cộng trùng khi event bắn lại. | `reputation/application/UpdateReputationUseCase` |
 | C9 | Hiện thực API/trang xem điểm uy tín của một người dùng, kèm phân hạng hiển thị. | `reputation/web/ReputationController` |
-| C10 | Hiện thực layout Thymeleaf dùng chung (header, nav theo vai, footer, vùng thông báo) và trang chủ `index.html` hiển thị vé đang bán. | `templates/layout/base.html`, `templates/index.html` |
-| C11 | Hoàn thiện xử lý ngoại lệ toàn cục: map `BusinessRuleViolationException`, `ResourceNotFoundException`, lỗi validate và lỗi 500 sang trang lỗi thân thiện; giữ nguyên hành vi JSON cho các endpoint API. | `shared/exception/GlobalExceptionHandler`, `templates/error/**` |
+| C10 | Cung cấp dữ liệu người dùng và uy tín cho tầng view; phối hợp với Người A để đưa dữ liệu ra giao diện hiển thị. | `user/web/UserController`, `reputation/web/ReputationController` |
+| C11 | Hoàn thiện xử lý ngoại lệ toàn cục: map `BusinessRuleViolationException`, `ResourceNotFoundException`, lỗi validate và lỗi 500 sang trang lỗi thân thiện; giữ nguyên hành vi JSON cho các endpoint API. | `shared/exception/GlobalExceptionHandler` |
 | C12 | Ghép điểm uy tín vào hồ sơ: `UserProfileResponse` phải trả kèm điểm uy tín (`BigDecimal`) và số giao dịch thành công, lấy từ module `reputation`. | `user/web/dto/UserProfileResponse`, `user/application/UserQueryService` |
 
 ---
@@ -138,6 +138,7 @@ Những việc dưới đây không thuộc riêng ai, cả ba đều phải tha
 | Cần gì | Của ai | Dùng ở đâu |
 |---|---|---|
 | `FileStorageService` | Người C | Lưu ảnh vé công khai và ảnh QR ẩn do seller upload. |
+| `UserProfileResponse`, `ReputationResponse` | Người C | Hiển thị thông tin người bán và điểm uy tín trên thẻ vé tại trang chủ và chi tiết vé. |
 
 ### Người C phụ thuộc vào
 
@@ -145,7 +146,6 @@ Những việc dưới đây không thuộc riêng ai, cả ba đều phải tha
 |---|---|---|
 | `TicketTransactionCompletedEvent` được publish thật | Người B | `UpdateReputationUseCase` cộng điểm sau giao dịch thành công. |
 | `DisputeResolvedEvent` được publish thật | Người B | `UpdateReputationUseCase` trừ điểm bên thua tranh chấp. |
-| Dữ liệu vé để hiển thị trang chủ | Người A | `index.html` liệt kê vé đang ở trạng thái `LISTED`. |
 
 ### Vì sao không ai phải ngồi chờ ai
 

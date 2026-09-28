@@ -220,9 +220,9 @@ Nhóm gồm ba người. Việc chia theo **module nghiệp vụ** thay vì chia
 
 | Người | Modules phụ trách | Pattern trọng tâm | Vai trò |
 |---|---|---|---|
-| **A** | `ticket` | Adapter, State, Strategy | Vòng đời vé, 3 adapter loại vé (phim, xe khách, concert), state machine, validation đăng vé |
+| **A** | `ticket`, `web` (giao diện toàn sàn) | Adapter, State, Strategy | Vòng đời vé, 3 adapter loại vé (phim, xe khách, concert), state machine, validation đăng vé, toàn bộ giao diện Thymeleaf, layout và styling CSS |
 | **B** | `payment`, `dispute` | Adapter, Strategy | Dòng tiền và xử lý tranh chấp: escrow, cọc, hoa hồng, thuế, giải ngân, hoàn tiền, tịch thu cọc, quy trình khiếu nại |
-| **C** | `user`, `reputation`, `web`, `shared` | Observer, Adapter | Người dùng và xác thực đăng nhập, điểm uy tín qua domain event, giao diện Thymeleaf, và toàn bộ hạ tầng dùng chung: lưu file, cấu hình, xử lý ngoại lệ |
+| **C** | `user`, `reputation`, `shared` (backend) | Observer, Adapter | Người dùng và xác thực đăng nhập, điểm uy tín qua domain event, backend xử lý người dùng và toàn bộ hạ tầng dùng chung: lưu file, cấu hình, xử lý ngoại lệ |
 
 > **Ghi chú:** Module `verification` (OCR, hash QR, email forward, phân bậc rủi ro) đã được **deprecated** khi dự án chuyển hướng sang mô hình marketplace. Xem phần giải thích ở mục 4 — Phạm vi NGOÀI đồ án.
 

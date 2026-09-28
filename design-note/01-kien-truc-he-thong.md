@@ -414,9 +414,9 @@ Chia việc theo module nghiệp vụ chứ không theo layer. Nếu chia theo l
 
 | Người | Package sở hữu | Được sửa file của người khác không? |
 |---|---|---|
-| **A** | `ticket/**`, `verification/**` | Không. Cần thêm phương thức ở module khác thì mở issue và để chủ sở hữu thêm. |
+| **A** | `ticket/**`, `resources/templates/**`, `resources/static/**`, `user/web/HomeController.java` | Không. Cần thêm phương thức ở module khác thì mở issue và để chủ sở hữu thêm. |
 | **B** | `payment/**`, `dispute/**` | Không. |
-| **C** | `user/**`, `reputation/**`, `shared/**`, `resources/templates/**` | Không. |
+| **C** | `user/**` (backend), `reputation/**`, `shared/**` | Không. |
 
 `shared` do C sở hữu nhưng là nơi ba người phải phối hợp nhiều nhất, nên có thêm quy ước: **chỉ thêm vào `shared`, hầu như không sửa cái đã có**. Muốn đổi chữ ký của một interface trong `shared` thì phải báo cả nhóm trước.
 

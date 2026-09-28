@@ -18,9 +18,9 @@ import org.springframework.web.bind.annotation.GetMapping;
  * còn thiếu ({@code user/profile}, {@code ticket/*}, {@code dispute/*}, {@code admin/*},
  * {@code reputation/*}).</p>
  *
- * <p>Module: user</p>
+ * <p>Module: web / ticket</p>
  *
- * Chủ sở hữu: Người C
+ * Chủ sở hữu: Người A
  */
 @Controller
 @RequiredArgsConstructor
