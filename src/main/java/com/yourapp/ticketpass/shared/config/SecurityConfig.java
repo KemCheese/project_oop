@@ -50,9 +50,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Trang công khai: khách chưa đăng nhập vẫn xem được
                         .requestMatchers("/", "/register", "/login", "/error").permitAll()
+                        // Form đăng vé mới của Dev A: bắt buộc đăng nhập (đặt TRƯỚC permitAll để không bị match nhầm bởi "/tickets/*")
+                        .requestMatchers("/tickets/new").authenticated()
                         // Danh sách vé và chi tiết vé — marketplace mở cho guest duyệt
-                        // Dùng "/tickets/*" (single *) để chỉ match /tickets/123,
-                        // KHÔNG match /tickets/new hay /tickets/123/transfer (cần đăng nhập)
                         .requestMatchers("/tickets", "/tickets/*").permitAll()
                         // Tài nguyên tĩnh và file người dùng tải lên
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/files/**").permitAll()

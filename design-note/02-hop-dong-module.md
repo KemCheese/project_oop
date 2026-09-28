@@ -148,36 +148,27 @@ Do Dev C phụ trách cấu hình bảo mật tập trung tại [`SecurityConfig
   - Xem vé: `/tickets`, `/tickets/*` (cho phép khách vãng lai duyệt danh sách và xem chi tiết vé)
   - Cổng thanh toán Callback: `/payment/momo/ipn` (miễn CSRF, permitAll phục vụ webhook MoMo)
   - Công cụ quản trị CSDL Dev: `/h2-console/**` (miễn CSRF, cùng origin iframe)
+- **Yêu cầu đăng nhập (`authenticated()`):**
+  - Form đăng bán vé mới: `/tickets/new` (bắt buộc đăng nhập, cấu hình ưu tiên trước `permitAll` của `/tickets/*`)
+  - Các thao tác tài khoản, giao dịch, chuyển nhượng vé, nộp bằng chứng khiếu nại...
 - **Quản trị (`hasRole('ADMIN')`):** `/admin/**`
-- **Các URL còn lại (`authenticated()`):** Bắt buộc đăng nhập trước khi truy cập.
 
 ---
 
-### 6.2. ⚠️ CẢNH BÁO RỦI RO ĐẶC BIỆT CHO DEV A (Module Ticket)
+### 6.2. Phân quyền và Bảo vệ URL dành cho Dev A (Module Ticket)
 
-> **CẢNH BÁO XUNG ĐỘT URL:** Khớp mẫu `/tickets/*` với `/tickets/new`
-
-1. **Hiện trạng cấu hình:**
-   - Để người dùng chưa đăng nhập (guest) có thể xem danh sách vé và chi tiết vé, `SecurityConfig` đang cấu hình:
-     ```java
-     .requestMatchers("/", "/tickets", "/tickets/*").permitAll()
-     ```
-2. **Rủi ro phát hiện:**
-   - Trong Spring Security Ant/Path matching, ký tự `*` (đơn) khớp đúng 1 segment đường dẫn.
-   - Do đó, pattern `/tickets/*` không chỉ khớp `/tickets/123`, `/tickets/456` mà **vô tình khớp luôn cả đường dẫn `GET /tickets/new`** (trang hiển thị form đăng bán vé mới của Dev A trong `TicketController`).
-   - **Hậu quả:** Khách vãng lai chưa đăng nhập vẫn có thể truy cập và xem giao diện form tạo vé mới. Mặc dù khi bấm submit (`POST /tickets`), request sẽ bị chặn nếu không có session hợp lệ, nhưng điều này gây ảnh hưởng đến trải nghiệm người dùng (UX) và tiềm ẩn nguy cơ spam form.
-3. **Phương án xử lý & giải pháp thống nhất:**
-   - **Phương án 1 (Dev C ưu tiên hỗ trợ tại `SecurityConfig`):**
-     Khai báo rule yêu cầu đăng nhập cho `/tickets/new` **ngay trước** rule `permitAll`:
-     ```java
-     .requestMatchers("/tickets/new").authenticated()
-     .requestMatchers("/", "/tickets", "/tickets/*").permitAll()
-     ```
-     *(Trong Spring Security DSL, quy tắc nào được định nghĩa phía trước sẽ được ưu tiên đánh giá trước).*
-   - **Phương án 2 (Dev A chủ động quy hoạch lại URL):**
-     Nếu Dev A muốn tách bạch hoàn toàn URL của luồng người bán (Seller), có thể đổi endpoint tạo vé sang dạng:
-     - `GET /seller/tickets/new` hoặc `GET /tickets/seller/create` (chứa 2 segments nên không bị khớp bởi `/tickets/*`).
-   - **Thống nhất:** Dev A khi hoàn thiện giao diện và controller cần chủ động xác nhận phương án với Dev C để điều chỉnh kịp thời.
+Đã thống nhất và áp dụng **Phương án 1** trực tiếp tại tầng cấu hình bảo mật [`SecurityConfig.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/shared/config/SecurityConfig.java):
+- **Cấu hình Spring Security đã kích hoạt:**
+  ```java
+  // Form đăng bán vé mới của Dev A: bắt buộc đăng nhập (đặt TRƯỚC permitAll để không bị match nhầm bởi "/tickets/*")
+  .requestMatchers("/tickets/new").authenticated()
+  // Danh sách vé và chi tiết vé — marketplace mở cho guest duyệt
+  .requestMatchers("/tickets", "/tickets/*").permitAll()
+  ```
+- **Cam kết hợp đồng:**
+  - Quy tắc `.requestMatchers("/tickets/new").authenticated()` được khai báo **ngay trước** `.requestMatchers("/tickets", "/tickets/*").permitAll()`. Nhờ cơ chế first-match (luật nào định nghĩa trước sẽ được đánh giá trước) của Spring Security DSL, toàn bộ request đến `GET /tickets/new` (hiển thị form tạo vé) hay `POST /tickets/new` đều bắt buộc phải đăng nhập.
+  - Khách vãng lai (guest) chỉ được phép xem danh sách vé (`/tickets`) và xem thông tin chi tiết vé theo ID (`/tickets/{id}`).
+  - Dev A hoàn toàn an tâm giữ nguyên URL mapping `GET /tickets/new` trong `TicketController` mà không gặp bất kỳ xung đột quyền truy cập nào.
 
 ---
 
