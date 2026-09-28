@@ -17,15 +17,15 @@ Lý do bắt buộc mỗi người tự điền phần của mình: người vi�
 
 ---
 
-## Bảng của Người A — module `ticket`, `verification`
+## Bảng của Người A — module `ticket`, `web / giao diện`
 
 | Module | Design Pattern | Nguyên tắc OOP | Lý do áp dụng |
 |---|---|---|---|
 | ticket |  |  |  |
 | ticket |  |  |  |
 | ticket |  |  |  |
-| verification |  |  |  |
-| verification |  |  |  |
+| web (giao diện) |  |  |  |
+| web (giao diện) |  |  |  |
 
 ---
 
@@ -41,7 +41,7 @@ Lý do bắt buộc mỗi người tự điền phần của mình: người vi�
 
 ---
 
-## Bảng của Người C — module `user`, `reputation`, `shared`, giao diện
+## Bảng của Người C — module `user`, `reputation`, `shared (backend)`
 
 | Module | Design Pattern | Nguyên tắc OOP | Lý do áp dụng |
 |---|---|---|---|
@@ -49,7 +49,7 @@ Lý do bắt buộc mỗi người tự điền phần của mình: người vi�
 | shared |  |  |  |
 | reputation |  |  |  |
 | user |  |  |  |
-| web (giao diện) |  |  |  |
+| user |  |  |  |
 
 ---
 
@@ -59,16 +59,15 @@ Lý do bắt buộc mỗi người tự điền phần của mình: người vi�
 
 ### Adapter
 
-Bốn chỗ trong dự án dùng Adapter, mỗi chỗ giải một vấn đề khác nhau:
+Ba chỗ tiêu biểu trong dự án dùng Adapter, mỗi chỗ giải một vấn đề khác nhau:
 
 | Nơi dùng | Interface | Các hiện thực |
 |---|---|---|
 | Loại vé | `ticket/domain/TicketAdapter` | `MovieTicketAdapter`, `ConcertTicketAdapter`, `TrainTicketAdapter`, `BusTicketAdapter` |
 | Cổng thanh toán | `payment/domain/PaymentGateway` | `MomoTestGatewayAdapter` |
 | Lưu file | `shared/storage/FileStorageService` | `shared/storage/adapter/LocalFileStorageAdapter` |
-| Nhận dạng văn bản | `verification/domain/OcrEngine` | `verification/infrastructure/TesseractOcrEngine` |
 
-Câu hỏi tự đặt khi viết lý do: nếu ngày mai đổi từ MoMo sang VNPay, hoặc từ lưu file cục bộ sang S3, hoặc từ Tesseract sang Google Cloud Vision, thì phải sửa bao nhiêu file?
+Câu hỏi tự đặt khi viết lý do: nếu ngày mai đổi từ MoMo sang VNPay, hoặc từ lưu file cục bộ sang S3, thì phải sửa bao nhiêu file?
 
 ### State
 
@@ -93,7 +92,7 @@ Câu hỏi tự đặt: vì sao module `payment` không gọi thẳng `updateRep
 
 ### Repository / Port–Adapter
 
-Interface đặt ở `domain` (`TicketRepository`, `DepositRepository`, `EscrowTransactionRepository`, `VerificationRepository`, `UserRepository`, `ReputationRepository`), hiện thực `*RepositoryImpl` đặt ở `infrastructure` và bọc quanh `*JpaRepository` của Spring Data.
+Interface đặt ở `domain` (`TicketRepository`, `DepositRepository`, `EscrowTransactionRepository`, `UserRepository`, `ReputationRepository`), hiện thực `*RepositoryImpl` đặt ở `infrastructure` và bọc quanh `*JpaRepository` của Spring Data.
 
 Câu hỏi tự đặt: vì sao không cho lớp `application` gọi thẳng `TicketJpaRepository`? Việc thêm một lớp bọc ở giữa đổi lại được điều gì khi viết unit test?
 

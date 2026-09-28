@@ -1,6 +1,6 @@
 # Nhật ký phát triển — Người A
 
-**Module phụ trách:** `ticket`, `verification`
+**Module phụ trách:** `ticket`, `web / giao diện`
 
 ## Cách ghi
 
