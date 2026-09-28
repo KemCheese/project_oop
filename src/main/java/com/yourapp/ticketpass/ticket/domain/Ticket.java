@@ -105,10 +105,6 @@ public class Ticket {
     @Column(length = 500)
     private String qrImageStorageKey;
 
-    /** [DEPRECATED] SHA-256 hex cua payload QR - khong con dung de chong ban trung. */
-    @Column(length = 64)
-    private String qrPayloadHash;
-
     /** Huong dan chuyen ve sinh theo loai ve, dung de hien thi cho buyer sau khi anh QR an duoc mo khoa. */
     @Column(columnDefinition = "TEXT")
     private String transferInstruction;

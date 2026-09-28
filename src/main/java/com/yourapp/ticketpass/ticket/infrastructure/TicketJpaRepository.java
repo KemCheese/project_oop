@@ -47,18 +47,6 @@ public interface TicketJpaRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByTicketTypeAndStatus(TicketType ticketType, TicketStatus status);
 
     /**
-     * @param qrPayloadHash SHA-256 hex cua payload QR
-     * @return ve co cung hash neu ton tai
-     */
-    Optional<Ticket> findByQrPayloadHash(String qrPayloadHash);
-
-    /**
-     * @param qrPayloadHash SHA-256 hex cua payload QR
-     * @return true neu da co ve dung ma QR nay
-     */
-    boolean existsByQrPayloadHash(String qrPayloadHash);
-
-    /**
      * @param status trang thai can quet
      * @param before moc thoi gian so sanh voi disputeWindowClosesAt
      * @return cac ve da het cua so khieu nai va den han tu dong hoan tat

@@ -49,7 +49,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         // Trang công khai: khách chưa đăng nhập vẫn xem được
-                        .requestMatchers("/", "/register", "/login").permitAll()
+                        .requestMatchers("/", "/register", "/login", "/error").permitAll()
                         // Tài nguyên tĩnh và file người dùng tải lên
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/files/**").permitAll()
                         // Console H2 chỉ dùng khi phát triển

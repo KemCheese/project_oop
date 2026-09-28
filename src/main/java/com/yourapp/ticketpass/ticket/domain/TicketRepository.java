@@ -68,22 +68,6 @@ public interface TicketRepository {
     List<Ticket> findListedByType(TicketType ticketType);
 
     /**
-     * Tim ve theo hash payload QR, phuc vu kiem tra ban trung ve.
-     *
-     * @param qrPayloadHash SHA-256 hex cua payload QR
-     * @return ve co cung hash neu ton tai
-     */
-    Optional<Ticket> findByQrPayloadHash(String qrPayloadHash);
-
-    /**
-     * Kiem tra nhanh xem hash payload QR da ton tai trong he thong chua.
-     *
-     * @param qrPayloadHash SHA-256 hex cua payload QR
-     * @return true neu da co ve khac dung cung ma QR
-     */
-    boolean existsByQrPayloadHash(String qrPayloadHash);
-
-    /**
      * Lay cac ve den han tu dong hoan tat: dang o trang thai chi dinh va
      * cua so khieu nai da dong truoc moc thoi gian dua vao.
      *
