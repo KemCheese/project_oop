@@ -40,7 +40,7 @@
 -- entity voi schema nay luc khoi dong. Lech mot ten cot hoac mot kieu du
 -- lieu la ung dung khong start. Ten cot cua cac module user / ticket /
 -- verification / reputation duoc suy ra tu ten field Java theo
--- CamelCaseToUnderscoresNamingStrategy (vi du qrPayloadHash -> qr_payload_hash);
+-- CamelCaseToUnderscoresNamingStrategy (vi du ticketImageStorageKey -> ticket_image_storage_key);
 -- cac module payment / dispute khai bao ten cot tuong minh bang @Column(name=...).
 -- =====================================================================
 
@@ -133,11 +133,9 @@ CREATE TABLE IF NOT EXISTS tickets (
     sale_price                  DECIMAL(15,2),
     provider_name               VARCHAR(100),
     provider_order_code         VARCHAR(120),
-    -- Chi luu storage key do FileStorageService cap
+    -- Chi luu storage key do FileStorageService cap (ticketImage: anh cong khai, qrImage: anh ma check-in bi mat)
     ticket_image_storage_key    VARCHAR(500),
     qr_image_storage_key        VARCHAR(500),
-    -- SHA-256 hex cua payload QR (64 ky tu), khoa chong ban trung ve
-    qr_payload_hash             VARCHAR(64),
     -- Huong dan chuyen ve sinh theo loai ve, @Column(columnDefinition = "TEXT")
     transfer_instruction        TEXT,
     -- ID thuan sang module payment
@@ -156,57 +154,9 @@ CREATE TABLE IF NOT EXISTS tickets (
     KEY idx_tickets_buyer_id (buyer_id),
     KEY idx_tickets_status (status),
     KEY idx_tickets_ticket_type (ticket_type),
-    -- CO Y KHONG UNIQUE tren qr_payload_hash. He thong PHAI luu duoc ca nhung
-    -- ve bi nghi trung de dua vao dien admin duyet / tu choi. Neu dat UNIQUE
-    -- thi lenh insert se fail ngay tu dau, module verification khong con co
-    -- hoi gan risk tier HIGH va tao ho so cho admin xem xet.
-    KEY idx_tickets_qr_payload_hash (qr_payload_hash),
     -- Index to hop phuc vu AutoCompleteScheduler: quet cac ve dang o trang thai
     -- cho ma cua so khieu nai da dong de tu dong hoan tat giao dich.
     KEY idx_tickets_status_dispute_window_closes_at (status, dispute_window_closes_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- =====================================================================
--- 4. ticket_verifications
--- Module: verification  |  Chu so huu: Nguoi A
--- Ho so xac thuc mot ve: ket qua OCR, kiem tra trung ma QR, bang chung
--- email forward. ticket_id / duplicate_of_ticket_id tro sang module ticket,
--- verified_by_admin_id tro sang module user - deu la ID thuan.
--- =====================================================================
-CREATE TABLE IF NOT EXISTS ticket_verifications (
-    id                           BIGINT NOT NULL AUTO_INCREMENT,
-    ticket_id                    BIGINT NOT NULL,
-    -- VerificationStatus / RiskTier: @Enumerated(EnumType.STRING)
-    status                       VARCHAR(40),
-    risk_tier                    VARCHAR(40),
-    -- Do tin cay OCR theo thang diem phan tram, vi du 87.50
-    ocr_confidence               DECIMAL(5,2),
-    -- Toan bo van ban OCR doc duoc, @Column(columnDefinition = "TEXT")
-    ocr_extracted_text           TEXT,
-    -- SHA-256 hex cua payload QR (64 ky tu)
-    qr_payload_hash              VARCHAR(64),
-    -- Perceptual hash cua anh ve, bat truong hop anh bi crop hoac chinh nhe
-    image_perceptual_hash        VARCHAR(64),
-    -- ID thuan cua ve bi trung; null neu khong phat hien trung
-    duplicate_of_ticket_id       BIGINT,
-    -- Boolean wrapper trong entity => cho phep null (chua kiem tra)
-    email_forward_verified       BIT(1),
-    email_forward_from           VARCHAR(255),
-    email_forward_subject        VARCHAR(255),
-    email_forward_received_at    DATETIME(6),
-    evidence_storage_key         VARCHAR(500),
-    rejection_reason             VARCHAR(500),
-    -- ID thuan sang module user: admin da duyet ho so nay
-    verified_by_admin_id         BIGINT,
-    created_at                   DATETIME(6),
-    updated_at                   DATETIME(6),
-    PRIMARY KEY (id),
-    KEY idx_ticket_verifications_ticket_id (ticket_id),
-    KEY idx_ticket_verifications_status (status),
-    KEY idx_ticket_verifications_risk_tier (risk_tier),
-    -- Tra cuu nhanh cac ho so co cung ma QR khi do trung ve
-    KEY idx_ticket_verifications_qr_payload_hash (qr_payload_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -400,7 +350,7 @@ CREATE TABLE IF NOT EXISTS dispute_evidences (
 --          - Co: ten cot trong DB phai dung y het chuoi trong name.
 --          - Khong: ten cot duoc suy ra tu ten field theo
 --            CamelCaseToUnderscoresNamingStrategy
---            (qrPayloadHash -> qr_payload_hash, totalGmv -> total_gmv).
+--            (ticketImageStorageKey -> ticket_image_storage_key, totalGmv -> total_gmv).
 --       3. Sua bang cach tao file V2__... (xem muc a), KHONG sua V1.
 --       4. Muon app khoi dong tam thoi de debug: doi
 --          spring.jpa.hibernate.ddl-auto=none, sua xong nho tra lai validate.
