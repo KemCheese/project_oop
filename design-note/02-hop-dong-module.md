@@ -134,3 +134,77 @@ Phần lớn các module giao tiếp bằng Event. Tuy nhiên, ngoại lệ ở 
 3. **Giải ngân:** Khi vé `AUTO_COMPLETE`, bắt buộc gọi `ReleaseFundsUseCase.release(...)` trong cùng một `@Transactional`.
 
 *Chú ý:* Người B (phụ trách payment) cần expose các Service Interface này ra và có chữ ký hàm nhận vào `Long ticketId`, `Long buyerId`, `Long sellerId`, `BigDecimal price` chứ không nhận nguyên entity `Ticket`.
+
+---
+
+## 6. Hợp đồng Bảo mật & Phân quyền URL (Spring Security Contract)
+
+Do Dev C phụ trách cấu hình bảo mật tập trung tại [`SecurityConfig.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/shared/config/SecurityConfig.java). Mọi thay đổi về URL mapping của Dev A và Dev B cần tuân thủ các ràng buộc và lưu ý cảnh báo dưới đây.
+
+### 6.1. Danh mục URL và Trạng thái Phân quyền hiện tại
+- **Công khai (`permitAll`):**
+  - Trang chủ & Auth: `/`, `/login`, `/register`, `/error`
+  - Static resources: `/css/**`, `/js/**`, `/images/**`, `/files/**`
+  - Xem vé: `/tickets`, `/tickets/*` (cho phép khách vãng lai duyệt danh sách và xem chi tiết vé)
+  - Cổng thanh toán Callback: `/payment/momo/ipn` (miễn CSRF, permitAll phục vụ webhook MoMo)
+  - Công cụ quản trị CSDL Dev: `/h2-console/**` (miễn CSRF, cùng origin iframe)
+- **Quản trị (`hasRole('ADMIN')`):** `/admin/**`
+- **Các URL còn lại (`authenticated()`):** Bắt buộc đăng nhập trước khi truy cập.
+
+---
+
+### 6.2. ⚠️ CẢNH BÁO RỦI RO ĐẶC BIỆT CHO DEV A (Module Ticket)
+
+> **CẢNH BÁO XUNG ĐỘT URL:** Khớp mẫu `/tickets/*` với `/tickets/new`
+
+1. **Hiện trạng cấu hình:**
+   - Để người dùng chưa đăng nhập (guest) có thể xem danh sách vé và chi tiết vé, `SecurityConfig` đang cấu hình:
+     ```java
+     .requestMatchers("/", "/tickets", "/tickets/*").permitAll()
+     ```
+2. **Rủi ro phát hiện:**
+   - Trong Spring Security Ant/Path matching, ký tự `*` (đơn) khớp đúng 1 segment đường dẫn.
+   - Do đó, pattern `/tickets/*` không chỉ khớp `/tickets/123`, `/tickets/456` mà **vô tình khớp luôn cả đường dẫn `GET /tickets/new`** (trang hiển thị form đăng bán vé mới của Dev A trong `TicketController`).
+   - **Hậu quả:** Khách vãng lai chưa đăng nhập vẫn có thể truy cập và xem giao diện form tạo vé mới. Mặc dù khi bấm submit (`POST /tickets`), request sẽ bị chặn nếu không có session hợp lệ, nhưng điều này gây ảnh hưởng đến trải nghiệm người dùng (UX) và tiềm ẩn nguy cơ spam form.
+3. **Phương án xử lý & giải pháp thống nhất:**
+   - **Phương án 1 (Dev C ưu tiên hỗ trợ tại `SecurityConfig`):**
+     Khai báo rule yêu cầu đăng nhập cho `/tickets/new` **ngay trước** rule `permitAll`:
+     ```java
+     .requestMatchers("/tickets/new").authenticated()
+     .requestMatchers("/", "/tickets", "/tickets/*").permitAll()
+     ```
+     *(Trong Spring Security DSL, quy tắc nào được định nghĩa phía trước sẽ được ưu tiên đánh giá trước).*
+   - **Phương án 2 (Dev A chủ động quy hoạch lại URL):**
+     Nếu Dev A muốn tách bạch hoàn toàn URL của luồng người bán (Seller), có thể đổi endpoint tạo vé sang dạng:
+     - `GET /seller/tickets/new` hoặc `GET /tickets/seller/create` (chứa 2 segments nên không bị khớp bởi `/tickets/*`).
+   - **Thống nhất:** Dev A khi hoàn thiện giao diện và controller cần chủ động xác nhận phương án với Dev C để điều chỉnh kịp thời.
+
+---
+
+### 6.3. ⚠️ CẢNH BÁO RỦI RO & RÀNG BUỘC CHO DEV B (Module Payment & MoMo IPN)
+
+> **RỦI RO AN TOÀN WEBHOOK:** Endpoint `/payment/momo/ipn` được miễn CSRF và permitAll
+
+1. **Hiện trạng cấu hình:**
+   - `SecurityConfig` đã mở hoàn toàn cho webhook IPN từ MoMo theo yêu cầu tích hợp của Dev B:
+     ```java
+     .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/payment/momo/ipn"))
+     .authorizeHttpRequests(auth -> auth
+         .requestMatchers("/payment/momo/ipn").permitAll()
+         ...
+     )
+     ```
+2. **Rủi ro phát hiện:**
+   - Hiện tại phương thức `momoIpn(...)` trong `PaymentController` của Dev B đang ném `UnsupportedOperationException` và chưa có logic xác thực chữ ký (Signature Verification).
+   - Vì endpoint này mở công khai và không có CSRF token bảo vệ, bất kỳ ai cũng có thể gửi HTTP POST request giả mạo MoMo server để báo "thanh toán thành công" nếu Dev B không kiểm tra chữ ký bí mật.
+3. **Yêu cầu bắt buộc đối với Dev B khi implement:**
+   - **Xác thực chữ ký HMAC SHA-256:** Dev B phải lấy chữ ký từ trường `signature` trong payload của MoMo gửi về, tự tính toán lại chữ ký bằng `secretKey` (cấu hình trong `application.properties`) và so sánh an toàn (timing-safe equals).
+   - **Chỉ cập nhật trạng thái khi verify chữ ký thành công:** Tuyệt đối không cập nhật trạng thái vé/tiền nếu chữ ký không hợp lệ.
+
+---
+
+### 6.4. Lưu ý chung về H2 Console (Toàn đội)
+
+- Endpoint `/h2-console/**` hiện đang mở `permitAll()` và miễn CSRF, kèm cấu hình `headers().frameOptions().sameOrigin()` để phục vụ chạy và kiểm thử cơ sở dữ liệu trên môi trường phát triển cục bộ (`local`/`dev`).
+- Khi triển khai môi trường Production thực tế hoặc demo bên ngoài, cấu hình này bắt buộc phải được đóng lại hoặc giới hạn qua Spring Profile (`@Profile("local")`) để tránh rò rỉ toàn bộ cơ sở dữ liệu.
+
