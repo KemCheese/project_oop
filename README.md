@@ -400,9 +400,9 @@ Dự án được xây dựng bởi nhóm 3 thành viên, phân chia theo **modu
 
 | Thành viên | Nhánh Git | Module phụ trách | Design Pattern trọng tâm | Nhiệm vụ chính |
 |---|---|---|---|---|
-| **Hoàng Thế Ngọc** (`ngocht`) | `ngocht` | `ticket`, `web / giao diện` | Adapter, State, Strategy | Vòng đời vé, 3 adapter loại vé (`Movie`, `Concert`, `Bus`), State Machine 9 trạng thái, kiểm tra điều kiện đăng vé, chuyển nhượng vé, toàn bộ giao diện Thymeleaf, layout chung, trang chủ và styling CSS. |
-| **Minh Tuấn** (`MinhTuan`) | `MinhTuan` | `payment`, `dispute` | Adapter, Strategy | Dòng tiền: Escrow, khóa cọc 50%, tính hoa hồng, khấu trừ thuế stub, giải ngân, MoMo Sandbox adapter, quy trình khiếu nại và tự động hoàn tất. |
-| **Hà Linh** (`Halinh`) | `Halinh` | `user`, `reputation`, `shared` (backend) | Observer, Adapter | Quản lý người dùng, Spring Security session, lưu file, tính điểm uy tín qua Domain Events, xử lý ngoại lệ toàn cục và cấu hình hệ thống. |
+| **Minh Tuấn** (`MinhTuan`) | `MinhTuan` | `ticket`, `web / giao diện` | Adapter, State, Strategy | Vòng đời vé, 3 adapter loại vé (`Movie`, `Concert`, `Bus`), State Machine 9 trạng thái, kiểm tra điều kiện đăng vé, chuyển nhượng vé, toàn bộ giao diện Thymeleaf, layout chung, trang chủ và styling CSS. |
+| **Hà Linh** (`Halinh`) | `Halinh` | `payment`, `dispute` | Adapter, Strategy | Dòng tiền: Escrow, khóa cọc 50%, tính hoa hồng, khấu trừ thuế stub, giải ngân, MoMo Sandbox adapter, quy trình khiếu nại và tự động hoàn tất. |
+| **Hoàng Thế Ngọc** (`ngocht`) | `ngocht` | `user`, `reputation`, `shared` (backend) | Observer, Adapter | Quản lý người dùng, Spring Security session, lưu file, tính điểm uy tín qua Domain Events, xử lý ngoại lệ toàn cục và cấu hình hệ thống. |
 
 ### Nhật ký phát triển cá nhân (Dev Logs)
 Mỗi thành viên cập nhật tiến độ công việc và lý do đưa ra các quyết định thiết kế tại:

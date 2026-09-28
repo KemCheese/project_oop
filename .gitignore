@@ -27,3 +27,5 @@ application-local.properties
 
 # --- macOS ---
 .DS_Store
+
+GEMINI.md

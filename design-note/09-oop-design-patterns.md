@@ -45,7 +45,7 @@ Lý do bắt buộc mỗi người tự điền phần của mình: người vi�
 
 | Module | Design Pattern | Nguyên tắc OOP | Lý do áp dụng |
 |---|---|---|---|
-| shared |  |  |  |
+| shared | Adapter — `shared/storage/adapter/LocalFileStorageAdapter.java` (implements `FileStorageService`) | **Abstraction:** Interface `FileStorageService` chỉ lộ "lưu/đọc/xóa/kiểm tra file", giấu hoàn toàn cách lưu vật lý. **Polymorphism:** `UserProfileService`, `TransferTicketService`, `FileDisputeUseCase` gọi `fileStorageService.store(...)` mà không biết file lưu trên đĩa hay S3. **Encapsulation:** Logic chống Path Traversal và chuẩn hoá tên file đóng gói trong 3 hàm private. | Nếu không dùng Adapter: ba module (ticket, dispute, user) gọi thẳng `Files.copy()`, `Paths.get("D:/uploads/...")` — đường dẫn vật lý rải rác trong 6+ file. Đổi sang S3 phải sửa tất cả. Với Adapter, chỉ viết `S3FileStorageAdapter` mới và đổi 1 dòng bean config. Test `UserProfileService` chỉ cần mock `FileStorageService`, không cần tạo file thật. |
 | shared |  |  |  |
 | reputation |  |  |  |
 | user |  |  |  |
