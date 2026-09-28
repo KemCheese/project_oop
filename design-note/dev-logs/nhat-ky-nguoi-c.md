@@ -1,6 +1,6 @@
 # Nhật ký phát triển — Người C
 
-**Module phụ trách:** `user`, `reputation`, `shared`, giao diện
+**Module phụ trách:** `user`, `reputation`, `shared (backend)`
 
 ## Cách ghi
 
