@@ -50,10 +50,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Trang công khai: khách chưa đăng nhập vẫn xem được
                         .requestMatchers("/", "/register", "/login", "/error").permitAll()
+                        // Form đăng vé mới của Dev A: bắt buộc đăng nhập (đặt TRƯỚC permitAll để không bị match nhầm bởi "/tickets/*")
+                        .requestMatchers("/tickets/new").authenticated()
+                        // Danh sách vé và chi tiết vé — marketplace mở cho guest duyệt
+                        .requestMatchers("/tickets", "/tickets/*").permitAll()
                         // Tài nguyên tĩnh và file người dùng tải lên
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/files/**").permitAll()
                         // Console H2 chỉ dùng khi phát triển
                         .requestMatchers("/h2-console/**").permitAll()
+                        // Callback MoMo server-to-server: không có session đăng nhập
+                        .requestMatchers("/payment/momo/ipn").permitAll()
                         // Khu vực quản trị
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         // Còn lại bắt buộc đăng nhập
@@ -61,9 +67,23 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
+                        .defaultSuccessUrl("/", true)
                         .permitAll()
                 )
-                .logout(logout -> logout.permitAll());
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll()
+                )
+                // Cho phép H2 Console hiển thị trong iframe (dev tool dùng <iframe>)
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.sameOrigin())
+                )
+                // Miễn CSRF cho H2 Console (dev tool) và MoMo IPN (server-to-server callback)
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/h2-console/**", "/payment/momo/ipn")
+                );
 
         return http.build();
     }

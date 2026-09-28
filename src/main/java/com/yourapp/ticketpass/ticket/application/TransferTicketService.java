@@ -1,7 +1,6 @@
 package com.yourapp.ticketpass.ticket.application;
 
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
-import com.yourapp.ticketpass.shared.util.QrCodeGenerator;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest;
 import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
@@ -40,8 +39,6 @@ public class TransferTicketService {
     private final ValidateTicketService validateTicketService;
 
     private final FileStorageService fileStorageService;
-
-    private final QrCodeGenerator qrCodeGenerator;
 
     /**
      * Tao mot listing moi tu du lieu nguoi ban nhap.

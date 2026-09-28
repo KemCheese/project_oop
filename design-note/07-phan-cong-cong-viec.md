@@ -42,7 +42,7 @@ Nhóm gồm ba người. Việc chia theo **module nghiệp vụ** thay vì chia
 
 ### Quy tắc riêng cho `shared/`
 
-`shared/` **do Người C sở hữu**. Đây là nơi đặt những thứ cả ba module dùng chung: `FileStorageService`, `QrCodeGenerator`, `ImageHashUtil`, các `*Config`, các DTO dùng chung (`CommissionBreakdown`, `ForfeitBreakdown`, `TaxWithholding`), các event (`TicketTransactionCompletedEvent`, `DisputeResolvedEvent`) và `GlobalExceptionHandler`.
+`shared/` **do Người C sở hữu**. Đây là nơi đặt những thứ cả ba module dùng chung: `FileStorageService`, các `*Config`, các DTO dùng chung (`CommissionBreakdown`, `ForfeitBreakdown`, `TaxWithholding`), các event (`TicketTransactionCompletedEvent`, `DisputeResolvedEvent`) và `GlobalExceptionHandler`. Sàn áp dụng mô hình 2 ảnh (Public + Check-in bí mật), đã loại bỏ các tiện ích băm QR / perceptual hash tự động.
 
 Người A và Người B **không được tự thêm hoặc sửa file trong `shared/`**. Nếu cần thêm một method, một DTO hay một event mới:
 
@@ -94,8 +94,8 @@ Prompt 1 đã dựng xong toàn bộ khung: entity, interface, ký hiệu method
 | # | Việc | File / class |
 |---|---|---|
 | C1 | Hiện thực lưu file cục bộ: ghi file vào `app.storage.local.base-dir`, sinh tên file chống trùng, chặn path traversal, trả `StoredFileRef` kèm URL công khai. | `shared/storage/adapter/LocalFileStorageAdapter` |
-| C2 | Hiện thực sinh và đọc mã QR bằng zxing: sinh ảnh QR từ payload, đọc payload từ ảnh upload. | `shared/util/QrCodeGenerator` |
-| C3 | Hiện thực băm ảnh: SHA-256 cho payload chuỗi và perceptual hash (aHash/dHash) cho ảnh, kèm hàm tính khoảng cách Hamming để Người A dùng so ảnh gần giống. | `shared/util/ImageHashUtil` |
+| C2 | [ĐÃ LOẠI BỎ] Tiện ích sinh/đọc QR bằng ZXing (Đã bỏ do chuyển sang mô hình 2 ảnh vé và ký quỹ P2P). | `shared/util/QrCodeGenerator` (Đã xoá) |
+| C3 | [ĐÃ LOẠI BỎ] Băm ảnh SHA-256 và Perceptual hash (Đã bỏ do chuyển sang mô hình 2 ảnh vé và ký quỹ P2P). | `shared/util/ImageHashUtil` (Đã xoá) |
 | C4 | Hoàn thiện phân quyền: trang công khai (danh sách vé, chi tiết vé, đăng nhập, đăng ký, `/files/**`, tài nguyên tĩnh), trang cần đăng nhập, trang chỉ `ADMIN`; cấu hình form login, logout, trang từ chối truy cập. | `shared/config/SecurityConfig` |
 | C5 | Hiện thực nạp người dùng cho Spring Security: tra `User` theo email, map `UserRole` sang authority, chặn tài khoản không ở trạng thái hoạt động. | `user/infrastructure/UserDetailsServiceImpl` |
 | C6 | Hiện thực đăng ký: kiểm tra trùng email, mã hoá mật khẩu bằng `BCryptPasswordEncoder`, tạo `User` và khởi tạo `UserReputationScore` ban đầu. | `user/application/RegisterUserUseCase` |
@@ -153,7 +153,7 @@ Prompt 1 đã tạo sẵn **toàn bộ interface, ký hiệu method, DTO và eve
 
 - Code của cả ba người **biên dịch được ngay từ đầu**, vì mọi thứ họ gọi đã tồn tại.
 - Người B viết `ReleaseFundsUseCase` gọi `commissionCalculator.calculate(...)` được ngay, dù chính method đó có thể chưa xong.
-- Người A viết `QrDuplicateCheckService` gọi `imageHashUtil.sha256(...)` được ngay, dù Người C chưa hiện thực.
+- Người A viết luồng chuyển vé gọi `fileStorageService.store(...)` để lưu 2 ảnh (ảnh công khai và ảnh check-in bí mật) được ngay.
 - Khi viết unit test, phần chưa xong của người khác được **mock** lại. Test của mình chỉ kiểm tra logic của mình.
 
 Điều kiện duy nhất để cách làm này không sụp đổ: **không ai được tự ý đổi ký hiệu method, tên DTO hay tên trường của event.** Muốn đổi thì ghi đề xuất vào [`02-hop-dong-module.md`](02-hop-dong-module.md) và báo cả nhóm trước, vì một thay đổi nhỏ ở đó sẽ làm nhánh của hai người kia không build được ở buổi tích hợp gần nhất.

@@ -27,3 +27,8 @@ application-local.properties
 
 # --- macOS ---
 .DS_Store
+
+GEMINI.md
+
+# --- Dev C plan & reports cá nhân ---
+design-note/ngoc_plan/
