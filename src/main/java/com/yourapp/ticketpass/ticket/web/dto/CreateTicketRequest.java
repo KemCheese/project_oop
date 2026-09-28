@@ -69,7 +69,4 @@ public class CreateTicketRequest {
 
     /** Khoa file anh QR da duoc upload truoc do qua FileStorageService. */
     private String qrImageStorageKey;
-
-    /** Noi dung tho cua email forward tu don vi phat hanh (truoc day dung cho verification, nay co the de trong). */
-    private String rawEmailForwardSource;
 }

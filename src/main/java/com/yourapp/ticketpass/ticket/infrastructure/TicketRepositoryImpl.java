@@ -13,11 +13,17 @@ import org.springframework.stereotype.Repository;
 /**
  * Hien thuc port {@link TicketRepository} bang Spring Data JPA.
  *
- * <p>Day la glue code thuan: moi method chi delegate sang {@link TicketJpaRepository}. Nho lop nay,
- * tang domain va application khong biet gi ve Spring Data, va co the thay bang hien thuc in-memory
- * khi viet unit test.</p>
+ * <p>
+ * Day la glue code thuan: moi method chi delegate sang
+ * {@link TicketJpaRepository}. Nho lop nay,
+ * tang domain va application khong biet gi ve Spring Data, va co the thay bang
+ * hien thuc in-memory
+ * khi viet unit test.
+ * </p>
  *
- * <p>Module: ticket</p>
+ * <p>
+ * Module: ticket
+ * </p>
  *
  * Chu so huu: Nguoi A
  */
@@ -55,16 +61,6 @@ public class TicketRepositoryImpl implements TicketRepository {
     @Override
     public List<Ticket> findListedByType(TicketType ticketType) {
         return ticketJpaRepository.findByTicketTypeAndStatus(ticketType, TicketStatus.LISTED);
-    }
-
-    @Override
-    public Optional<Ticket> findByQrPayloadHash(String qrPayloadHash) {
-        return ticketJpaRepository.findByQrPayloadHash(qrPayloadHash);
-    }
-
-    @Override
-    public boolean existsByQrPayloadHash(String qrPayloadHash) {
-        return ticketJpaRepository.existsByQrPayloadHash(qrPayloadHash);
     }
 
     @Override
