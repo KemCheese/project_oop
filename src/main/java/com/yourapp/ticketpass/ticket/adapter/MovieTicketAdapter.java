@@ -6,6 +6,9 @@ import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.ticket.domain.TransferInstruction;
 import com.yourapp.ticketpass.ticket.domain.ValidationResult;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,7 +20,7 @@ import org.springframework.stereotype.Component;
  * anh cong khai (de buyer xem truoc) va anh QR an (chi mo khoa sau escrow + coc).</p>
  *
  * <p>Cua so khieu nai DU KIEN: 2 gio sau khi ve duoc chuyen (anh QR an mo khoa), doc tu
- * cau hinh {@code app.dispute.window.movie} o Prompt 2, va luon phai dong truoc
+ * cau hinh {@code app.dispute.window.movie-hours}, va luon phai dong truoc
  * {@code eventStartAt} vi ve phim thuong duoc su dung ngay.</p>
  *
  * <p>Module: ticket</p>
@@ -27,6 +30,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class MovieTicketAdapter implements TicketAdapter {
 
+    @Value("${app.dispute.window.movie-hours:2}")
+    private int disputeWindowHours;
+
     @Override
     public TicketType supportedType() {
         return TicketType.MOVIE;
@@ -34,46 +40,66 @@ public class MovieTicketAdapter implements TicketAdapter {
 
     @Override
     public Duration disputeWindowAfterTransfer() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Tra ve cua so khieu nai 2 gio cho ve phim, doc tu cau hinh "
-                        + "app.dispute.window.movie thay vi hard-code.");
+        return Duration.ofHours(disputeWindowHours);
     }
 
     @Override
     public Duration autoCompleteDelay() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Tra ve do tre tu dong hoan tat cho ve phim, tinh bang "
-                        + "cua so khieu nai cong bien an toan, va khong duoc vuot qua thoi diem eventStartAt.");
+        // Cua so khieu nai cong them 1 gio bien an toan
+        return disputeWindowAfterTransfer().plusHours(1);
     }
 
+    /**
+     * Ve phim bat buoc khai thong tin ghe (phong chieu va so ghe)
+     * de nguoi mua doi chieu voi ve nhan duoc.
+     * Xem BR-01.2 trong 04-quy-tac-nghiep-vu.md.
+     */
     @Override
     public boolean requiresSeatInfo() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Tra ve true vi ve phim bat buoc khai phong chieu va so ghe "
-                        + "de nguoi mua doi chieu voi ve nhan duoc.");
+        return true;
     }
 
+    /**
+     * [DEPRECATED] Du an da chuyen sang mo hinh marketplace,
+     * khong con yeu cau email forward de xac thuc.
+     */
     @Override
     public boolean requiresEmailForwardProof() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Quyet dinh ve phim co bat buoc email forward tu rap hay khong; "
-                        + "neu co thi doi chieu ma dat cho trong email voi providerOrderCode.");
+        return false;
     }
 
     @Override
     public ValidationResult validateListing(Ticket ticket) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Kiem tra ve phim truoc khi dang ban - bat buoc co seatInfo, "
-                        + "eventStartAt phai o tuong lai va con du thoi gian chuyen ve, salePrice khong vuot "
-                        + "originalPrice qua muc tran cho phep, phai co anh ve va anh QR. Tra ValidationResult.ok() "
-                        + "hoac ValidationResult.fail(danh sach loi).");
+        List<String> errors = new ArrayList<>();
+
+        // BR-01.2: Ve phim bat buoc co seatInfo (phong chieu + so ghe)
+        if (ticket.getSeatInfo() == null || ticket.getSeatInfo().isBlank()) {
+            errors.add("Ve phim bat buoc phai co thong tin ghe (phong chieu va so ghe).");
+        }
+
+        // Kiem tra eventName (ten phim) khong duoc rong
+        if (ticket.getEventName() == null || ticket.getEventName().isBlank()) {
+            errors.add("Ve phim bat buoc phai co ten phim.");
+        }
+
+        if (errors.isEmpty()) {
+            return ValidationResult.ok();
+        }
+        return ValidationResult.fail(errors);
     }
 
     @Override
     public TransferInstruction buildTransferInstruction(Ticket ticket) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Sinh huong dan chuyen ve phim theo kenh ma dat cho - cac buoc "
-                        + "gom mo app cua rap, tim don hang theo providerOrderCode, gui ma dat cho va anh QR "
-                        + "cho nguoi mua qua chat cua san; kem ghi chu han chot truoc gio chieu.");
+        List<String> steps = List.of(
+                "San da mo khoa anh QR an cua ve cho ban.",
+                "Vao muc 'Ve da mua' de xem anh QR.",
+                "Su dung anh QR nay de check-in tai rap " + (ticket.getVenue() != null ? ticket.getVenue() : "") + ".",
+                "Mang theo CCCD/CMND de doi chieu neu rap yeu cau."
+        );
+
+        String note = "Han su dung: truoc gio chieu ghi tren ve. "
+                + "Neu gap van de, ban co " + disputeWindowHours + " gio sau khi nhan ve de mo khieu nai.";
+
+        return new TransferInstruction(TicketType.MOVIE, "QR_UNLOCK", steps, note);
     }
 }

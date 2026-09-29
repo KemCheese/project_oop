@@ -84,9 +84,11 @@
         </dependency>
 
         <!-- ================= Lombok: giam boilerplate getter/setter/constructor ================= -->
+        <!-- Ghi de version 1.18.40+ vi Spring Boot 3.3.4 quan ly 1.18.34 khong tuong thich JDK 25 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.40</version>
             <optional>true</optional>
         </dependency>
 
@@ -106,6 +108,20 @@
 
     <build>
         <plugins>
+            <!-- Cau hinh annotation processor de Lombok sinh getter/setter/constructor dung cach -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.40</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

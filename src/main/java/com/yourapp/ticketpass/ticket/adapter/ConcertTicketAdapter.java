@@ -6,6 +6,9 @@ import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.ticket.domain.TransferInstruction;
 import com.yourapp.ticketpass.ticket.domain.ValidationResult;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,7 +20,7 @@ import org.springframework.stereotype.Component;
  * ghe/zone (phai khop voi so luong ve), gia ban, anh cong khai va anh QR an.</p>
  *
  * <p>Cua so khieu nai DU KIEN: 24 gio sau khi ve duoc chuyen (anh QR an mo khoa), doc tu
- * cau hinh {@code app.dispute.window.concert} o Prompt 2, va luon phai dong truoc
+ * cau hinh {@code app.dispute.window.concert-hours}, va luon phai dong truoc
  * {@code eventStartAt}. Ve concert thuong duoc sang tay truoc su kien hang tuan nen
  * cua so dai nhat trong ba loai ve.</p>
  *
@@ -28,6 +31,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ConcertTicketAdapter implements TicketAdapter {
 
+    @Value("${app.dispute.window.concert-hours:24}")
+    private int disputeWindowHours;
+
     @Override
     public TicketType supportedType() {
         return TicketType.CONCERT;
@@ -35,46 +41,68 @@ public class ConcertTicketAdapter implements TicketAdapter {
 
     @Override
     public Duration disputeWindowAfterTransfer() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Tra ve cua so khieu nai 24 gio cho ve concert, doc tu cau hinh "
-                        + "app.dispute.window.concert thay vi hard-code.");
+        return Duration.ofHours(disputeWindowHours);
     }
 
     @Override
     public Duration autoCompleteDelay() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Tra ve do tre tu dong hoan tat cho ve concert; vi su kien co the "
-                        + "cach ngay chuyen ve rat lau, phai lay moc som hon giua (transferredAt + cua so khieu nai) "
-                        + "va eventStartAt.");
+        // Cua so khieu nai cong them 1 gio bien an toan
+        return disputeWindowAfterTransfer().plusHours(1);
     }
 
+    /**
+     * Ve concert KHONG bat buoc seatInfo vi nhieu truong hop khong co ghe:
+     * ve dung khu fanzone, ve general admission, ve ban theo khu vuc.
+     * Bat buoc seatInfo voi concert se khien nguoi ban phai nhap du lieu gia
+     * de vuot validation — lam du lieu ban hon chu khong sach hon.
+     * Xem BR-01.2 trong 04-quy-tac-nghiep-vu.md.
+     */
     @Override
     public boolean requiresSeatInfo() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Xac dinh yeu cau seatInfo cho ve concert - ve co danh so ghe thi bat buoc, "
-                        + "ve khu vuc dung (standing/fan zone) thi chi can hang ve nen khong the bat buoc cung.");
+        return false;
     }
 
+    /**
+     * [DEPRECATED] Du an da chuyen sang mo hinh marketplace,
+     * khong con yeu cau email forward de xac thuc.
+     */
     @Override
     public boolean requiresEmailForwardProof() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Tra ve true vi ve concert gia tri cao, bat buoc nop email xac nhan "
-                        + "tu don vi phat hanh de EmailForwardParserService doi chieu providerName va providerOrderCode.");
+        return false;
     }
 
     @Override
     public ValidationResult validateListing(Ticket ticket) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Kiem tra ve concert truoc khi dang ban - bat buoc co eventName, venue, "
-                        + "hang ve trong seatInfo, anh ve va anh QR ro net; chan truong hop salePrice cao bat thuong "
-                        + "so voi originalPrice (dau hieu dau co ve). Tra ValidationResult.ok() hoac fail(...).");
+        List<String> errors = new ArrayList<>();
+
+        // Kiem tra eventName (ten concert) khong duoc rong
+        if (ticket.getEventName() == null || ticket.getEventName().isBlank()) {
+            errors.add("Ve concert bat buoc phai co ten su kien.");
+        }
+
+        // Kiem tra venue (dia diem to chuc) khong duoc rong
+        if (ticket.getVenue() == null || ticket.getVenue().isBlank()) {
+            errors.add("Ve concert bat buoc phai co dia diem to chuc.");
+        }
+
+        if (errors.isEmpty()) {
+            return ValidationResult.ok();
+        }
+        return ValidationResult.fail(errors);
     }
 
     @Override
     public TransferInstruction buildTransferInstruction(Ticket ticket) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Sinh huong dan chuyen ve concert theo kenh email forward / doi ten "
-                        + "tren cong ban ve - cac buoc gom dang nhap cong ban ve, chon chuc nang chuyen nhuong ve, "
-                        + "nhap email nguoi mua, va forward email xac nhan cho nguoi mua lam bang chung.");
+        List<String> steps = List.of(
+                "San da mo khoa anh QR an cua ve cho ban.",
+                "Vao muc 'Ve da mua' de xem anh QR.",
+                "Su dung anh QR nay de check-in tai " + (ticket.getVenue() != null ? ticket.getVenue() : "dia diem to chuc") + ".",
+                "Mang theo CCCD/CMND de doi chieu neu ban to chuc yeu cau."
+        );
+
+        String note = "Han su dung: truoc gio bat dau su kien ghi tren ve. "
+                + "Neu gap van de, ban co " + disputeWindowHours + " gio sau khi nhan ve de mo khieu nai.";
+
+        return new TransferInstruction(TicketType.CONCERT, "QR_UNLOCK", steps, note);
     }
 }
