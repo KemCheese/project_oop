@@ -54,6 +54,8 @@ public class SecurityConfig {
                         .requestMatchers("/tickets/new").authenticated()
                         // Danh sách vé và chi tiết vé — marketplace mở cho guest duyệt
                         .requestMatchers("/tickets", "/tickets/*").permitAll()
+                        // Uy tín công khai — guest cần xem uy tín seller trước khi quyết định mua
+                        .requestMatchers("/reputation/**").permitAll()
                         // Tài nguyên tĩnh và file người dùng tải lên
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/files/**").permitAll()
                         // Console H2 chỉ dùng khi phát triển

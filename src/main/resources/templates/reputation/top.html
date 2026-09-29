@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!--
+  Bang xep hang nguoi ban uy tin nhat tren san.
+  Route: GET /reputation/top?limit=10
+  Model attributes:
+    - sellers (List<ReputationResponse>): danh sach nguoi ban sap xep giam dan theo diem
+    - limit (int): so luong hien thi
+
+  Chu so huu: Nguoi C (controller), Nguoi A (styling).
+-->
+<div th:replace="~{layout/base :: layout('Bảng xếp hạng uy tín', ~{::content})}">
+    <content>
+        <h2 th:text="'Top ' + ${limit} + ' người bán uy tín nhất'">Bảng xếp hạng</h2>
+
+        <div th:if="${#lists.isEmpty(sellers)}">
+            <p>Chưa có dữ liệu xếp hạng.</p>
+        </div>
+
+        <table th:if="${!#lists.isEmpty(sellers)}" border="1" cellpadding="8" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Hạng</th>
+                    <th>Mã người dùng</th>
+                    <th>Điểm uy tín</th>
+                    <th>Giao dịch thành công</th>
+                    <th>Tổng GMV (VND)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="seller, iterStat : ${sellers}">
+                    <td th:text="${iterStat.count}">1</td>
+                    <td>
+                        <a th:href="@{/reputation/{id}(id=${seller.userId})}"
+                           th:text="'#' + ${seller.userId}">#1</a>
+                    </td>
+                    <td th:text="${seller.score}">100.00</td>
+                    <td th:text="${seller.successfulTransactions} ?: 0">0</td>
+                    <td th:text="${seller.totalGmv} ?: 0">0</td>
+                </tr>
+            </tbody>
+        </table>
+    </content>
+</div>

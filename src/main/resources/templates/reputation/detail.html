@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!--
+  Ho so uy tin cong khai cua mot nguoi dung.
+  Route: GET /reputation/{userId}
+  Model attributes:
+    - reputation (ReputationResponse): thong tin uy tin
+
+  Chu so huu: Nguoi C (controller), Nguoi A (styling).
+-->
+<div th:replace="~{layout/base :: layout('Uy tín người dùng', ~{::content})}">
+    <content>
+        <h2>Hồ sơ uy tín</h2>
+
+        <div th:if="${reputation != null}" th:object="${reputation}">
+            <table border="1" cellpadding="8" cellspacing="0">
+                <tr>
+                    <th>Mã người dùng</th>
+                    <td th:text="'#' + *{userId}">-</td>
+                </tr>
+                <tr>
+                    <th>Điểm uy tín</th>
+                    <td>
+                        <strong th:text="*{score} + ' / 100'">-</strong>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Tổng giao dịch</th>
+                    <td th:text="*{totalTransactions} ?: 0">0</td>
+                </tr>
+                <tr>
+                    <th>Giao dịch thành công</th>
+                    <td th:text="*{successfulTransactions} ?: 0">0</td>
+                </tr>
+                <tr>
+                    <th>Tranh chấp thắng</th>
+                    <td th:text="*{disputesWon} ?: 0">0</td>
+                </tr>
+                <tr>
+                    <th>Tranh chấp thua</th>
+                    <td th:text="*{disputesLost} ?: 0">0</td>
+                </tr>
+                <tr>
+                    <th>Tổng giá trị giao dịch (GMV)</th>
+                    <td th:text="*{totalGmv} != null ? *{totalGmv} + ' VND' : 'Chưa có'">-</td>
+                </tr>
+                <tr>
+                    <th>Giao dịch gần nhất</th>
+                    <td th:text="*{lastTransactionAt} ?: 'Chưa có'">-</td>
+                </tr>
+            </table>
+        </div>
+
+        <p>
+            <a th:href="@{/reputation/top}">Xem bảng xếp hạng uy tín</a>
+        </p>
+    </content>
+</div>

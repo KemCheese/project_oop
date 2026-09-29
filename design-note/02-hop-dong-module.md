@@ -67,35 +67,24 @@ public interface FileStorageService {
 
 ## 3. Danh sách Domain Events (Observer Pattern)
 
-Sử dụng `ApplicationEventPublisher` để phát Event. Nơi nhận Event sẽ dùng `@EventListener` (hoặc `@TransactionalEventListener`). Event class lưu ở `com.yourapp.ticketpass.shared.event`.
+Sử dụng `ApplicationEventPublisher` để phát Event. Nơi nhận Event dùng `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`. Event class lưu ở `com.yourapp.ticketpass.shared.event`.
 
 ### 3.1. `TicketTransactionCompletedEvent`
-- **Khi nào phát:** Module `ticket` phát ra khi trạng thái vé chuyển sang `AUTO_COMPLETE` hoặc khi Dispute quyết định xong và giải ngân cho người bán thành công.
-- **Ai lắng nghe:** Module `reputation` lắng nghe để cộng điểm uy tín cho người bán.
-- **Fields:**
-  ```java
-  public class TicketTransactionCompletedEvent {
-      private Long ticketId;
-      private Long sellerId;
-      private Long buyerId;
-      private BigDecimal salePrice;
-      private CompletionReason reason; // Enum: AUTO_COMPLETED, RESOLVED_SELLER_WINS
-  }
-  ```
+- **Khi nào phát:** Module `payment` (`ReleaseFundsUseCase` của Dev B) phát ra sau khi đã giải ngân escrow thành công cho người bán và hoàn tiền cọc.
+- **Ai lắng nghe:** Module `reputation` (`UpdateReputationUseCase` của Dev C) đăng ký lắng nghe ở phase `AFTER_COMMIT`.
+- **Hiệu quả cập nhật uy tín (Đã kích hoạt):**
+  - **Người bán (Seller):** +2 điểm (chặn trần tối đa `100.00`), tăng `totalTransactions` + 1, tăng `successfulTransactions` + 1, cộng dồn `salePrice` vào `totalGmv`, cập nhật `lastTransactionAt = occurredAt`.
+  - **Người mua (Buyer):** +2 điểm (chặn trần tối đa `100.00`), tăng `totalTransactions` + 1, tăng `successfulTransactions` + 1, cập nhật `lastTransactionAt = occurredAt` (không cộng GMV).
+- **Ràng buộc đối với Dev B:** Bắt buộc chỉ phát sự kiện sau khi tiền bạc đã chuyển xong và transaction tiền đã commit.
 
 ### 3.2. `DisputeResolvedEvent`
-- **Khi nào phát:** Module `dispute` phát ra khi admin chốt kết quả khiếu nại.
-- **Ai lắng nghe:** Module `reputation` lắng nghe để trừ điểm uy tín (nếu người bán thua/người mua tố cáo sai), module `ticket` lắng nghe để chuyển trạng thái vé sang `RESOLVED_BUYER_WINS` / `RESOLVED_SELLER_WINS`.
-- **Fields:**
-  ```java
-  public class DisputeResolvedEvent {
-      private Long disputeId;
-      private Long ticketId;
-      private Long buyerId;
-      private Long sellerId;
-      private DisputeOutcome outcome; // Enum: BUYER_WINS, SELLER_WINS
-  }
-  ```
+- **Khi nào phát:** Module `dispute` (`ReviewDisputeUseCase` của Dev B) phát ra sau khi admin ra phán quyết khiếu nại và các lệnh hoàn tiền / tịch thu cọc đã xử lý xong.
+- **Ai lắng nghe:** Module `reputation` (`UpdateReputationUseCase` của Dev C) đăng ký lắng nghe ở phase `AFTER_COMMIT`.
+- **Hiệu quả cập nhật uy tín (Đã kích hoạt theo BR-11):**
+  - `BUYER_WINS`: Người bán bị **-15 điểm** (chặn sàn tối thiểu `0.00`), tăng `disputesLost` + 1; Người mua được **+1 điểm** (chặn trần `100.00`), tăng `disputesWon` + 1.
+  - `SELLER_WINS`: Người bán được **+1 điểm** (chặn trần `100.00`), tăng `disputesWon` + 1; Người mua bị **-15 điểm** (chặn sàn `0.00`), tăng `disputesLost` + 1.
+  - `WITHDRAWN`: Không thay đổi điểm của bất kỳ bên nào, chỉ tăng `disputesOpenedAgainst` + 1 cho người bán.
+- **Ràng buộc đối với Dev B:** Phải truyền đầy đủ `sellerId`, `buyerId`, `outcome` để `UpdateReputationUseCase` phân bổ điểm chính xác.
 
 ---
 
@@ -146,6 +135,7 @@ Do Dev C phụ trách cấu hình bảo mật tập trung tại [`SecurityConfig
   - Trang chủ & Auth: `/`, `/login`, `/register`, `/error`
   - Static resources: `/css/**`, `/js/**`, `/images/**`, `/files/**`
   - Xem vé: `/tickets`, `/tickets/*` (cho phép khách vãng lai duyệt danh sách và xem chi tiết vé)
+  - Hồ sơ uy tín: `/reputation/**` (cho phép khách vãng lai và người mua xem chi tiết uy tín seller và bảng xếp hạng top sellers - Task C9)
   - Cổng thanh toán Callback: `/payment/momo/ipn` (miễn CSRF, permitAll phục vụ webhook MoMo)
   - Công cụ quản trị CSDL Dev: `/h2-console/**` (miễn CSRF, cùng origin iframe)
 - **Yêu cầu đăng nhập (`authenticated()`):**
@@ -194,8 +184,53 @@ Do Dev C phụ trách cấu hình bảo mật tập trung tại [`SecurityConfig
 
 ---
 
-### 6.4. Lưu ý chung về H2 Console (Toàn đội)
+### 6.4. ⚠️ CẢNH BÁO RỦI RO & RÀNG BUỘC CHO DEV B: Snapshot thông tin tài khoản ngân hàng khi tạo Escrow / Payout
+
+> **RỦI RO GIAO DỊCH TIỀN TỆ:** Người dùng thay đổi thông tin ngân hàng trong khi giao dịch Escrow / Khiếu nại đang diễn ra.
+
+1. **Ngữ cảnh nghiệp vụ (Task C7):**
+   - Người dùng (Seller) có quyền tự do cập nhật thông tin tài khoản ngân hàng bất cứ lúc nào qua `UserProfileService.updateBankAccount(...)` (cập nhật `bankName`, `bankAccountNumber`, `bankAccountHolder`).
+2. **Rủi ro phát hiện:**
+   - Nếu trong quá trình giao dịch ký quỹ đang giữ tiền (Escrow) hoặc tranh chấp (Dispute) đang giải quyết, Seller vào đổi số tài khoản ngân hàng:
+   - Nếu module `payment` khi thực hiện `payout` (hoặc `ReleaseFundsUseCase`) lại truy vấn động từ entity `User` (`user.getBankAccountNumber()`, `user.getBankName()`, ...), dòng tiền có thể bị chuyển nhầm sang số tài khoản mới (sai lệch đối soát, rủi ro gian lận / chiếm đoạt tiền bán vé).
+3. **Yêu cầu bắt buộc đối với Dev B khi thiết kế & hiện thực module Payment:**
+   - **Snapshot thông tin ngân hàng tại thời điểm phát sinh:** Khi tạo giao dịch ký quỹ giữ tiền (`HoldFundsUseCase`) hoặc khi Seller tạo lệnh bán/cọc vé, module `payment` phải sao lưu cứng (snapshot) các thông tin `bankName`, `bankAccountNumber`, `bankAccountHolder` của Seller vào bản ghi `escrow_transactions` (hoặc bảng payout tương ứng).
+   - **Quy tắc giải ngân (`payout`):** Khi giải ngân tiền về cho Seller, chỉ sử dụng thông tin ngân hàng đã snapshot trong giao dịch ký quỹ đó, **TUYỆT ĐỐI KHÔNG** truy vấn động từ bảng `users` tại thời điểm giải ngân.
+
+---
+
+### 6.5. QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Tự động cập nhật uy tín qua Domain Events (`UpdateReputationUseCase`)
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (Task C8 - 2026-09-29):** Observer Pattern cho tính điểm uy tín sàn vé.
+
+1. **Ranh giới độc lập (Observer Pattern):**
+   - Module `payment` và `dispute` của Dev B **TUYỆT ĐỐI KHÔNG** inject hay gọi trực tiếp `UpdateReputationUseCase`. Mọi tương tác chỉ được phép thông qua phát sự kiện `TicketTransactionCompletedEvent` và `DisputeResolvedEvent` qua `ApplicationEventPublisher`.
+2. **Phase xử lý `AFTER_COMMIT`:**
+   - Điểm uy tín chỉ thay đổi sau khi transaction tiền bạc đã commit thành công. Nếu khâu tính điểm có lỗi, giao dịch tiền vẫn bảo toàn trọn vẹn (tiền quan trọng hơn điểm).
+3. **Cơ chế khoá lạc quan (Optimistic Locking) & Tự động thử lại (Retry):**
+   - Bản ghi `UserReputationScore` có trường `@Version`. Khi nhiều sự kiện cùng tác động vào một người dùng tại cùng thời điểm, `UpdateReputationUseCase` đã kích hoạt sẵn cơ chế retry tự động tối đa 3 lần (`MAX_RETRY = 3`), tự nạp lại bản ghi mới nhất từ CSDL để tính toán lại điểm.
+4. **Idempotency & Replay:**
+   - Dev B cần đảm bảo `TicketTransactionCompletedEvent` chỉ được publish 1 lần duy nhất cho mỗi giao dịch vé hoàn tất nhằm tránh cộng điểm lặp.
+
+---
+
+### 6.6. Lưu ý chung về H2 Console (Toàn đội)
 
 - Endpoint `/h2-console/**` hiện đang mở `permitAll()` và miễn CSRF, kèm cấu hình `headers().frameOptions().sameOrigin()` để phục vụ chạy và kiểm thử cơ sở dữ liệu trên môi trường phát triển cục bộ (`local`/`dev`).
 - Khi triển khai môi trường Production thực tế hoặc demo bên ngoài, cấu hình này bắt buộc phải được đóng lại hoặc giới hạn qua Spring Profile (`@Profile("local")`) để tránh rò rỉ toàn bộ cơ sở dữ liệu.
+
+---
+
+### 6.7. QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Hiển thị hồ sơ uy tín và Bảng xếp hạng (`ReputationController` - Task C9)
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (Task C9 - 2026-09-29):** Phục vụ thẩm định uy tín minh bạch cho khách vãng lai và người mua.
+
+1. **Các Endpoint công khai:**
+   - `GET /reputation/{userId}`: Trả về model view `"reputation/detail"`, chứa DTO `ReputationResponse` (điểm uy tín, tổng số giao dịch, giao dịch thành công, tỷ lệ thành công, ngày giao dịch cuối, đánh giá cấp độ uy tín...). Luôn trả về dữ liệu hợp lệ nhờ cơ chế idempotent `getOrCreate(userId)`.
+   - `GET /reputation/top?limit=N`: Trả về view `"reputation/top"`. Chặn trần/sàn `limit` trong `[1, 100]` (mặc định 10) qua kỹ thuật Clamp, ngăn ngừa truy vấn quá tải DB.
+2. **Quyền truy cập mở cho Guest:**
+   - Route `/reputation/**` được cấu hình `permitAll()` trong `SecurityConfig`. Khách vãng lai chưa có tài khoản hoặc chưa đăng nhập vẫn có thể thẩm tra toàn bộ lịch sử uy tín của người bán trước khi quyết định đăng ký hoặc mua vé.
+3. **Phối hợp liên module (Dành cho Dev A):**
+   - Khi Dev A hiện thực trang chi tiết vé (`GET /tickets/{id}`), có thể đặt hyperlink trỏ trực tiếp sang `/reputation/{sellerId}` để người mua xem ngay mức độ uy tín của người bán trước khi bấm nút "Mua vé / Ký quỹ".
+
 
