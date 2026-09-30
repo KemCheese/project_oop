@@ -91,7 +91,7 @@
                         <td style="color: #666; width: 150px;">Điểm uy tín:</td>
                         <td>
                             <strong style="font-size: 20px; color: #1976d2;"
-                                    th:text="${profile.reputationScore != null ? profile.reputationScore + ' / 100' : '100 / 100'}">100 / 100</strong>
+                                    th:text="${profile.reputationScore != null ? profile.reputationScore.intValue() + ' / 100' : '100 / 100'}">100 / 100</strong>
                         </td>
                     </tr>
                     <tr>

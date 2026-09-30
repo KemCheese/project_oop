@@ -99,7 +99,6 @@ class ReputationControllerTest {
             assertThat(response.getSuccessfulTransactions()).isEqualTo(8);
             assertThat(response.getDisputesWon()).isEqualTo(1);
             assertThat(response.getDisputesLost()).isEqualTo(1);
-            assertThat(response.getTotalGmv()).isEqualByComparingTo(new BigDecimal("5000000"));
             assertThat(response.getLastTransactionAt()).isNotNull();
 
             verify(updateReputationUseCase).getOrCreate(1L);

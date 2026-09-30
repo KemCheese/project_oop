@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -52,10 +53,10 @@ public class SecurityConfig {
                         .requestMatchers("/", "/register", "/login", "/error").permitAll()
                         // Form đăng vé mới của Dev A: bắt buộc đăng nhập (đặt TRƯỚC permitAll để không bị match nhầm bởi "/tickets/*")
                         .requestMatchers("/tickets/new").authenticated()
-                        // Danh sách vé và chi tiết vé — marketplace mở cho guest duyệt
-                        .requestMatchers("/tickets", "/tickets/*").permitAll()
-                        // Uy tín công khai — guest cần xem uy tín seller trước khi quyết định mua
-                        .requestMatchers("/reputation/**").permitAll()
+                        // Danh sách vé và chi tiết vé — marketplace mở cho guest duyệt (chỉ cho phép GET để bảo vệ POST /tickets tạo listing)
+                        .requestMatchers(HttpMethod.GET, "/tickets", "/tickets/*").permitAll()
+                        // Uy tín công khai — guest cần xem uy tín seller trước khi quyết định mua (chỉ GET)
+                        .requestMatchers(HttpMethod.GET, "/reputation/**").permitAll()
                         // Tài nguyên tĩnh và file người dùng tải lên
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/files/**").permitAll()
                         // Console H2 chỉ dùng khi phát triển

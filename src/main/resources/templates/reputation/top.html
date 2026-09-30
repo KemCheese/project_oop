@@ -23,7 +23,6 @@
                     <th>Mã người dùng</th>
                     <th>Điểm uy tín</th>
                     <th>Giao dịch thành công</th>
-                    <th>Tổng GMV (VND)</th>
                 </tr>
             </thead>
             <tbody>
@@ -33,9 +32,8 @@
                         <a th:href="@{/reputation/{id}(id=${seller.userId})}"
                            th:text="'#' + ${seller.userId}">#1</a>
                     </td>
-                    <td th:text="${seller.score}">100.00</td>
+                    <td th:text="${seller.score != null ? seller.score.intValue() : 100}">100</td>
                     <td th:text="${seller.successfulTransactions} ?: 0">0</td>
-                    <td th:text="${seller.totalGmv} ?: 0">0</td>
                 </tr>
             </tbody>
         </table>

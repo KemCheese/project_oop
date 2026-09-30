@@ -248,4 +248,96 @@ Do Dev C phụ trách cấu hình bảo mật tập trung tại [`SecurityConfig
    - **TUYỆT ĐỐI KHÔNG** sử dụng `UserProfileResponse` cho bất kỳ trang hoặc API công khai nào. DTO này chỉ dành riêng cho **chính chủ** xem hồ sơ cá nhân của mình tại route đã xác thực `GET /profile`.
    - **Bắt buộc sử dụng [`UserSummaryResponse`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/user/web/dto/UserSummaryResponse.java):** Khi cần hiển thị thông tin người bán cho khách mua hoặc khách vãng lai, Dev A bắt buộc dùng DTO `UserSummaryResponse` (chỉ chứa `id`, `email`, `fullName`, `role`, `status`, `reputationScore`). DTO này hoàn toàn không chứa bất kỳ trường ngân hàng nào, đảm bảo an toàn tuyệt đối.
 
+---
+
+### 6.9. ⚠️ CẢNH BÁO RỦI RO & RÀNG BUỘC CHO DEV A: Kiểm tra quyền sở hữu IDOR và bảo vệ CSRF trên các Action vé (SEC-01 & SEC-03)
+
+> **RỦI RO LỖ HỔNG IDOR & CSRF TRONG QUẢN LÝ VÉ:**
+> 1. **SEC-01 (IDOR - Insecure Direct Object Reference):** Người dùng có thể xóa, cập nhật hoặc sửa đổi vé của người khác nếu endpoint cập nhật/xóa vé chỉ nhận `ticketId` mà không kiểm tra người gọi có phải là `sellerId` của vé đó hay không (hoặc không có role ADMIN).
+> 2. **SEC-03 (Thiếu CSRF Token trên Form giao diện):** Các form thao tác nhạy cảm (đăng bán vé, hủy vé, mua vé) nếu không gửi kèm CSRF token hoặc dùng sai method (GET thay vì POST) có thể bị tấn công Cross-Site Request Forgery.
+
+**Quy tắc bắt buộc đối với Dev A:**
+- **Kiểm tra quyền sở hữu vé (SEC-01):**
+  - Trong Service layer (`TicketService`) hoặc Controller layer (`TicketController`), trước khi thực hiện logic chỉnh sửa trạng thái, cập nhật thông tin hoặc xóa vé:
+    ```java
+    Ticket ticket = ticketRepository.findById(ticketId)
+        .orElseThrow(() -> new TicketNotFoundException("Không tìm thấy vé"));
+    Long currentUserId = SecurityUtils.getCurrentUserId(); // hoặc Authentication
+    if (!ticket.getSellerId().equals(currentUserId) && !SecurityUtils.isAdmin()) {
+        throw new AccessDeniedException("Bạn không có quyền can thiệp vào vé này");
+    }
+    ```
+- **Bảo vệ CSRF và Method hợp lệ (SEC-03):**
+  - Mọi thao tác làm thay đổi dữ liệu (tạo vé, sửa vé, hủy bán, đặt cọc/mua vé) **bắt buộc dùng POST / PUT / DELETE**, tuyệt đối không dùng GET.
+  - Trong các template Thymeleaf form của Dev A, luôn đảm bảo thẻ `<form th:action="..." method="post">` được tự động render CSRF token hidden input (hoặc truyền header `X-CSRF-TOKEN` nếu gọi Ajax).
+
+---
+
+### 6.10. ⚠️ CẢNH BÁO RỦI RO & RÀNG BUỘC CHO DEV A: Chống Race Condition mua vé đồng thời bằng Khóa (CONC-01)
+
+> **RỦI RO MUA TRÙNG VÉ (DOUBLE-SPEND / OVERSELLING):** Khi một vé hot được đăng bán, nhiều người mua có thể nhấn nút "Mua ngay / Đặt chỗ" tại cùng một mili-giây. Nếu đọc trạng thái `AVAILABLE` đồng thời, cả 2 giao dịch đều vượt qua validation và dẫn đến 1 vé được bán cho 2 người.
+
+**Quy tắc bắt buộc đối với Dev A:**
+- Phải áp dụng cơ chế khóa ở tầng dữ liệu khi thực hiện nghiệp vụ đổi trạng thái vé từ `AVAILABLE` sang `RESERVED` hoặc `SOLD`.
+- **Giải pháp khuyến nghị (Pessimistic Write Lock):**
+  ```java
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT t FROM TicketJpaEntity t WHERE t.id = :id")
+  Optional<TicketJpaEntity> findByIdWithLock(@Param("id") Long id);
+  ```
+- Hoặc kết hợp `@Version` trên Entity `TicketJpaEntity` (Optimistic Locking) kèm xử lý retry khi bắt `OptimisticLockingFailureException`.
+
+---
+
+### 6.11. ⚠️ CẢNH BÁO RỦI RO & RÀNG BUỘC CHO DEV A: Chuẩn hóa phân tầng Hexagonal / DDD trong module Ticket (ARCH-01)
+
+> **RỦI RO VI PHẠM PHÂN TẦNG (LEAKY ABSTRACTION):** Entity JPA của hạ tầng bị rò rỉ trực tiếp ra ngoài Web Controller hoặc Controller tự ý thao tác gọi JPA Repository mà không thông qua Domain Service / UseCase Port.
+
+**Quy tắc bắt buộc đối với Dev A:**
+- Đảm bảo ranh giới phân tầng:
+  1. `web` (Controller) -> giao tiếp với `domain/service` hoặc `application` thông qua Command/Query hoặc DTO.
+  2. `domain` không phụ thuộc vào `web` hay `infrastructure`.
+  3. `TicketJpaEntity` chỉ nằm trong gói `infrastructure/persistence`, chuyển đổi qua lại với `Ticket` (Domain Entity) thông qua `TicketMapper`.
+
+---
+
+### 6.12. ⚠️ CẢNH BÁO RỦI RO & RÀNG BUỘC CHO DEV B: Xác thực chữ ký số HMAC / Token Webhook Payment (SEC-04)
+
+> **RỦI RO FAKE WEBHOOK THANH TOÁN (PAYMENT SPOOFING):** Endpoint tiếp nhận callback/webhook từ cổng thanh toán (VNPay, Momo, Stripe...) nếu không thẩm định chữ ký số (Checksum / HMAC SHA-256) sẽ cho phép kẻ xấu tự dựng request giả mạo báo trạng thái thanh toán thành công để cướp tiền hoặc vé.
+
+**Quy tắc bắt buộc đối với Dev B:**
+- Trong `PaymentWebhookController` hoặc `PaymentService`:
+  - **Bắt buộc kiểm tra Checksum/Signature:** Tính toán lại HMAC-SHA256 của toàn bộ payload/query parameters gửi về với `secret_key` bí mật được cấu hình trong `application.properties`.
+  - Nếu chữ ký không trùng khớp, lập tức từ chối và trả về HTTP 400 Bad Request hoặc 403 Forbidden.
+  - Phải kiểm tra tính lũy kế / idempotent của giao dịch: Không cộng tiền hay đổi trạng thái đơn hàng 2 lần nếu webhook gửi retry.
+
+---
+
+### 6.13. ⚠️ CẢNH BÁO RỦI RO & RÀNG BUỘC CHO DEV B: Đóng gói nghiệp vụ Dispute và Escrow vào Domain Service (ARCH-02)
+
+> **RỦI RO PHÂN TÁN LOGIC TRỌNG TÀI TRANH CHẤP:** Nghiệp vụ giải quyết tranh chấp (Dispute Resolution: hoàn tiền người mua hay giải ngân người bán, xử phạt uy tín) là logic nghiệp vụ tài chính cốt lõi, không được đặt rải rác trong Controller hoặc gọi thẳng repository.
+
+**Quy tắc bắt buộc đối với Dev B:**
+- Toàn bộ quy trình giải quyết Dispute:
+  1. Đổi trạng thái `Dispute` và `PaymentTransaction` (Escrow -> Refund / Release).
+  2. Xuất Domain Event `DisputeResolvedEvent` (đã có trong module shared) để module `reputation` lắng nghe và tự động trừ/cộng điểm uy tín.
+  - Tất cả phải được đóng gói gọn trong `DisputeService` / `Domain Service` của module `dispute`, đảm bảo tính toàn vẹn Transaction (`@Transactional`).
+
+---
+
+### 6.14. 🛡️ QUY CHUẨN BẢO VỆ ĐÃ KÍCH HOẠT BỞI DEV C (Active Contracts: SEC-02, CONC-02, PRIV-01)
+
+Các quy chuẩn và cơ chế bảo vệ sau đây đã được Dev C hoàn thành triển khai và kiểm thử thành công trong toàn hệ thống:
+
+1. **Bảo vệ Phân quyền HTTP Method trên Ticket & Reputation (SEC-02 - ĐÃ KÍCH HOẠT):**
+   - File: [`SecurityConfig.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/shared/config/SecurityConfig.java).
+   - Chi tiết: Matcher `.requestMatchers(HttpMethod.GET, "/tickets", "/tickets/*", "/reputation/**").permitAll()` chỉ mở công khai cho phương thức xem dữ liệu (GET). Mọi hành động `POST /tickets` (đăng bán vé) hoặc ghi dữ liệu đều bắt buộc phải đăng nhập (`authenticated`).
+2. **Khóa lạc quan chống ghi đè thông tin người dùng (CONC-02 - ĐÃ KÍCH HOẠT):**
+   - File: [`User.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/user/domain/User.java) & Migration [`V2__add_version_to_users.sql`](file:///d:/lam%20viec/FORK/project_oop/src/main/resources/db/migration/V2__add_version_to_users.sql).
+   - Chi tiết: Bổ sung trường `@Version private Long version;` vào Entity User. Mọi thao tác cập nhật đồng thời lên cùng một hồ sơ người dùng sẽ được JPA phát hiện và ngăn chặn xung đột (Optimistic Lock).
+3. **Ẩn dữ liệu nhạy cảm doanh thu GMV của người dùng (PRIV-01 - ĐÃ KÍCH HOẠT):**
+   - File: [`ReputationResponse.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/reputation/web/dto/ReputationResponse.java), [`ReputationController.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/reputation/web/ReputationController.java), [`detail.html`](file:///d:/lam%20viec/FORK/project_oop/src/main/resources/templates/reputation/detail.html), [`top.html`](file:///d:/lam%20viec/FORK/project_oop/src/main/resources/templates/reputation/top.html).
+   - Chi tiết: Đã loại bỏ hoàn toàn trường `totalGmv` khỏi API và giao diện uy tín công khai, bảo vệ bí mật kinh doanh và doanh số giao dịch của người dùng theo quy định bảo mật quyền riêng tư.
+
+
 

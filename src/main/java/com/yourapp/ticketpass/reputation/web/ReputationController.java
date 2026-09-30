@@ -108,7 +108,6 @@ public class ReputationController {
         response.setSuccessfulTransactions(score.getSuccessfulTransactions());
         response.setDisputesLost(score.getDisputesLost());
         response.setDisputesWon(score.getDisputesWon());
-        response.setTotalGmv(score.getTotalGmv());
         response.setLastTransactionAt(score.getLastTransactionAt());
         return response;
     }
