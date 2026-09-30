@@ -10,6 +10,7 @@ Cột **"Quyết định thiết kế"** là cột quan trọng nhất và cũng
 
 | Ngày | Module | Việc đã làm | Vấn đề gặp phải & cách giải quyết | Quyết định thiết kế | Việc tiếp theo |
 |---|---|---|---|---|---|
+| 2026-09-28 | web (giao diện) | Chuẩn bị UI Đăng nhập Google | Nhận yêu cầu từ Dev C về việc bổ sung nút "Đăng nhập bằng Google" trên form đăng nhập và đăng ký. | Dùng endpoint mặc định của Spring Security OAuth2: `/oauth2/authorization/google`. | Cập nhật file `auth/login.html` và `auth/register.html` |
 
 ## Ví dụ một dòng đã điền
 

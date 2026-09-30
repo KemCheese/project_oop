@@ -2,10 +2,18 @@ package com.yourapp.ticketpass.reputation.application;
 
 import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
+import com.yourapp.ticketpass.shared.event.DisputeOutcome;
 import com.yourapp.ticketpass.shared.event.DisputeResolvedEvent;
 import com.yourapp.ticketpass.shared.event.TicketTransactionCompletedEvent;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -38,9 +46,19 @@ import org.springframework.transaction.event.TransactionalEventListener;
  *
  * Chủ sở hữu: Người C
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UpdateReputationUseCase {
+
+    private static final BigDecimal MAX_SCORE = new BigDecimal("100.00");
+    private static final BigDecimal MIN_SCORE = new BigDecimal("0.00");
+    private static final BigDecimal INITIAL_SCORE = new BigDecimal("100.00");
+    private static final BigDecimal POINTS_TRANSACTION_COMPLETED = new BigDecimal("2");
+    private static final BigDecimal POINTS_DISPUTE_WON = BigDecimal.ONE;
+    private static final BigDecimal POINTS_DISPUTE_LOST = new BigDecimal("15");
+    private static final BigDecimal POINTS_LISTING_CANCELLED = new BigDecimal("10");
+    private static final int MAX_RETRY = 3;
 
     private final ReputationRepository reputationRepository;
 
@@ -51,13 +69,38 @@ public class UpdateReputationUseCase {
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onTicketTransactionCompleted(TicketTransactionCompletedEvent event) {
-        throw new UnsupportedOperationException(
-                "TODO [Người C] Prompt 2: với cả event.getSellerId() và event.getBuyerId(), gọi "
-                        + "getOrCreate(userId) rồi cộng 2 điểm (chặn trần 100.00), tăng "
-                        + "totalTransactions và successfulTransactions, cộng event.getSalePrice() vào "
-                        + "totalGmv của người bán, đặt lastTransactionAt = event.getOccurredAt(), lưu qua "
-                        + "reputationRepository.save; bắt OptimisticLockingFailureException để thử lại "
-                        + "vì nhiều event có thể cùng ghi một bản ghi.");
+        if (event == null) {
+            log.warn("Received null TicketTransactionCompletedEvent, ignoring");
+            return;
+        }
+
+        log.info("Processing TicketTransactionCompletedEvent for ticketId={}, sellerId={}, buyerId={}",
+                event.getTicketId(), event.getSellerId(), event.getBuyerId());
+
+        Instant occurredAt = event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now();
+
+        // 1. Cập nhật uy tín người bán: +2 điểm, tăng transactions, cộng GMV, ghi nhận lastTransactionAt
+        if (event.getSellerId() != null) {
+            updateWithRetry(event.getSellerId(), rep -> {
+                rep.setScore(clampScore(getScoreOrDefault(rep).add(POINTS_TRANSACTION_COMPLETED)));
+                rep.setTotalTransactions(getOrDefault(rep.getTotalTransactions()) + 1);
+                rep.setSuccessfulTransactions(getOrDefault(rep.getSuccessfulTransactions()) + 1);
+                BigDecimal currentGmv = rep.getTotalGmv() != null ? rep.getTotalGmv() : BigDecimal.ZERO;
+                BigDecimal salePrice = event.getSalePrice() != null ? event.getSalePrice() : BigDecimal.ZERO;
+                rep.setTotalGmv(currentGmv.add(salePrice).setScale(2, RoundingMode.HALF_UP));
+                rep.setLastTransactionAt(occurredAt);
+            });
+        }
+
+        // 2. Cập nhật uy tín người mua: +2 điểm, tăng transactions, ghi nhận lastTransactionAt (không cộng GMV)
+        if (event.getBuyerId() != null) {
+            updateWithRetry(event.getBuyerId(), rep -> {
+                rep.setScore(clampScore(getScoreOrDefault(rep).add(POINTS_TRANSACTION_COMPLETED)));
+                rep.setTotalTransactions(getOrDefault(rep.getTotalTransactions()) + 1);
+                rep.setSuccessfulTransactions(getOrDefault(rep.getSuccessfulTransactions()) + 1);
+                rep.setLastTransactionAt(occurredAt);
+            });
+        }
     }
 
     /**
@@ -67,12 +110,54 @@ public class UpdateReputationUseCase {
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onDisputeResolved(DisputeResolvedEvent event) {
-        throw new UnsupportedOperationException(
-                "TODO [Người C] Prompt 2: đọc event.getOutcome(); với BUYER_WINS thì người bán "
-                        + "-15 điểm và tăng disputesLost, người mua +1 điểm và tăng disputesWon; với "
-                        + "SELLER_WINS thì đảo lại; với WITHDRAWN thì không đổi điểm mà chỉ tăng "
-                        + "disputesOpenedAgainst của bên bị khiếu nại. Áp sàn 0.00 và trần 100.00, "
-                        + "lưu qua reputationRepository.save.");
+        if (event == null || event.getOutcome() == null) {
+            log.warn("Received null DisputeResolvedEvent or outcome, ignoring");
+            return;
+        }
+
+        log.info("Processing DisputeResolvedEvent for disputeId={}, outcome={}, sellerId={}, buyerId={}",
+                event.getDisputeId(), event.getOutcome(), event.getSellerId(), event.getBuyerId());
+
+        switch (event.getOutcome()) {
+            case BUYER_WINS -> {
+                // Người mua thắng: seller -15 điểm, tăng disputesLost; buyer +1 điểm, tăng disputesWon
+                if (event.getSellerId() != null) {
+                    updateWithRetry(event.getSellerId(), rep -> {
+                        rep.setScore(clampScore(getScoreOrDefault(rep).subtract(POINTS_DISPUTE_LOST)));
+                        rep.setDisputesLost(getOrDefault(rep.getDisputesLost()) + 1);
+                    });
+                }
+                if (event.getBuyerId() != null) {
+                    updateWithRetry(event.getBuyerId(), rep -> {
+                        rep.setScore(clampScore(getScoreOrDefault(rep).add(POINTS_DISPUTE_WON)));
+                        rep.setDisputesWon(getOrDefault(rep.getDisputesWon()) + 1);
+                    });
+                }
+            }
+            case SELLER_WINS -> {
+                // Người bán thắng: seller +1 điểm, tăng disputesWon; buyer -15 điểm, tăng disputesLost
+                if (event.getSellerId() != null) {
+                    updateWithRetry(event.getSellerId(), rep -> {
+                        rep.setScore(clampScore(getScoreOrDefault(rep).add(POINTS_DISPUTE_WON)));
+                        rep.setDisputesWon(getOrDefault(rep.getDisputesWon()) + 1);
+                    });
+                }
+                if (event.getBuyerId() != null) {
+                    updateWithRetry(event.getBuyerId(), rep -> {
+                        rep.setScore(clampScore(getScoreOrDefault(rep).subtract(POINTS_DISPUTE_LOST)));
+                        rep.setDisputesLost(getOrDefault(rep.getDisputesLost()) + 1);
+                    });
+                }
+            }
+            case WITHDRAWN -> {
+                // Rút đơn khiếu nại: không đổi điểm, chỉ tăng disputesOpenedAgainst cho seller
+                if (event.getSellerId() != null) {
+                    updateWithRetry(event.getSellerId(), rep -> {
+                        rep.setDisputesOpenedAgainst(getOrDefault(rep.getDisputesOpenedAgainst()) + 1);
+                    });
+                }
+            }
+        }
     }
 
     /**
@@ -81,11 +166,25 @@ public class UpdateReputationUseCase {
      * @param userId id thuần của người dùng
      * @return bản ghi điểm hiện có hoặc bản ghi vừa khởi tạo
      */
+    @Transactional
     public UserReputationScore getOrCreate(Long userId) {
-        throw new UnsupportedOperationException(
-                "TODO [Người C] Prompt 2: gọi reputationRepository.findByUserId(userId); nếu chưa có "
-                        + "thì tạo UserReputationScore mới với score = new BigDecimal(\"100.00\"), các bộ "
-                        + "đếm = 0, totalGmv = BigDecimal.ZERO rồi save và trả về.");
+        if (userId == null) {
+            throw new IllegalArgumentException("userId must not be null");
+        }
+        return reputationRepository.findByUserId(userId)
+                .orElseGet(() -> {
+                    UserReputationScore newScore = new UserReputationScore();
+                    newScore.setUserId(userId);
+                    newScore.setScore(INITIAL_SCORE);
+                    newScore.setTotalTransactions(0);
+                    newScore.setSuccessfulTransactions(0);
+                    newScore.setCancelledListings(0);
+                    newScore.setDisputesOpenedAgainst(0);
+                    newScore.setDisputesLost(0);
+                    newScore.setDisputesWon(0);
+                    newScore.setTotalGmv(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+                    return reputationRepository.save(newScore);
+                });
     }
 
     /**
@@ -93,9 +192,63 @@ public class UpdateReputationUseCase {
      *
      * @param sellerId id thuần của người bán
      */
+    @Transactional
     public void recordCancelledListing(Long sellerId) {
-        throw new UnsupportedOperationException(
-                "TODO [Người C] Prompt 2: gọi getOrCreate(sellerId), trừ 10 điểm với sàn 0.00, "
-                        + "tăng cancelledListings thêm 1 rồi lưu qua reputationRepository.save.");
+        if (sellerId == null) {
+            throw new IllegalArgumentException("sellerId must not be null");
+        }
+        log.info("Recording cancelled listing for sellerId={}", sellerId);
+        updateWithRetry(sellerId, rep -> {
+            rep.setScore(clampScore(getScoreOrDefault(rep).subtract(POINTS_LISTING_CANCELLED)));
+            rep.setCancelledListings(getOrDefault(rep.getCancelledListings()) + 1);
+        });
+    }
+
+    /**
+     * Thực hiện cập nhật điểm uy tín kèm cơ chế retry xử lý OptimisticLockingFailureException.
+     *
+     * @param userId id người dùng cần cập nhật
+     * @param updateAction lambda cập nhật các trường của entity
+     */
+    private void updateWithRetry(Long userId, Consumer<UserReputationScore> updateAction) {
+        int attempts = 0;
+        while (attempts < MAX_RETRY) {
+            attempts++;
+            try {
+                UserReputationScore rep = getOrCreate(userId);
+                updateAction.accept(rep);
+                reputationRepository.save(rep);
+                return;
+            } catch (OptimisticLockingFailureException ex) {
+                log.warn("Optimistic locking conflict when updating reputation for userId {} (attempt {}/{}): {}",
+                        userId, attempts, MAX_RETRY, ex.getMessage());
+                if (attempts >= MAX_RETRY) {
+                    log.error("Failed to update reputation for userId {} after {} attempts due to concurrent modifications",
+                            userId, MAX_RETRY, ex);
+                    throw ex;
+                }
+            }
+        }
+    }
+
+    private BigDecimal clampScore(BigDecimal score) {
+        if (score == null) {
+            return INITIAL_SCORE;
+        }
+        if (score.compareTo(MAX_SCORE) > 0) {
+            return MAX_SCORE;
+        }
+        if (score.compareTo(MIN_SCORE) < 0) {
+            return MIN_SCORE;
+        }
+        return score.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal getScoreOrDefault(UserReputationScore rep) {
+        return rep.getScore() != null ? rep.getScore() : INITIAL_SCORE;
+    }
+
+    private int getOrDefault(Integer val) {
+        return val != null ? val : 0;
     }
 }
