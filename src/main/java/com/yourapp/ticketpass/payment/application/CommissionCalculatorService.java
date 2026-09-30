@@ -1,12 +1,13 @@
 package com.yourapp.ticketpass.payment.application;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import org.springframework.stereotype.Service;
 
-import com.yourapp.ticketpass.payment.domain.CommissionTier;
 import com.yourapp.ticketpass.shared.config.CommissionConfig;
 import com.yourapp.ticketpass.shared.dto.CommissionBreakdown;
+import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,7 +33,7 @@ import lombok.RequiredArgsConstructor;
  * rẻ, phí theo tỷ lệ có thể nhỏ hơn 5.000đ nên phải nâng lên mức sàn 5.000đ. Khi mức sàn được
  * áp dụng, đánh dấu {@code minFeeApplied = true} trong {@link CommissionBreakdown}.</p>
  *
- * <p><b>Chặn trần:</b> chỉ bậc {@link CommissionTier#FROM_10M} có trần 400.000đ/giao dịch.
+ * <p><b>Chặn trần:</b> chỉ bậc FROM_10M (giá từ 10.000.000đ trở lên) có trần 400.000đ/giao dịch.
  * Khi trần được áp dụng, đánh dấu {@code capApplied = true}. Trường hợp cả mức sàn và trần đều
  * có thể áp dụng thì trần được xét sau cùng, vì trần là cam kết tuyệt đối với người dùng.</p>
  *
@@ -64,12 +65,22 @@ public class CommissionCalculatorService {
      * @param salePrice giá bán vé
      * @return bậc phí áp dụng cho giá bán này
      */
-    public CommissionTier resolveTier(BigDecimal salePrice) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: tra bảng phí theo giá bán — "
-                + "duyệt CommissionTier.values() theo thứ tự khai báo, trả về bậc đầu tiên có "
-                + "exclusiveUpperBound == null (bậc cao nhất) hoặc salePrice < exclusiveUpperBound; "
-                + "biên trên là exclusive nên salePrice đúng bằng 1.000.000đ phải rơi vào UNDER_5M. "
-                + "Ném BusinessRuleViolationException nếu salePrice null hoặc <= 0.");
+    public CommissionConfig.TierProperties resolveTier(BigDecimal salePrice) {
+        if (salePrice == null || salePrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessRuleViolationException(
+                    "Giá bán phải lớn hơn 0 để tra bảng hoa hồng, nhận được: " + salePrice);
+        }
+        for (CommissionConfig.TierProperties tier : commissionConfig.getTiers()) {
+            // exclusiveUpperBound == null nghĩa là bậc cao nhất, không có trần trên
+            if (tier.getExclusiveUpperBound() == null
+                    || salePrice.compareTo(tier.getExclusiveUpperBound()) < 0) {
+                return tier;
+            }
+        }
+        // Trường hợp này không xảy ra nếu cấu hình đúng (có bậc cao nhất với bound = null)
+        throw new BusinessRuleViolationException(
+                "Không tìm được bậc hoa hồng cho giá bán: " + salePrice
+                + ". Kiểm tra app.commission.tiers có bậc cao nhất với exclusive-upper-bound = null.");
     }
 
     /**
@@ -79,16 +90,48 @@ public class CommissionCalculatorService {
      * @return chi tiết hoa hồng gồm tổng, phần người mua, phần người bán và các cờ sàn/trần
      */
     public CommissionBreakdown calculate(BigDecimal salePrice) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: tính hoa hồng theo trình tự — "
-                + "(1) resolveTier(salePrice) để lấy bậc và tierRatePercent; "
-                + "(2) rawCommission = salePrice * ratePercent / 100; "
-                + "(3) áp mức sàn totalCommission = max(rawCommission, commissionConfig.getMinFee()) "
-                + "và đặt minFeeApplied = true nếu mức sàn được dùng; "
-                + "(4) nếu bậc có maxCommission thì totalCommission = min(totalCommission, maxCommission) "
-                + "và đặt capApplied = true nếu trần được dùng; "
-                + "(5) chia đôi theo buyerShareRatio/sellerShareRatio, làm tròn HALF_UP tới 2 chữ số thập phân "
-                + "rồi dồn phần lẻ vào sellerShare để bảo đảm buyerShare + sellerShare == totalCommission; "
-                + "(6) trả CommissionBreakdown với tierCode = tier.name().");
+        // (1) Tra bảng tìm bậc phí
+        CommissionConfig.TierProperties tier = resolveTier(salePrice);
+
+        // (2) rawCommission = salePrice * ratePercent / 100, làm tròn HALF_UP đến 2 chữ số thập phân
+        BigDecimal rawCommission = salePrice
+                .multiply(tier.getRatePercent())
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+        // (3) Áp mức sàn tối thiểu
+        boolean minFeeApplied = false;
+        BigDecimal totalCommission = rawCommission;
+        if (rawCommission.compareTo(commissionConfig.getMinFee()) < 0) {
+            totalCommission = commissionConfig.getMinFee();
+            minFeeApplied = true;
+        }
+
+        // (4) Chặn trần (chỉ áp nếu bậc có maxCommission)
+        boolean capApplied = false;
+        if (tier.getMaxCommission() != null
+                && totalCommission.compareTo(tier.getMaxCommission()) > 0) {
+            totalCommission = tier.getMaxCommission();
+            capApplied = true;
+        }
+
+        // (5) Chia đôi theo buyerShareRatio / sellerShareRatio
+        // Làm tròn HALF_UP phần buyer trước, dồn phần lẻ vào seller để tổng luôn khớp
+        BigDecimal buyerShare = totalCommission
+                .multiply(commissionConfig.getBuyerShareRatio())
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal sellerShare = totalCommission.subtract(buyerShare);
+
+        // (6) Trả CommissionBreakdown đầy đủ
+        return new CommissionBreakdown(
+                salePrice,
+                tier.getCode(),
+                tier.getRatePercent(),
+                rawCommission,
+                totalCommission,
+                buyerShare,
+                sellerShare,
+                minFeeApplied,
+                capApplied);
     }
 
     /**
@@ -98,8 +141,11 @@ public class CommissionCalculatorService {
      * @return số tiền hoa hồng người mua phải chịu
      */
     public BigDecimal buyerShareOf(CommissionBreakdown breakdown) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: trả về breakdown.getBuyerShare(), "
-                + "kiểm tra breakdown không null và ném BusinessRuleViolationException nếu null.");
+        if (breakdown == null) {
+            throw new BusinessRuleViolationException(
+                    "CommissionBreakdown không được null khi lấy phần hoa hồng người mua.");
+        }
+        return breakdown.getBuyerShare();
     }
 
     /**
@@ -109,7 +155,10 @@ public class CommissionCalculatorService {
      * @return số tiền hoa hồng người bán phải chịu
      */
     public BigDecimal sellerShareOf(CommissionBreakdown breakdown) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: trả về breakdown.getSellerShare(), "
-                + "kiểm tra breakdown không null và ném BusinessRuleViolationException nếu null.");
+        if (breakdown == null) {
+            throw new BusinessRuleViolationException(
+                    "CommissionBreakdown không được null khi lấy phần hoa hồng người bán.");
+        }
+        return breakdown.getSellerShare();
     }
 }

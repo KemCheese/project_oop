@@ -48,11 +48,28 @@ public class TaxWithholdingService {
      * @return chi tiết khấu thuế gồm số thuế và số thực nhận
      */
     public TaxWithholding withhold(BigDecimal sellerGrossAmount, Long sellerId) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: nếu taxConfig.isEnabled() = false hoặc "
-                + "!isTaxable(sellerGrossAmount) thì trả TaxWithholding với taxAmount = 0 và "
-                + "netAmount = sellerGrossAmount; ngược lại taxAmount = sellerGrossAmount * ratePercent / 100 "
-                + "(làm tròn HALF_UP tới 2 chữ số thập phân), netAmount = sellerGrossAmount - taxAmount; "
-                + "luôn gán mock = taxConfig.isMock() để báo rõ đây là số liệu mô phỏng của đồ án.");
+        if (!isTaxable(sellerGrossAmount)) {
+            // Không thuộc diện chịu thuế (disabled hoặc dưới ngưỡng): taxAmount = 0, netAmount = gross
+            return new TaxWithholding(
+                    sellerGrossAmount,
+                    taxConfig.getRatePercent(),
+                    BigDecimal.ZERO,
+                    sellerGrossAmount,
+                    taxConfig.isMock());
+        }
+
+        // taxAmount = sellerGrossAmount * ratePercent / 100, làm tròn HALF_UP tới 2 chữ số thập phân
+        BigDecimal taxAmount = sellerGrossAmount
+                .multiply(taxConfig.getRatePercent())
+                .divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal netAmount = sellerGrossAmount.subtract(taxAmount);
+
+        return new TaxWithholding(
+                sellerGrossAmount,
+                taxConfig.getRatePercent(),
+                taxAmount,
+                netAmount,
+                taxConfig.isMock());
     }
 
     /**
@@ -62,8 +79,9 @@ public class TaxWithholdingService {
      * @return {@code true} nếu khoản thu phải khấu thuế
      */
     public boolean isTaxable(BigDecimal sellerGrossAmount) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: trả true khi taxConfig.isEnabled() "
-                + "và sellerGrossAmount không null và sellerGrossAmount > taxConfig.getTaxableThreshold(); "
-                + "ngưỡng là exclusive nên khoản thu đúng bằng ngưỡng thì KHÔNG chịu thuế.");
+        // Điều kiện: enabled = true VÀ amount không null VÀ amount > threshold (exclusive)
+        return taxConfig.isEnabled()
+                && sellerGrossAmount != null
+                && sellerGrossAmount.compareTo(taxConfig.getTaxableThreshold()) > 0;
     }
 }
