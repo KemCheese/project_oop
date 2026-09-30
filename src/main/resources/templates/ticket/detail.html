@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<!--
+  Trang chi tiet ve tren san TicketPass.
+  Hien thi thong tin day du + nut hanh dong theo trang thai ve va vai tro nguoi dung.
+
+  Model attributes:
+    - ticket        : TicketResponse
+    - currentUserId : Long (null neu chua dang nhap)
+    - isSeller      : Boolean
+    - isBuyer       : Boolean
+
+  Chu so huu: Nguoi A
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${ticket.title} + ' - TicketPass'">Chi tiet ve - TicketPass</title>
+    <style>
+        /* ===== Design Tokens ===== */
+        :root {
+            --font-base: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --color-primary: #1e40af;
+            --color-primary-hover: #1e3a8a;
+            --color-primary-surface: #eff6ff;
+            --color-accent: #c2410c;
+            --color-surface: #ffffff;
+            --color-bg: #f1f5f9;
+            --color-border: #e2e8f0;
+            --color-text: #0f172a;
+            --color-text-secondary: #475569;
+            --color-text-muted: #94a3b8;
+            --color-success: #15803d;
+            --color-success-surface: #f0fdf4;
+            --color-success-border: #86efac;
+            --color-warning: #b45309;
+            --color-warning-surface: #fffbeb;
+            --color-warning-border: #fcd34d;
+            --color-danger: #b91c1c;
+            --color-danger-surface: #fef2f2;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+            --transition: 0.2s ease;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-base);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== Header ===== */
+        .site-header {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+
+        .site-logo {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-primary);
+            text-decoration: none;
+            letter-spacing: -0.3px;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 20px;
+        }
+
+        .header-nav a {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--transition);
+        }
+
+        .header-nav a:hover {
+            color: var(--color-primary);
+        }
+
+        /* ===== Page ===== */
+        .page-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 32px 24px 64px;
+        }
+
+        /* ===== Breadcrumb ===== */
+        .breadcrumb {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            margin-bottom: 20px;
+        }
+
+        .breadcrumb a {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            color: var(--color-primary);
+        }
+
+        .breadcrumb .sep {
+            margin: 0 6px;
+        }
+
+        /* ===== Detail Layout ===== */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 28px;
+            align-items: start;
+        }
+
+        /* ===== Image Section ===== */
+        .ticket-image-wrap {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .ticket-image-wrap img {
+            width: 100%;
+            display: block;
+            object-fit: contain;
+            max-height: 480px;
+            background: #f0f2f5;
+        }
+
+        .image-placeholder {
+            aspect-ratio: 16 / 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f2f5;
+            color: var(--color-text-muted);
+            font-size: 14px;
+        }
+
+        /* ===== QR Image (chi hien khi duoc phep) ===== */
+        .qr-section {
+            margin-top: 16px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+        }
+
+        .qr-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .qr-section img {
+            max-width: 200px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border);
+        }
+
+        /* ===== Info Panel ===== */
+        .info-panel {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .status-LISTED {
+            background: var(--color-primary-surface);
+            color: var(--color-primary);
+        }
+
+        .status-PAYMENT_ESCROWED {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-DEPOSIT_LOCKED {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-TRANSFERRED {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .status-AWAITING_USE {
+            background: var(--color-success-surface);
+            color: var(--color-success);
+        }
+
+        .status-AUTO_COMPLETE {
+            background: var(--color-success-surface);
+            color: var(--color-success);
+        }
+
+        .status-DISPUTE_UNDER_REVIEW {
+            background: var(--color-danger-surface);
+            color: var(--color-danger);
+        }
+
+        .status-RESOLVED_BUYER_WINS {
+            background: #fce7f3;
+            color: #9d174d;
+        }
+
+        .status-RESOLVED_SELLER_WINS {
+            background: #fce7f3;
+            color: #9d174d;
+        }
+
+        /* Type Badge */
+        .type-badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 6px;
+        }
+
+        .type-MOVIE {
+            background: var(--color-primary-surface);
+            color: var(--color-primary);
+        }
+
+        .type-CONCERT {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .type-BUS {
+            background: #f0fdfa;
+            color: #0d9488;
+        }
+
+
+        .ticket-title {
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+
+        .ticket-event {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-bottom: 20px;
+        }
+
+        /* Price */
+        .price-block {
+            padding: 16px 0;
+            border-top: 1px solid var(--color-border);
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 20px;
+        }
+
+        .sale-price {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-accent);
+            line-height: 1.2;
+        }
+
+        .original-price {
+            font-size: 14px;
+            color: var(--color-text-muted);
+            margin-top: 2px;
+        }
+
+        .original-price span {
+            text-decoration: line-through;
+        }
+
+        /* Info Rows */
+        .info-table {
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 8px 0;
+            font-size: 14px;
+            gap: 12px;
+        }
+
+        .info-row+.info-row {
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .info-label {
+            color: var(--color-text-muted);
+            flex-shrink: 0;
+            min-width: 100px;
+        }
+
+        .info-value {
+            color: var(--color-text);
+            text-align: right;
+            word-break: break-word;
+        }
+
+        /* Transfer Instruction */
+        .transfer-box {
+            background: var(--color-warning-surface);
+            border: 1px solid var(--color-warning-border);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            margin-bottom: 20px;
+        }
+
+        .transfer-box-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-warning);
+            margin-bottom: 6px;
+        }
+
+        .transfer-box-content {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+
+        /* Dispute Window */
+        .dispute-info {
+            background: var(--color-success-surface);
+            border: 1px solid var(--color-success-border);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: var(--color-success);
+        }
+
+        /* ===== Action Buttons ===== */
+        .action-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 11px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: background var(--transition);
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-success {
+            background: var(--color-success);
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            background: #166534;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-outline:hover {
+            background: #f8fafc;
+        }
+
+        .btn-danger-outline {
+            background: transparent;
+            color: var(--color-danger);
+            border: 1px solid #fca5a5;
+        }
+
+        .btn-danger-outline:hover {
+            background: var(--color-danger-surface);
+        }
+
+        /* Cancel form inline */
+        .cancel-form {
+            margin-top: 12px;
+        }
+
+        .cancel-form .cancel-reason {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-family: inherit;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+            outline: none;
+        }
+
+        .cancel-form .cancel-reason:focus {
+            border-color: #fca5a5;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-panel {
+                order: -1;
+            }
+
+            .page-container {
+                padding: 16px 16px 48px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== Header ===== -->
+    <header class="site-header">
+        <div class="header-inner">
+            <a th:href="@{/}" class="site-logo">TicketPass</a>
+            <nav class="header-nav">
+                <a th:href="@{/tickets}">Ve dang ban</a>
+                <a th:href="@{/login}">Dang nhap</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ===== Main Content ===== -->
+    <div class="page-container">
+
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+            <a th:href="@{/tickets}">Ve dang ban</a>
+            <span class="sep">/</span>
+            <span th:text="${ticket.title}">Chi tiet</span>
+        </div>
+
+        <div class="detail-grid">
+
+            <!-- ===== Left: Image ===== -->
+            <div>
+                <div class="ticket-image-wrap">
+                    <img th:if="${ticket.ticketImageUrl != null}" th:src="${ticket.ticketImageUrl}"
+                        alt="Anh ve cong khai">
+                    <div th:if="${ticket.ticketImageUrl == null}" class="image-placeholder">
+                        Chua co anh ve
+                    </div>
+                </div>
+
+                <!-- QR Image: chi hien cho buyer sau khi ve o trang thai TRANSFERRED tro di -->
+                <div class="qr-section" th:if="${ticket.qrImageUrl != null && isBuyer != null && isBuyer
+                          && (ticket.status.name() == 'TRANSFERRED'
+                              || ticket.status.name() == 'AWAITING_USE'
+                              || ticket.status.name() == 'AUTO_COMPLETE')}">
+                    <div class="qr-section-title">Anh QR check-in (chi ban thay)</div>
+                    <img th:src="${ticket.qrImageUrl}" alt="Anh QR ve">
+                </div>
+            </div>
+
+            <!-- ===== Right: Info Panel ===== -->
+            <div class="info-panel">
+
+                <!-- Status + Type -->
+                <div>
+                    <span class="status-badge" th:classappend="'status-' + ${ticket.status.name()}"
+                        th:text="${ticket.status.name()}">LISTED</span>
+                    <span class="type-badge" th:classappend="'type-' + ${ticket.ticketType.name()}"
+                        th:text="${ticket.ticketType.name()}">MOVIE</span>
+                </div>
+
+                <!-- Title -->
+                <h1 class="ticket-title" th:text="${ticket.title}">Ten ve</h1>
+                <div class="ticket-event" th:text="${ticket.eventName}">Ten su kien</div>
+
+                <!-- Price -->
+                <div class="price-block">
+                    <div class="sale-price"
+                        th:text="${#numbers.formatDecimal(ticket.salePrice, 0, 'COMMA', 0, 'POINT')} + ' VND'">100.000
+                        VND</div>
+                    <div class="original-price" th:if="${ticket.originalPrice != null}">
+                        Gia goc: <span
+                            th:text="${#numbers.formatDecimal(ticket.originalPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'">150.000
+                            VND</span>
+                    </div>
+                </div>
+
+                <!-- Info Table -->
+                <div class="info-table">
+                    <div class="info-row" th:if="${ticket.venue != null && !ticket.venue.isBlank()}">
+                        <span class="info-label">Dia diem</span>
+                        <span class="info-value" th:text="${ticket.venue}"></span>
+                    </div>
+                    <div class="info-row" th:if="${ticket.seatInfo != null && !ticket.seatInfo.isBlank()}">
+                        <span class="info-label">Ghe / Cho</span>
+                        <span class="info-value" th:text="${ticket.seatInfo}"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Thoi gian</span>
+                        <span class="info-value"
+                            th:text="${#temporals.format(ticket.eventStartAt, 'HH:mm - dd/MM/yyyy')}">20:00 -
+                            15/10/2026</span>
+                    </div>
+                    <div class="info-row" th:if="${ticket.createdAt != null}">
+                        <span class="info-label">Ngay dang</span>
+                        <span class="info-value"
+                            th:text="${#temporals.format(ticket.createdAt, 'dd/MM/yyyy')}">01/10/2026</span>
+                    </div>
+                </div>
+
+                <!-- Transfer Instruction (hien khi co) -->
+                <div class="transfer-box"
+                    th:if="${ticket.transferInstruction != null && !ticket.transferInstruction.isBlank()}">
+                    <div class="transfer-box-title">Huong dan chuyen ve</div>
+                    <div class="transfer-box-content" th:text="${ticket.transferInstruction}"></div>
+                </div>
+
+                <!-- Dispute Window (hien khi dang cho khieu nai) -->
+                <div class="dispute-info" th:if="${ticket.disputeWindowClosesAt != null
+                     && (ticket.status.name() == 'AWAITING_USE')}">
+                    Cua so khieu nai dong luc:
+                    <strong th:text="${#temporals.format(ticket.disputeWindowClosesAt, 'HH:mm dd/MM/yyyy')}">12:00
+                        20/10/2026</strong>
+                </div>
+
+                <!-- ===== Action Buttons ===== -->
+                <div class="action-group">
+
+                    <!-- Guest: chua dang nhap → nut dang nhap de mua -->
+                    <a th:if="${currentUserId == null && ticket.status.name() == 'LISTED'}" th:href="@{/login}"
+                        class="btn btn-primary">Dang nhap de mua ve nay</a>
+
+                    <!-- Seller: ve LISTED → nut huy listing -->
+                    <div th:if="${isSeller != null && isSeller && ticket.status.name() == 'LISTED'}">
+                        <button type="button" class="btn btn-danger-outline"
+                            onclick="document.getElementById('cancelSection').style.display='block'; this.style.display='none';">
+                            Huy dang ve
+                        </button>
+                        <div id="cancelSection" class="cancel-form" style="display:none;">
+                            <form method="post" th:action="@{/tickets/{id}/cancel(id=${ticket.id})}">
+                                <input type="text" name="reason" class="cancel-reason"
+                                    placeholder="Ly do huy (bat buoc)" required maxlength="500">
+                                <button type="submit" class="btn btn-danger-outline">Xac nhan huy</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Seller: ve DEPOSIT_LOCKED → nut xac nhan da chuyen ve -->
+                    <form th:if="${isSeller != null && isSeller && ticket.status.name() == 'DEPOSIT_LOCKED'}"
+                        method="post" th:action="@{/tickets/{id}/transfer(id=${ticket.id})}">
+                        <button type="submit" class="btn btn-primary">Xac nhan da chuyen ve</button>
+                    </form>
+
+                    <!-- Buyer: ve TRANSFERRED → nut xac nhan da nhan ve -->
+                    <form th:if="${isBuyer != null && isBuyer && ticket.status.name() == 'TRANSFERRED'}" method="post"
+                        th:action="@{/tickets/{id}/received(id=${ticket.id})}">
+                        <button type="submit" class="btn btn-success">Xac nhan da nhan ve</button>
+                    </form>
+
+                    <!-- Back to list -->
+                    <a th:href="@{/tickets}" class="btn btn-outline">Quay lai danh sach</a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

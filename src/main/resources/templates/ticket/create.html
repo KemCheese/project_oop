@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<!--
+  Form dang ve moi tren san TicketPass.
+  Upload anh cong khai + anh QR an, nhap thong tin ve theo loai.
+  Hien thi loi validation inline (BindingResult).
+
+  Model attributes:
+    - createTicketRequest : CreateTicketRequest (form object)
+    - ticketTypes         : TicketType[]
+
+  Chu so huu: Nguoi A
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dang ve moi - TicketPass</title>
+    <style>
+        /* ===== Design Tokens ===== */
+        :root {
+            --font-base: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --color-primary: #1e40af;
+            --color-primary-hover: #1e3a8a;
+            --color-surface: #ffffff;
+            --color-bg: #f1f5f9;
+            --color-border: #e2e8f0;
+            --color-border-focus: #93c5fd;
+            --color-text: #0f172a;
+            --color-text-secondary: #475569;
+            --color-text-muted: #94a3b8;
+            --color-danger: #b91c1c;
+            --color-danger-surface: #fef2f2;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+            --transition: 0.2s ease;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-base);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== Header ===== */
+        .site-header {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+
+        .site-logo {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-primary);
+            text-decoration: none;
+            letter-spacing: -0.3px;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 20px;
+        }
+
+        .header-nav a {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--transition);
+        }
+
+        .header-nav a:hover {
+            color: var(--color-primary);
+        }
+
+        /* ===== Page ===== */
+        .page-container {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 32px 24px 64px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-bottom: 28px;
+        }
+
+        /* ===== Global Error ===== */
+        .global-error {
+            background: var(--color-danger-surface);
+            border: 1px solid #fca5a5;
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: var(--color-danger);
+        }
+
+        /* ===== Form Card ===== */
+        .form-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 28px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .form-section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .form-section+.form-section {
+            margin-top: 28px;
+        }
+
+        /* ===== Form Fields ===== */
+        .field {
+            margin-bottom: 18px;
+        }
+
+        .field:last-child {
+            margin-bottom: 0;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .field-label .required {
+            color: var(--color-danger);
+            margin-left: 2px;
+        }
+
+        .field-input {
+            width: 100%;
+            padding: 9px 12px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--color-text);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            transition: border-color var(--transition), box-shadow var(--transition);
+            outline: none;
+        }
+
+        .field-input:focus {
+            border-color: var(--color-border-focus);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        }
+
+        .field-input.has-error {
+            border-color: var(--color-danger);
+        }
+
+        .field-input.has-error:focus {
+            box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
+        }
+
+        select.field-input {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+
+        .field-error {
+            font-size: 12px;
+            color: var(--color-danger);
+            margin-top: 4px;
+        }
+
+        .field-hint {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+
+        /* ===== Two Column Row ===== */
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* ===== File Upload ===== */
+        .file-upload-area {
+            position: relative;
+            border: 2px dashed var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color var(--transition), background var(--transition);
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--color-primary);
+            background: #f8faff;
+        }
+
+        .file-upload-area.has-error {
+            border-color: var(--color-danger);
+        }
+
+        .file-upload-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            margin-bottom: 8px;
+            color: var(--color-text-muted);
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+
+        .file-name {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--color-primary);
+            font-weight: 500;
+            word-break: break-all;
+            display: none;
+        }
+
+        /* ===== Submit ===== */
+        .form-actions {
+            margin-top: 28px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: background var(--transition);
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 640px) {
+            .page-container {
+                padding: 20px 16px 48px;
+            }
+
+            .form-card {
+                padding: 20px;
+            }
+
+            .field-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column-reverse;
+            }
+
+            .form-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== Header ===== -->
+    <header class="site-header">
+        <div class="header-inner">
+            <a th:href="@{/}" class="site-logo">TicketPass</a>
+            <nav class="header-nav">
+                <a th:href="@{/tickets}">Ve dang ban</a>
+                <a th:href="@{/profile}">Ho so</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ===== Main Content ===== -->
+    <div class="page-container">
+
+        <h1 class="page-title">Dang ve moi</h1>
+        <p class="page-subtitle">Dien day du thong tin ve va tai len anh de dang ban tren san.</p>
+
+        <!-- Global Errors -->
+        <div class="global-error" th:if="${#fields.hasGlobalErrors()}" th:each="err : ${#fields.globalErrors()}"
+            th:text="${err}"></div>
+
+        <form method="post" th:action="@{/tickets}" th:object="${createTicketRequest}" enctype="multipart/form-data"
+            novalidate>
+
+            <div class="form-card">
+
+                <!-- Section: Thong tin co ban -->
+                <div class="form-section">
+                    <div class="form-section-title">Thong tin co ban</div>
+
+                    <div class="field">
+                        <label class="field-label" for="ticketType">
+                            Loai ve <span class="required">*</span>
+                        </label>
+                        <select id="ticketType" th:field="*{ticketType}"
+                            th:classappend="${#fields.hasErrors('ticketType')} ? 'has-error'" class="field-input">
+                            <option value="">-- Chon loai ve --</option>
+                            <option th:each="type : ${ticketTypes}" th:value="${type.name()}" th:text="${type.name()}">
+                            </option>
+                        </select>
+                        <div class="field-error" th:if="${#fields.hasErrors('ticketType')}" th:errors="*{ticketType}">
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="title">
+                            Tieu de ve <span class="required">*</span>
+                        </label>
+                        <input type="text" id="title" th:field="*{title}" maxlength="200"
+                            th:classappend="${#fields.hasErrors('title')} ? 'has-error'" class="field-input"
+                            placeholder="VD: Ve xem phim Avengers 20h ngay 15/10">
+                        <div class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="eventName">
+                            Ten su kien <span class="required">*</span>
+                        </label>
+                        <input type="text" id="eventName" th:field="*{eventName}" maxlength="200"
+                            th:classappend="${#fields.hasErrors('eventName')} ? 'has-error'" class="field-input"
+                            placeholder="VD: Avengers: Endgame">
+                        <div class="field-error" th:if="${#fields.hasErrors('eventName')}" th:errors="*{eventName}">
+                        </div>
+                    </div>
+
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label" for="venue">Dia diem</label>
+                            <input type="text" id="venue" th:field="*{venue}" maxlength="255" class="field-input"
+                                placeholder="VD: CGV Vincom Ba Trieu">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="seatInfo">Thong tin ghe</label>
+                            <input type="text" id="seatInfo" th:field="*{seatInfo}" maxlength="120" class="field-input"
+                                placeholder="VD: H7, H8">
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="eventStartAt">
+                            Thoi gian su kien <span class="required">*</span>
+                        </label>
+                        <input type="datetime-local" id="eventStartAt" th:field="*{eventStartAt}"
+                            th:classappend="${#fields.hasErrors('eventStartAt')} ? 'has-error'" class="field-input">
+                        <div class="field-error" th:if="${#fields.hasErrors('eventStartAt')}"
+                            th:errors="*{eventStartAt}"></div>
+                    </div>
+                </div>
+
+                <!-- Section: Gia ban -->
+                <div class="form-section">
+                    <div class="form-section-title">Gia ve</div>
+
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label" for="originalPrice">
+                                Gia goc (VND) <span class="required">*</span>
+                            </label>
+                            <input type="number" id="originalPrice" th:field="*{originalPrice}" min="0" step="1000"
+                                th:classappend="${#fields.hasErrors('originalPrice')} ? 'has-error'" class="field-input"
+                                placeholder="0">
+                            <div class="field-error" th:if="${#fields.hasErrors('originalPrice')}"
+                                th:errors="*{originalPrice}"></div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="salePrice">
+                                Gia ban (VND) <span class="required">*</span>
+                            </label>
+                            <input type="number" id="salePrice" th:field="*{salePrice}" min="1000" step="1000"
+                                th:classappend="${#fields.hasErrors('salePrice')} ? 'has-error'" class="field-input"
+                                placeholder="0">
+                            <div class="field-error" th:if="${#fields.hasErrors('salePrice')}" th:errors="*{salePrice}">
+                            </div>
+                            <div class="field-hint">Gia ban khong duoc vuot qua gia goc.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Nha phat hanh -->
+                <div class="form-section">
+                    <div class="form-section-title">Nha phat hanh (tuy chon)</div>
+
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label" for="providerName">Don vi phat hanh</label>
+                            <input type="text" id="providerName" th:field="*{providerName}" maxlength="100"
+                                class="field-input" placeholder="VD: CGV, Ticketbox">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="providerOrderCode">Ma don hang</label>
+                            <input type="text" id="providerOrderCode" th:field="*{providerOrderCode}" maxlength="120"
+                                class="field-input" placeholder="VD: ORD-123456">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Upload anh -->
+                <div class="form-section">
+                    <div class="form-section-title">Anh ve</div>
+
+                    <div class="field">
+                        <label class="field-label">
+                            Anh ve cong khai <span class="required">*</span>
+                        </label>
+                        <div class="file-upload-area"
+                            th:classappend="${#fields.hasErrors('ticketImageStorageKey')} ? 'has-error'"
+                            id="ticketImageArea">
+                            <input type="file" name="ticketImage" accept="image/*"
+                                onchange="showFileName(this, 'ticketImageName')">
+                            <div class="upload-icon">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                            </div>
+                            <div class="upload-text">Chon anh ve cong khai</div>
+                            <div class="upload-hint">Nguoi mua se thay anh nay truoc khi mua. JPG, PNG (toi da 25MB)
+                            </div>
+                            <div class="file-name" id="ticketImageName"></div>
+                        </div>
+                        <div class="field-error" th:if="${#fields.hasErrors('ticketImageStorageKey')}"
+                            th:errors="*{ticketImageStorageKey}"></div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label">
+                            Anh QR an (check-in) <span class="required">*</span>
+                        </label>
+                        <div class="file-upload-area"
+                            th:classappend="${#fields.hasErrors('qrImageStorageKey')} ? 'has-error'" id="qrImageArea">
+                            <input type="file" name="qrImage" accept="image/*"
+                                onchange="showFileName(this, 'qrImageName')">
+                            <div class="upload-icon">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5">
+                                    <rect x="3" y="3" width="7" height="7" />
+                                    <rect x="14" y="3" width="7" height="7" />
+                                    <rect x="3" y="14" width="7" height="7" />
+                                    <path d="M14 14h3v3h-3zM20 14v3h-3M14 20h3M20 20" />
+                                </svg>
+                            </div>
+                            <div class="upload-text">Chon anh QR an</div>
+                            <div class="upload-hint">Anh nay chi duoc mo khoa cho nguoi mua sau khi thanh toan va dat
+                                coc.</div>
+                            <div class="file-name" id="qrImageName"></div>
+                        </div>
+                        <div class="field-error" th:if="${#fields.hasErrors('qrImageStorageKey')}"
+                            th:errors="*{qrImageStorageKey}"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <a th:href="@{/tickets}" class="btn btn-secondary">Huy</a>
+                <button type="submit" class="btn btn-primary">Dang ve</button>
+            </div>
+
+        </form>
+
+    </div>
+
+    <script>
+        function showFileName(input, targetId) {
+            var nameEl = document.getElementById(targetId);
+            if (input.files && input.files.length > 0) {
+                nameEl.textContent = input.files[0].name;
+                nameEl.style.display = 'block';
+            } else {
+                nameEl.style.display = 'none';
+            }
+        }
+    </script>
+
+</body>
+
+</html>
