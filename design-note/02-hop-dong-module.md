@@ -233,4 +233,19 @@ Do Dev C phụ trách cấu hình bảo mật tập trung tại [`SecurityConfig
 3. **Phối hợp liên module (Dành cho Dev A):**
    - Khi Dev A hiện thực trang chi tiết vé (`GET /tickets/{id}`), có thể đặt hyperlink trỏ trực tiếp sang `/reputation/{sellerId}` để người mua xem ngay mức độ uy tín của người bán trước khi bấm nút "Mua vé / Ký quỹ".
 
+---
+
+### 6.8. ⚠️ CẢNH BÁO RỦI RO & RÀNG BUỘC CHO DEV A: Bảo vệ thông tin tài khoản ngân hàng — Tuyệt đối KHÔNG tái sử dụng UserProfileResponse cho Endpoint công khai (RR-1)
+
+> **RỦI RO RÒ RỈ THÔNG TIN NHẠY CẢM (DATA LEAK):** Lộ số tài khoản ngân hàng người dùng ra ngoài Internet nếu dùng sai DTO.
+
+1. **Ngữ cảnh nghiệp vụ (Task C10):**
+   - Để phục vụ giao diện xem hồ sơ cá nhân (`GET /profile`), class DTO [`UserProfileResponse`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/user/web/dto/UserProfileResponse.java) đã được bổ sung các trường thông tin tài khoản ngân hàng: `bankName`, `bankAccountNumber`, `bankAccountHolder`.
+   - Tại màn hình cá nhân của người dùng, số tài khoản ngân hàng đã được Controller thực hiện che dấu (masking) chỉ giữ 4 số cuối (ví dụ `******7890`) trước khi đẩy vào view HTML.
+2. **Rủi ro tiềm ẩn đối với Dev A:**
+   - Trong tương lai, khi Dev A thiết kế tính năng xem "Hồ sơ người bán" công khai (`GET /users/{id}` hoặc modal popup thông tin người bán trên trang chi tiết vé), nếu Dev A tiện tay tái sử dụng DTO `UserProfileResponse`, toàn bộ số tài khoản ngân hàng, tên ngân hàng và chủ tài khoản của người bán sẽ bị gửi công khai ra trình duyệt của khách vãng lai và hacker.
+3. **Quy tắc bắt buộc đối với Dev A:**
+   - **TUYỆT ĐỐI KHÔNG** sử dụng `UserProfileResponse` cho bất kỳ trang hoặc API công khai nào. DTO này chỉ dành riêng cho **chính chủ** xem hồ sơ cá nhân của mình tại route đã xác thực `GET /profile`.
+   - **Bắt buộc sử dụng [`UserSummaryResponse`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/user/web/dto/UserSummaryResponse.java):** Khi cần hiển thị thông tin người bán cho khách mua hoặc khách vãng lai, Dev A bắt buộc dùng DTO `UserSummaryResponse` (chỉ chứa `id`, `email`, `fullName`, `role`, `status`, `reputationScore`). DTO này hoàn toàn không chứa bất kỳ trường ngân hàng nào, đảm bảo an toàn tuyệt đối.
+
 

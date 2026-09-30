@@ -182,6 +182,29 @@ class UserProfileServiceTest {
         }
 
         @Test
+        @DisplayName("Cập nhật với số điện thoại rỗng / blank → chuyển thành null và reset phoneVerified")
+        void updateProfile_phoneBlank_normalizesToNullAndResetsPhoneVerified() {
+            // Arrange
+            sampleUser.setPhoneNumber("0901234567");
+            sampleUser.setPhoneVerified(true);
+            when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            UpdateProfileRequest request = new UpdateProfileRequest();
+            request.setFullName("Ngọc Hoàng Mới");
+            request.setPhoneNumber("   "); // chuỗi rỗng / khoảng trắng
+
+            // Act
+            UserProfileResponse response = userProfileService.updateProfile(1L, request);
+
+            // Assert
+            assertThat(response.getFullName()).isEqualTo("Ngọc Hoàng Mới");
+            assertThat(sampleUser.getPhoneNumber()).isNull();
+            assertThat(sampleUser.isPhoneVerified()).isFalse();
+            verify(userRepository).save(sampleUser);
+        }
+
+        @Test
         @DisplayName("Ném ResourceNotFoundException khi user không tồn tại")
         void updateProfile_userNotFound_throwsException() {
             // Arrange

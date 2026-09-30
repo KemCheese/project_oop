@@ -99,7 +99,7 @@ public class UserProfileService {
 
         // Kiểm tra thay đổi số điện thoại → reset cờ xác minh
         String oldPhone = user.getPhoneNumber();
-        String newPhone = request.getPhoneNumber() != null
+        String newPhone = (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty())
                 ? request.getPhoneNumber().trim()
                 : null;
 
@@ -243,8 +243,14 @@ public class UserProfileService {
         response.setRole(user.getRole());
         response.setStatus(user.getStatus());
         response.setEmailVerified(user.isEmailVerified());
+        response.setPhoneVerified(user.isPhoneVerified());
         response.setIdentityVerified(user.isIdentityVerified());
         response.setCreatedAt(user.getCreatedAt());
+
+        // Thông tin tài khoản ngân hàng (RR-1: tầng web sẽ masking trước khi hiển thị)
+        response.setBankName(user.getBankName());
+        response.setBankAccountNumber(user.getBankAccountNumber());
+        response.setBankAccountHolder(user.getBankAccountHolder());
 
         // Dựng URL avatar qua FileStorageService (Adapter Pattern)
         // Nếu user chưa upload avatar → avatarUrl = null
@@ -254,7 +260,7 @@ public class UserProfileService {
         }
 
         // reputationScore và totalTransactions → null
-        // Tầng web (UserController) sẽ lắp từ module reputation (Task C10/C12)
+        // Tầng web (UserController) sẽ lắp từ module reputation (Task C10)
         return response;
     }
 }

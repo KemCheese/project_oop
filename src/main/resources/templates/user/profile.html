@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<!--
+  Hồ sơ cá nhân và cài đặt tài khoản của người dùng đang đăng nhập.
+  Route: GET /profile
+  Model attributes:
+    - profile (UserProfileResponse): Thông tin hồ sơ người dùng
+    - maskedBankAccount (String): Số tài khoản ngân hàng đã che dấu (RR-1 & RR-5)
+    - updateProfileRequest (UpdateProfileRequest): Form cập nhật thông tin cá nhân
+    - updateBankAccountRequest (UpdateBankAccountRequest): Form cập nhật tài khoản ngân hàng
+
+  Chủ sở hữu: Người C (controller & business logic), Người A (styling).
+-->
+<div th:replace="~{layout/base :: layout('Hồ sơ cá nhân', ~{::content})}">
+    <content>
+        <h2>Hồ sơ cá nhân</h2>
+
+        <!-- Thông báo trạng thái qua query params -->
+        <div th:if="${param.updated != null}" style="color: green; margin-bottom: 15px; padding: 10px; background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 4px;">
+            <strong>Thành công:</strong> Thông tin cá nhân đã được cập nhật thành công!
+        </div>
+
+        <div th:if="${param.bankUpdated != null}" style="color: green; margin-bottom: 15px; padding: 10px; background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 4px;">
+            <strong>Thành công:</strong> Thông tin tài khoản ngân hàng đã được cập nhật thành công!
+        </div>
+
+        <div th:if="${param.avatarUpdated != null}" style="color: green; margin-bottom: 15px; padding: 10px; background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 4px;">
+            <strong>Thành công:</strong> Ảnh đại diện đã được cập nhật thành công!
+        </div>
+
+        <div th:if="${param.avatarError != null}" style="color: #c62828; margin-bottom: 15px; padding: 10px; background-color: #ffebee; border: 1px solid #ffcdd2; border-radius: 4px;">
+            <strong>Lỗi tải ảnh:</strong>
+            <span th:if="${#strings.equals(param.avatarError, 'empty')}">Vui lòng chọn tệp ảnh hợp lệ để tải lên!</span>
+            <span th:unless="${#strings.equals(param.avatarError, 'empty')}">Tải lên ảnh thất bại. Tệp phải là ảnh (JPEG, PNG, WebP) và dung lượng tối đa 5MB!</span>
+        </div>
+
+        <!-- KHỐI 1 & 2: TỔNG QUAN TÀI KHOẢN & UY TÍN -->
+        <div style="display: flex; gap: 30px; flex-wrap: wrap; margin-bottom: 30px;">
+            <!-- Khối tổng quan tài khoản -->
+            <div style="flex: 1; min-width: 320px; border: 1px solid #ddd; padding: 20px; border-radius: 6px;">
+                <h3>Thông tin tài khoản</h3>
+
+                <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
+                    <div>
+                        <img th:if="${profile.avatarUrl != null and !#strings.isEmpty(profile.avatarUrl)}"
+                             th:src="${profile.avatarUrl}"
+                             alt="Avatar"
+                             style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #ccc;">
+                        <div th:unless="${profile.avatarUrl != null and !#strings.isEmpty(profile.avatarUrl)}"
+                             style="width: 80px; height: 80px; border-radius: 50%; background-color: #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #666; font-weight: bold; border: 2px solid #ccc;"
+                             th:text="${#strings.substring(profile.fullName, 0, 1)}">
+                            U
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0 0 5px 0;" th:text="${profile.fullName}">Họ và tên</h4>
+                        <p style="margin: 0; color: #666;" th:text="${profile.email}">email@example.com</p>
+                        <p style="margin: 4px 0 0 0;">
+                            <span style="display: inline-block; padding: 2px 8px; font-size: 12px; border-radius: 4px; background-color: #e3f2fd; color: #1565c0;"
+                                  th:text="${profile.role}">USER</span>
+                            <span style="display: inline-block; padding: 2px 8px; font-size: 12px; border-radius: 4px; background-color: #e8f5e9; color: #2e7d32;"
+                                  th:text="${profile.status}">ACTIVE</span>
+                        </p>
+                    </div>
+                </div>
+
+                <table cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="color: #666; width: 140px;">Mã người dùng:</td>
+                        <td><strong th:text="'#' + ${profile.id}">#1</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="color: #666;">Số điện thoại:</td>
+                        <td>
+                            <span th:text="${profile.phoneNumber != null ? profile.phoneNumber : 'Chưa cập nhật'}">0901234567</span>
+                            <span th:if="${profile.phoneVerified}" style="color: green; font-size: 12px;">(Đã xác minh)</span>
+                            <span th:unless="${profile.phoneVerified}" style="color: #888; font-size: 12px;">(Chưa xác minh)</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #666;">Ngày tham gia:</td>
+                        <td th:text="${profile.createdAt != null ? #temporals.format(profile.createdAt, 'dd/MM/yyyy HH:mm') : 'Chưa có'}">01/01/2026</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Khối chỉ số uy tín -->
+            <div style="flex: 1; min-width: 300px; border: 1px solid #ddd; padding: 20px; border-radius: 6px;">
+                <h3>Điểm uy tín & Giao dịch</h3>
+                <table cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="color: #666; width: 150px;">Điểm uy tín:</td>
+                        <td>
+                            <strong style="font-size: 20px; color: #1976d2;"
+                                    th:text="${profile.reputationScore != null ? profile.reputationScore + ' / 100' : '100 / 100'}">100 / 100</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #666;">Tổng số giao dịch:</td>
+                        <td><strong th:text="${profile.totalTransactions != null ? profile.totalTransactions : 0}">0</strong> giao dịch</td>
+                    </tr>
+                </table>
+                <p style="margin-top: 20px;">
+                    <a th:href="@{'/reputation/' + ${profile.id}}" style="color: #1976d2; text-decoration: underline;">
+                        Xem chi tiết lịch sử uy tín của tôi &rarr;
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <!-- KHỐI 3: FORM ĐỔI THÔNG TIN CÁ NHÂN -->
+        <div style="border: 1px solid #ddd; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
+            <h3>Cập nhật thông tin cá nhân</h3>
+            <form method="post" th:action="@{/profile}" th:object="${updateProfileRequest}" style="max-width: 500px;">
+                <div style="margin-bottom: 15px;">
+                    <label for="fullName" style="display: block; margin-bottom: 5px; font-weight: bold;">Họ và tên *</label>
+                    <input type="text" id="fullName" th:field="*{fullName}"
+                           maxlength="150" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    <div th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}" style="color: red; font-size: 13px; margin-top: 4px;"></div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label for="phoneNumber" style="display: block; margin-bottom: 5px; font-weight: bold;">Số điện thoại (10 chữ số, bắt đầu bằng 0)</label>
+                    <input type="text" id="phoneNumber" th:field="*{phoneNumber}"
+                           maxlength="20" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    <div th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}" style="color: red; font-size: 13px; margin-top: 4px;"></div>
+                </div>
+
+                <div>
+                    <button type="submit" style="padding: 9px 18px; background-color: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Lưu thông tin
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- KHỐI 4: FORM TẢI LÊN ẢNH ĐẠI DIỆN -->
+        <div style="border: 1px solid #ddd; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
+            <h3>Thay đổi ảnh đại diện</h3>
+            <p style="color: #666; font-size: 14px;">Chọn ảnh định dạng JPEG, PNG hoặc WebP. Kích thước tối đa cho phép là 5MB.</p>
+            <form method="post" th:action="@{/profile/avatar}" enctype="multipart/form-data" style="max-width: 500px;">
+                <div style="margin-bottom: 15px;">
+                    <input type="file" id="avatar" name="avatar" accept="image/jpeg, image/png, image/webp" style="margin-bottom: 10px;">
+                </div>
+                <div>
+                    <button type="submit" style="padding: 9px 18px; background-color: #388e3c; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Tải ảnh lên
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- KHỐI 5: FORM TÀI KHOẢN NGÂN HÀNG (RR-1 & RR-5) -->
+        <div style="border: 1px solid #ddd; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
+            <h3>Tài khoản ngân hàng nhận tiền</h3>
+            <p style="color: #666; font-size: 14px;">
+                Thông tin này được sử dụng để giải ngân số tiền bán vé sau khi giao dịch chuyển nhượng vé hoàn tất thành công.
+            </p>
+
+            <!-- Hiển thị tài khoản đã khai báo (che dấu số tài khoản theo RR-1 & RR-5) -->
+            <div style="background-color: #fafafa; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px dashed #ccc;">
+                <h4 style="margin-top: 0;">Tài khoản hiện tại:</h4>
+                <div th:if="${maskedBankAccount != null}">
+                    <p style="margin: 4px 0;"><strong>Ngân hàng:</strong> <span th:text="${profile.bankName}">-</span></p>
+                    <p style="margin: 4px 0;"><strong>Số tài khoản:</strong> <span th:text="${maskedBankAccount}" style="font-family: monospace; font-size: 15px; letter-spacing: 1px;">-</span></p>
+                    <p style="margin: 4px 0;"><strong>Chủ tài khoản:</strong> <span th:text="${profile.bankAccountHolder}">-</span></p>
+                </div>
+                <div th:unless="${maskedBankAccount != null}">
+                    <p style="margin: 0; color: #f57c00;">Chưa thiết lập tài khoản nhận tiền. Bạn cần cập nhật để có thể nhận tiền khi bán vé.</p>
+                </div>
+            </div>
+
+            <!-- Form cập nhật số tài khoản mới (RR-5: không điền sẵn số tài khoản cũ vào ô input) -->
+            <form method="post" th:action="@{/profile/bank}" th:object="${updateBankAccountRequest}" style="max-width: 500px;">
+                <div style="margin-bottom: 15px;">
+                    <label for="bankName" style="display: block; margin-bottom: 5px; font-weight: bold;">Tên ngân hàng *</label>
+                    <input type="text" id="bankName" th:field="*{bankName}"
+                           placeholder="Ví dụ: Vietcombank, Techcombank, MB Bank..."
+                           maxlength="100" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    <div th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}" style="color: red; font-size: 13px; margin-top: 4px;"></div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label for="bankAccountNumber" style="display: block; margin-bottom: 5px; font-weight: bold;">Số tài khoản ngân hàng *</label>
+                    <input type="text" id="bankAccountNumber" th:field="*{bankAccountNumber}"
+                           placeholder="Nhập số tài khoản ngân hàng mới..."
+                           maxlength="50" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    <small style="color: #666; font-size: 12px;">Vì lý do an toàn bảo mật, vui lòng nhập lại toàn bộ số tài khoản mỗi khi bạn cập nhật.</small>
+                    <div th:if="${#fields.hasErrors('bankAccountNumber')}" th:errors="*{bankAccountNumber}" style="color: red; font-size: 13px; margin-top: 4px;"></div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label for="bankAccountHolder" style="display: block; margin-bottom: 5px; font-weight: bold;">Tên chủ tài khoản (viết hoa không dấu) *</label>
+                    <input type="text" id="bankAccountHolder" th:field="*{bankAccountHolder}"
+                           placeholder="Ví dụ: NGUYEN VAN A"
+                           maxlength="150" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    <div th:if="${#fields.hasErrors('bankAccountHolder')}" th:errors="*{bankAccountHolder}" style="color: red; font-size: 13px; margin-top: 4px;"></div>
+                </div>
+
+                <div>
+                    <button type="submit" style="padding: 9px 18px; background-color: #e65100; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Cập nhật tài khoản nhận tiền
+                    </button>
+                </div>
+            </form>
+        </div>
+    </content>
+</div>
