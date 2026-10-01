@@ -1,13 +1,24 @@
 package com.yourapp.ticketpass.dispute.application;
 
+import java.time.Instant;
+import java.util.Objects;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.yourapp.ticketpass.dispute.domain.Dispute;
 import com.yourapp.ticketpass.dispute.domain.DisputeEvidenceRepository;
 import com.yourapp.ticketpass.dispute.domain.DisputeRepository;
+import com.yourapp.ticketpass.dispute.domain.DisputeStatus;
+import com.yourapp.ticketpass.shared.event.DisputeOutcome;
+import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
+import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
+import com.yourapp.ticketpass.ticket.application.TicketStateMachineService;
+import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Use case xử lý phản hồi của hai bên trong một khiếu nại đang mở: người bán giải trình,
@@ -29,6 +40,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>Chủ sở hữu: Người B</p>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RespondToDisputeUseCase {
@@ -42,6 +54,9 @@ public class RespondToDisputeUseCase {
     /** Cổng lưu trữ tệp cho bằng chứng phía người bán (nguyên tắc 3). */
     private final FileStorageService fileStorageService;
 
+    /** Máy trạng thái vé — nơi duy nhất được phép đổi trạng thái vé. */
+    private final TicketStateMachineService ticketStateMachineService;
+
     /**
      * Người bán gửi giải trình cho một khiếu nại.
      *
@@ -50,15 +65,47 @@ public class RespondToDisputeUseCase {
      * @param response  nội dung giải trình
      * @return hồ sơ khiếu nại sau khi đã ghi nhận giải trình
      */
+    @Transactional
     public Dispute submitSellerResponse(Long disputeId, Long sellerId, String response) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: (1) tra Dispute theo disputeId, "
-                + "ném ResourceNotFoundException nếu không có; "
-                + "(2) xác minh sellerId đúng là người bán của khiếu nại; "
-                + "(3) kiểm tra status đang là OPEN hoặc AWAITING_SELLER_RESPONSE và "
-                + "Instant.now() chưa vượt sellerResponseDeadline — quá hạn thì ném "
-                + "BusinessRuleViolationException; "
-                + "(4) gán sellerResponse = response, sellerRespondedAt = Instant.now(), "
-                + "status = SELLER_RESPONDED rồi save và trả về. Nhớ thêm @Transactional.");
+        if (disputeId == null) {
+            throw new BusinessRuleViolationException("ID khiếu nại không được để trống.");
+        }
+        if (sellerId == null) {
+            throw new BusinessRuleViolationException("ID người bán không được để trống.");
+        }
+        if (response == null || response.trim().isEmpty()) {
+            throw new BusinessRuleViolationException("Nội dung giải trình của người bán không được để trống.");
+        }
+
+        // (1) Tra Dispute theo disputeId, ném ResourceNotFoundException nếu không có
+        Dispute dispute = disputeRepository.findById(disputeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khiếu nại với ID: " + disputeId));
+
+        // (2) Xác minh sellerId đúng là người bán của khiếu nại
+        if (!Objects.equals(dispute.getSellerId(), sellerId)) {
+            throw new BusinessRuleViolationException("Người dùng (ID: " + sellerId + ") không phải là người bán của khiếu nại này.");
+        }
+
+        // (3) Kiểm tra status đang là OPEN hoặc AWAITING_SELLER_RESPONSE
+        DisputeStatus currentStatus = dispute.getStatus();
+        if (currentStatus != DisputeStatus.OPEN && currentStatus != DisputeStatus.AWAITING_SELLER_RESPONSE) {
+            throw new BusinessRuleViolationException("Khiếu nại không ở trạng thái cho phép người bán gửi giải trình (trạng thái hiện tại: " + currentStatus + ").");
+        }
+
+        // Kiểm tra Instant.now() chưa vượt sellerResponseDeadline — quá hạn thì ném BusinessRuleViolationException
+        Instant now = Instant.now();
+        if (dispute.getSellerResponseDeadline() != null && now.isAfter(dispute.getSellerResponseDeadline())) {
+            throw new BusinessRuleViolationException("Đã quá hạn gửi giải trình của người bán (hạn chót: " + dispute.getSellerResponseDeadline() + ").");
+        }
+
+        // (4) Gán sellerResponse = response, sellerRespondedAt = Instant.now(), status = SELLER_RESPONDED rồi save và trả về
+        dispute.setSellerResponse(response.trim());
+        dispute.setSellerRespondedAt(now);
+        dispute.setStatus(DisputeStatus.SELLER_RESPONDED);
+
+        Dispute savedDispute = disputeRepository.save(dispute);
+        log.info("Người bán (ID: {}) đã gửi giải trình thành công cho khiếu nại (ID: {})", sellerId, disputeId);
+        return savedDispute;
     }
 
     /**
@@ -68,14 +115,48 @@ public class RespondToDisputeUseCase {
      * @param buyerId   ID người mua đang rút khiếu nại
      * @param reason    lý do rút, lưu vào {@code resolutionNote} để có dấu vết
      */
+    @Transactional
     public void withdrawDispute(Long disputeId, Long buyerId, String reason) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: (1) tra Dispute theo disputeId; "
-                + "(2) xác minh buyerId đúng là người mua đã mở khiếu nại; "
-                + "(3) từ chối nếu khiếu nại đã có phán quyết (RESOLVED_BUYER_WINS, RESOLVED_SELLER_WINS) "
-                + "hoặc đã WITHDRAWN; "
-                + "(4) gán status = WITHDRAWN, outcome = DisputeOutcome.WITHDRAWN, "
-                + "resolutionNote = reason, reviewedAt = Instant.now() rồi save; "
-                + "(5) đưa vé trở lại luồng hoàn tất bình thường bằng cách chuyển vé về AWAITING_USE "
-                + "để AutoCompleteScheduler tiếp tục xử lý khi hết cửa sổ. Nhớ thêm @Transactional.");
+        if (disputeId == null) {
+            throw new BusinessRuleViolationException("ID khiếu nại không được để trống.");
+        }
+        if (buyerId == null) {
+            throw new BusinessRuleViolationException("ID người mua không được để trống.");
+        }
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new BusinessRuleViolationException("Lý do rút khiếu nại không được để trống.");
+        }
+
+        // (1) Tra Dispute theo disputeId
+        Dispute dispute = disputeRepository.findById(disputeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khiếu nại với ID: " + disputeId));
+
+        // (2) Xác minh buyerId đúng là người mua đã mở khiếu nại
+        if (!Objects.equals(dispute.getBuyerId(), buyerId)) {
+            throw new BusinessRuleViolationException("Người dùng (ID: " + buyerId + ") không phải là người mua đã mở khiếu nại này.");
+        }
+
+        // (3) Từ chối nếu khiếu nại đã có phán quyết (RESOLVED_BUYER_WINS, RESOLVED_SELLER_WINS) hoặc đã WITHDRAWN
+        DisputeStatus currentStatus = dispute.getStatus();
+        if (currentStatus == DisputeStatus.RESOLVED_BUYER_WINS || currentStatus == DisputeStatus.RESOLVED_SELLER_WINS) {
+            throw new BusinessRuleViolationException("Không thể rút khiếu nại đã có phán quyết của quản trị viên (trạng thái: " + currentStatus + ").");
+        }
+        if (currentStatus == DisputeStatus.WITHDRAWN) {
+            throw new BusinessRuleViolationException("Khiếu nại này đã được rút trước đó.");
+        }
+
+        // (4) Gán status = WITHDRAWN, outcome = DisputeOutcome.WITHDRAWN, resolutionNote = reason, reviewedAt = Instant.now() rồi save
+        Instant now = Instant.now();
+        dispute.setStatus(DisputeStatus.WITHDRAWN);
+        dispute.setOutcome(DisputeOutcome.WITHDRAWN);
+        dispute.setResolutionNote(reason.trim());
+        dispute.setReviewedAt(now);
+        disputeRepository.save(dispute);
+
+        // (5) Đưa vé trở lại luồng hoàn tất bình thường bằng cách chuyển vé về AWAITING_USE
+        // để AutoCompleteScheduler tiếp tục xử lý khi hết cửa sổ.
+        ticketStateMachineService.transition(dispute.getTicketId(), TicketStatus.AWAITING_USE);
+        log.info("Người mua (ID: {}) đã rút khiếu nại (ID: {}). Vé (ID: {}) đã được chuyển về AWAITING_USE.",
+                buyerId, disputeId, dispute.getTicketId());
     }
 }

@@ -1,6 +1,8 @@
 package com.yourapp.ticketpass.dispute.web.admin;
 
 import java.security.Principal;
+import java.time.Instant;
+import java.util.List;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,7 +12,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.yourapp.ticketpass.dispute.application.ReviewDisputeUseCase;
+import com.yourapp.ticketpass.dispute.domain.Dispute;
+import com.yourapp.ticketpass.dispute.domain.DisputeEvidence;
+import com.yourapp.ticketpass.dispute.domain.DisputeEvidenceRepository;
+import com.yourapp.ticketpass.dispute.domain.DisputeRepository;
+import com.yourapp.ticketpass.dispute.web.dto.DisputeEvidenceResponse;
+import com.yourapp.ticketpass.dispute.web.dto.DisputeResponse;
 import com.yourapp.ticketpass.dispute.web.dto.ReviewDisputeRequest;
+import com.yourapp.ticketpass.payment.domain.DepositRepository;
+import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
+import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
+import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
+import com.yourapp.ticketpass.shared.storage.FileStorageService;
+import com.yourapp.ticketpass.ticket.domain.TicketRepository;
+import com.yourapp.ticketpass.user.application.UserQueryService;
+import com.yourapp.ticketpass.user.domain.User;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +64,27 @@ public class DisputeReviewController {
     /** Use case phân xử tranh chấp. */
     private final ReviewDisputeUseCase reviewDisputeUseCase;
 
+    /** Cổng truy cập dữ liệu khiếu nại. */
+    private final DisputeRepository disputeRepository;
+
+    /** Cổng truy cập dữ liệu bằng chứng. */
+    private final DisputeEvidenceRepository disputeEvidenceRepository;
+
+    /** Cổng lưu trữ tệp để dựng publicUrl cho bằng chứng. */
+    private final FileStorageService fileStorageService;
+
+    /** Cổng truy cập vé để hiển thị thông tin vé cho admin. */
+    private final TicketRepository ticketRepository;
+
+    /** Cổng truy cập giao dịch ký quỹ để admin thấy số tiền đang giữ. */
+    private final EscrowTransactionRepository escrowTransactionRepository;
+
+    /** Cổng truy cập khoản cọc để admin thấy số tiền cọc đang khoá. */
+    private final DepositRepository depositRepository;
+
+    /** Dịch vụ truy vấn người dùng để tìm adminId từ Principal. */
+    private final UserQueryService userQueryService;
+
     /**
      * Danh sách khiếu nại đang chờ admin xử lý.
      *
@@ -56,10 +93,20 @@ public class DisputeReviewController {
      */
     @GetMapping
     public String listPending(Model model) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: gọi "
-                + "reviewDisputeUseCase.listPendingReview(), map từng Dispute sang DisputeResponse "
-                + "(chưa cần nạp bằng chứng ở trang danh sách), đổ vào model kèm số lượng hồ sơ "
-                + "và cảnh báo các hồ sơ sắp tới hạn; trả về tên view \"admin/dispute/list\".");
+        List<Dispute> pendingDisputes = reviewDisputeUseCase.listPendingReview();
+        List<DisputeResponse> disputeResponses = pendingDisputes.stream()
+                .map(d -> mapToResponse(d, null))
+                .toList();
+
+        Instant now = Instant.now();
+        long overdueCount = pendingDisputes.stream()
+                .filter(d -> d.getSellerResponseDeadline() != null && d.getSellerResponseDeadline().isBefore(now))
+                .count();
+
+        model.addAttribute("disputes", disputeResponses);
+        model.addAttribute("count", disputeResponses.size());
+        model.addAttribute("overdueCount", overdueCount);
+        return "admin/dispute/list";
     }
 
     /**
@@ -71,12 +118,34 @@ public class DisputeReviewController {
      */
     @GetMapping("/{id}")
     public String showDetail(@PathVariable Long id, Model model) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: tra Dispute theo id, "
-                + "nạp toàn bộ bằng chứng qua DisputeEvidenceRepository.findByDisputeId và dựng publicUrl "
-                + "bằng FileStorageService.buildPublicUrl, nạp thêm thông tin vé, giao dịch ký quỹ và khoản cọc "
-                + "để admin thấy rõ số tiền sẽ bị tác động bởi mỗi nhánh phán quyết, "
-                + "đổ DisputeResponse và ReviewDisputeRequest rỗng vào model; "
-                + "trả về tên view \"admin/dispute/detail\".");
+        Dispute dispute = disputeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khiếu nại với ID: " + id));
+
+        List<DisputeEvidence> evidences = disputeEvidenceRepository.findByDisputeId(id);
+        DisputeResponse disputeResponse = mapToResponse(dispute, evidences);
+
+        ticketRepository.findById(dispute.getTicketId())
+                .ifPresent(ticket -> model.addAttribute("ticket", ticket));
+
+        if (dispute.getEscrowTransactionId() != null) {
+            escrowTransactionRepository.findById(dispute.getEscrowTransactionId())
+                    .ifPresent(escrow -> model.addAttribute("escrow", escrow));
+        } else {
+            escrowTransactionRepository.findByTicketId(dispute.getTicketId())
+                    .ifPresent(escrow -> model.addAttribute("escrow", escrow));
+        }
+
+        if (dispute.getDepositId() != null) {
+            depositRepository.findById(dispute.getDepositId())
+                    .ifPresent(deposit -> model.addAttribute("deposit", deposit));
+        } else {
+            depositRepository.findByTicketId(dispute.getTicketId())
+                    .ifPresent(deposit -> model.addAttribute("deposit", deposit));
+        }
+
+        model.addAttribute("dispute", disputeResponse);
+        model.addAttribute("reviewRequest", new ReviewDisputeRequest());
+        return "admin/dispute/detail";
     }
 
     /**
@@ -89,9 +158,9 @@ public class DisputeReviewController {
      */
     @PostMapping("/{id}/buyer-wins")
     public String resolveBuyerWins(@PathVariable Long id, @Valid ReviewDisputeRequest request, Principal principal) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: lấy adminId từ principal, "
-                + "gọi reviewDisputeUseCase.resolveBuyerWins(id, adminId, request.getResolutionNote()), "
-                + "rồi trả về \"redirect:/admin/disputes/\" + id.");
+        Long adminId = resolveAdminId(principal);
+        reviewDisputeUseCase.resolveBuyerWins(id, adminId, request.getResolutionNote());
+        return "redirect:/admin/disputes/" + id;
     }
 
     /**
@@ -104,8 +173,62 @@ public class DisputeReviewController {
      */
     @PostMapping("/{id}/seller-wins")
     public String resolveSellerWins(@PathVariable Long id, @Valid ReviewDisputeRequest request, Principal principal) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: lấy adminId từ principal, "
-                + "gọi reviewDisputeUseCase.resolveSellerWins(id, adminId, request.getResolutionNote()), "
-                + "rồi trả về \"redirect:/admin/disputes/\" + id.");
+        Long adminId = resolveAdminId(principal);
+        reviewDisputeUseCase.resolveSellerWins(id, adminId, request.getResolutionNote());
+        return "redirect:/admin/disputes/" + id;
+    }
+
+    /**
+     * Chuyển đổi entity {@link Dispute} sang {@link DisputeResponse} DTO.
+     */
+    private DisputeResponse mapToResponse(Dispute dispute, List<DisputeEvidence> evidences) {
+        DisputeResponse resp = new DisputeResponse();
+        resp.setId(dispute.getId());
+        resp.setTicketId(dispute.getTicketId());
+        resp.setBuyerId(dispute.getBuyerId());
+        resp.setSellerId(dispute.getSellerId());
+        resp.setStatus(dispute.getStatus());
+        resp.setReason(dispute.getReason());
+        resp.setDescription(dispute.getDescription());
+        resp.setFiledAt(dispute.getFiledAt());
+        resp.setWindowClosesAt(dispute.getWindowClosesAt());
+        resp.setSellerResponseDeadline(dispute.getSellerResponseDeadline());
+        resp.setSellerResponse(dispute.getSellerResponse());
+        resp.setOutcome(dispute.getOutcome());
+        resp.setTotalDeposit(dispute.getTotalDeposit());
+        resp.setFounderCut(dispute.getFounderCut());
+        resp.setBuyerCompensation(dispute.getBuyerCompensation());
+
+        if (evidences != null && !evidences.isEmpty()) {
+            List<DisputeEvidenceResponse> evidenceResponses = evidences.stream().map(e -> {
+                DisputeEvidenceResponse er = new DisputeEvidenceResponse();
+                er.setId(e.getId());
+                er.setEvidenceType(e.getEvidenceType());
+                er.setOriginalFilename(e.getOriginalFilename());
+                er.setPublicUrl(fileStorageService.buildPublicUrl(e.getStorageKey()));
+                er.setNote(e.getNote());
+                er.setUploadedAt(e.getUploadedAt());
+                return er;
+            }).toList();
+            resp.setEvidences(evidenceResponses);
+        }
+        return resp;
+    }
+
+    /**
+     * Xác định adminId từ {@link Principal}.
+     */
+    private Long resolveAdminId(Principal principal) {
+        if (principal == null || principal.getName() == null) {
+            throw new BusinessRuleViolationException("Yêu cầu đăng nhập tài khoản quản trị viên.");
+        }
+        String name = principal.getName();
+        try {
+            return Long.parseLong(name);
+        } catch (NumberFormatException ignored) {
+            return userQueryService.findByEmail(name)
+                    .map(User::getId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản quản trị viên: " + name));
+        }
     }
 }

@@ -1,15 +1,22 @@
 package com.yourapp.ticketpass.dispute.application;
 
+import java.time.Instant;
+import java.util.List;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.yourapp.ticketpass.dispute.domain.Dispute;
 import com.yourapp.ticketpass.dispute.domain.DisputeRepository;
 import com.yourapp.ticketpass.dispute.domain.DisputeStatus;
 import com.yourapp.ticketpass.payment.application.ReleaseFundsUseCase;
 import com.yourapp.ticketpass.shared.event.CompletionReason;
+import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
+import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Job định kỳ đóng các giao dịch và khiếu nại đã hết thời hạn.
@@ -66,6 +73,7 @@ import lombok.RequiredArgsConstructor;
  * Chủ sở hữu: Người B
  * </p>
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class AutoCompleteScheduler {
@@ -92,15 +100,40 @@ public class AutoCompleteScheduler {
      */
     @Scheduled(cron = "0 */10 * * * *")
     void autoCompleteExpiredTickets() {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: (1) lấy danh sách vé ở trạng thái "
-                + "AWAITING_USE có disputeWindowClosesAt < Instant.now() qua ticketRepository; "
-                + "(2) với từng vé, BỎ QUA nếu disputeRepository.existsByTicketIdAndStatusIn(ticketId, "
-                + "List.of(OPEN, AWAITING_SELLER_RESPONSE, SELLER_RESPONDED, UNDER_REVIEW, EXPIRED)) trả true "
-                + "— đây là chốt an toàn chống giải ngân một vé đang tranh chấp; "
-                + "(3) chuyển vé sang TicketStatus.AUTO_COMPLETE; "
-                + "(4) gọi releaseFundsUseCase.release(ticketId, CompletionReason.AUTO_COMPLETE); "
-                + "(5) bọc mỗi vé trong try-catch và ghi log lỗi riêng để một vé lỗi không làm dừng "
-                + "toàn bộ lượt quét; xử lý từng vé trong transaction riêng, không dùng một transaction chung.");
+        Instant now = Instant.now();
+        // (1) Lấy danh sách vé ở trạng thái AWAITING_USE có disputeWindowClosesAt < Instant.now() qua ticketRepository
+        List<Ticket> dueTickets = ticketRepository.findDueForAutoComplete(TicketStatus.AWAITING_USE, now);
+        if (dueTickets == null || dueTickets.isEmpty()) {
+            return;
+        }
+
+        List<DisputeStatus> blockingStatuses = List.of(
+                DisputeStatus.OPEN,
+                DisputeStatus.AWAITING_SELLER_RESPONSE,
+                DisputeStatus.SELLER_RESPONDED,
+                DisputeStatus.UNDER_REVIEW,
+                DisputeStatus.EXPIRED
+        );
+
+        for (Ticket ticket : dueTickets) {
+            Long ticketId = ticket.getId();
+            try {
+                // (2) BỎ QUA nếu có khiếu nại chưa giải quyết — chốt an toàn chống giải ngân vé đang tranh chấp
+                boolean hasActiveDispute = disputeRepository.existsByTicketIdAndStatusIn(ticketId, blockingStatuses);
+                if (hasActiveDispute) {
+                    log.warn("[AutoCompleteScheduler] Vé #{} đang có khiếu nại chưa xử lý xong, bỏ qua tự động hoàn tất.", ticketId);
+                    continue;
+                }
+
+                // (3) & (4) releaseFundsUseCase.release tự động hoàn tất giao dịch trong transaction riêng:
+                // giải ngân cho seller, hoàn cọc seller, chuyển vé sang AUTO_COMPLETE và publish TicketTransactionCompletedEvent
+                releaseFundsUseCase.release(ticketId, CompletionReason.AUTO_COMPLETE);
+                log.info("[AutoCompleteScheduler] Tự động hoàn tất và giải ngân thành công cho vé #{}", ticketId);
+            } catch (Exception e) {
+                // (5) Bọc mỗi vé trong try-catch riêng để một vé lỗi không làm dừng toàn bộ lượt quét
+                log.error("[AutoCompleteScheduler] Lỗi khi tự động hoàn tất cho vé #{}: {}", ticketId, e.getMessage(), e);
+            }
+        }
     }
 
     /**
@@ -112,13 +145,23 @@ public class AutoCompleteScheduler {
      */
     @Scheduled(cron = "0 0 * * * *")
     void expireOverdueSellerResponses() {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: (1) gọi "
-                + "disputeRepository.findOverdueSellerResponses(Instant.now()) để lấy các khiếu nại ở "
-                + "AWAITING_SELLER_RESPONSE đã quá sellerResponseDeadline; "
-                + "(2) với từng hồ sơ, gán status = DisputeStatus.EXPIRED rồi save — "
-                + "KHÔNG tự động xử người bán thua, hồ sơ vẫn phải qua admin phân xử, "
-                + "việc người bán im lặng chỉ là tình tiết bất lợi; "
-                + "(3) bọc mỗi hồ sơ trong try-catch và ghi log lỗi riêng để một hồ sơ lỗi không làm dừng "
-                + "toàn bộ lượt quét.");
+        Instant now = Instant.now();
+        // (1) Lấy các khiếu nại ở AWAITING_SELLER_RESPONSE đã quá sellerResponseDeadline
+        List<Dispute> overdueDisputes = disputeRepository.findOverdueSellerResponses(now);
+        if (overdueDisputes == null || overdueDisputes.isEmpty()) {
+            return;
+        }
+
+        for (Dispute dispute : overdueDisputes) {
+            try {
+                // (2) Gán status = DisputeStatus.EXPIRED rồi save — KHÔNG tự động xử người bán thua
+                dispute.setStatus(DisputeStatus.EXPIRED);
+                disputeRepository.save(dispute);
+                log.info("[AutoCompleteScheduler] Khiếu nại #{} quá hạn phản hồi của người bán, đã chuyển sang EXPIRED", dispute.getId());
+            } catch (Exception e) {
+                // (3) Bọc mỗi hồ sơ trong try-catch riêng để một hồ sơ lỗi không làm dừng toàn bộ lượt quét
+                log.error("[AutoCompleteScheduler] Lỗi khi chuyển trạng thái EXPIRED cho khiếu nại #{}: {}", dispute.getId(), e.getMessage(), e);
+            }
+        }
     }
 }

@@ -1,6 +1,9 @@
 package com.yourapp.ticketpass.payment.application;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 
 import org.springframework.stereotype.Service;
 
@@ -52,13 +55,37 @@ public class ForfeitDepositPolicy {
      * @return chi tiết chia cọc gồm phần sàn giữ lại và phần bồi thường cho người mua
      */
     public ForfeitBreakdown computeForfeit(BigDecimal totalDeposit) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: áp dụng đúng nguyên văn công thức "
-                + "founder_cut = min(tong_coc, max(founderForfeitMinAmount, founderForfeitRatePercent% * tong_coc)) "
-                + "và buyer_compensation = tong_coc - founder_cut; "
-                + "BẮT BUỘC giữ lớp min(tong_coc, ...) để khi tổng cọc rất nhỏ (ví dụ 3.000đ) thì "
-                + "founder_cut = 3.000đ và buyer_compensation = 0đ, không bao giờ ra số âm; "
-                + "làm tròn HALF_UP tới 2 chữ số thập phân và kiểm tra bất biến "
-                + "founder_cut + buyer_compensation == tong_coc trước khi trả ForfeitBreakdown; "
-                + "ném BusinessRuleViolationException nếu totalDeposit null hoặc âm.");
+        // Guard: totalDeposit không được null hoặc âm
+        if (totalDeposit == null || totalDeposit.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessRuleViolationException(
+                    "Tổng tiền cọc phải lớn hơn hoặc bằng 0 để tính tịch thu, nhận được: " + totalDeposit);
+        }
+
+        // (1) rawCut = founderForfeitRatePercent% * totalDeposit, làm tròn HALF_UP tới 2 chữ số thập phân
+        BigDecimal rawCut = totalDeposit
+                .multiply(commissionConfig.getFounderForfeitRatePercent())
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+        // (2) Áp mức sàn: max(founderForfeitMinAmount, rawCut)
+        BigDecimal minAmount = commissionConfig.getFounderForfeitMinAmount();
+        BigDecimal floored = rawCut.max(minAmount);
+
+        // (3) Chặn trần: min(totalDeposit, floored) — BẮT BUỘC để buyer_compensation không âm
+        BigDecimal founderCut = totalDeposit.min(floored);
+
+        // (4) Phần bồi thường cho người mua
+        BigDecimal buyerCompensation = totalDeposit.subtract(founderCut);
+
+        // (5) Kiểm tra bất biến: founderCut + buyerCompensation == totalDeposit, cả hai không âm
+        if (founderCut.compareTo(BigDecimal.ZERO) < 0
+                || buyerCompensation.compareTo(BigDecimal.ZERO) < 0
+                || founderCut.add(buyerCompensation).compareTo(totalDeposit) != 0) {
+            throw new BusinessRuleViolationException(
+                    "Vi phạm bất biến tịch thu cọc: founderCut=" + founderCut
+                    + ", buyerCompensation=" + buyerCompensation
+                    + ", totalDeposit=" + totalDeposit);
+        }
+
+        return new ForfeitBreakdown(totalDeposit, founderCut, buyerCompensation);
     }
 }
