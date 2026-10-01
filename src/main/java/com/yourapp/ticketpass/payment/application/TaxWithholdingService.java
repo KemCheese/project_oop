@@ -79,9 +79,9 @@ public class TaxWithholdingService {
      * @return {@code true} nếu khoản thu phải khấu thuế
      */
     public boolean isTaxable(BigDecimal sellerGrossAmount) {
-        // Điều kiện: enabled = true VÀ amount không null VÀ amount > threshold (exclusive)
+        // Điều kiện: enabled = true VÀ amount không null VÀ amount >= threshold (BR-08: đạt ngưỡng là chịu thuế)
         return taxConfig.isEnabled()
                 && sellerGrossAmount != null
-                && sellerGrossAmount.compareTo(taxConfig.getTaxableThreshold()) > 0;
+                && sellerGrossAmount.compareTo(taxConfig.getTaxableThreshold()) >= 0;
     }
 }

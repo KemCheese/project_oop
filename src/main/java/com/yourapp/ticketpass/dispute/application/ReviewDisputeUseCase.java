@@ -1,19 +1,32 @@
 package com.yourapp.ticketpass.dispute.application;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.yourapp.ticketpass.dispute.domain.Dispute;
 import com.yourapp.ticketpass.dispute.domain.DisputeEvidenceRepository;
 import com.yourapp.ticketpass.dispute.domain.DisputeRepository;
+import com.yourapp.ticketpass.dispute.domain.DisputeStatus;
 import com.yourapp.ticketpass.payment.application.RefundBuyerUseCase;
 import com.yourapp.ticketpass.payment.application.ReleaseFundsUseCase;
+import com.yourapp.ticketpass.shared.dto.ForfeitBreakdown;
+import com.yourapp.ticketpass.shared.event.CompletionReason;
+import com.yourapp.ticketpass.shared.event.DisputeOutcome;
 import com.yourapp.ticketpass.shared.event.DisputeResolvedEvent;
+import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
+import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.ticket.application.TicketStateMachineService;
+import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Use case admin phân xử tranh chấp — điểm kết thúc của một khiếu nại.
@@ -60,6 +73,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>Chủ sở hữu: Người B</p>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReviewDisputeUseCase {
@@ -88,10 +102,25 @@ public class ReviewDisputeUseCase {
      * @return danh sách khiếu nại cần xem xét, sắp xếp theo mức độ cấp thiết
      */
     public List<Dispute> listPendingReview() {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: gộp danh sách khiếu nại ở các trạng thái "
-                + "OPEN, AWAITING_SELLER_RESPONSE, SELLER_RESPONDED, UNDER_REVIEW và EXPIRED "
-                + "bằng disputeRepository.findByStatus, sắp xếp theo filedAt tăng dần "
-                + "(hồ sơ cũ nhất xử lý trước) và trả về danh sách hợp nhất.");
+        List<DisputeStatus> pendingStatuses = List.of(
+                DisputeStatus.OPEN,
+                DisputeStatus.AWAITING_SELLER_RESPONSE,
+                DisputeStatus.SELLER_RESPONDED,
+                DisputeStatus.UNDER_REVIEW,
+                DisputeStatus.EXPIRED
+        );
+
+        List<Dispute> result = new ArrayList<>();
+        for (DisputeStatus status : pendingStatuses) {
+            List<Dispute> disputes = disputeRepository.findByStatus(status);
+            if (disputes != null) {
+                result.addAll(disputes);
+            }
+        }
+
+        // Sắp xếp theo filedAt tăng dần (hồ sơ cũ nhất xử lý trước)
+        result.sort(Comparator.comparing(Dispute::getFiledAt, Comparator.nullsLast(Comparator.naturalOrder())));
+        return result;
     }
 
     /**
@@ -102,17 +131,73 @@ public class ReviewDisputeUseCase {
      * @param resolutionNote ghi chú giải thích căn cứ phán quyết
      * @return hồ sơ khiếu nại sau khi đã phán quyết
      */
+    @Transactional
     public Dispute resolveBuyerWins(Long disputeId, Long adminId, String resolutionNote) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: theo đúng trình tự đã chốt — "
-                + "(1) tra Dispute, từ chối nếu đã có phán quyết; "
-                + "(2) gọi refundBuyerUseCase.refundWithForfeitedDeposit(ticketId, resolutionNote) ĐỒNG BỘ "
-                + "để hoàn 100% escrow cho người mua và tịch thu cọc người bán, nhận về ForfeitBreakdown; "
-                + "(3) lưu snapshot totalDeposit/founderCut/buyerCompensation từ ForfeitBreakdown vào Dispute, "
-                + "gán status = RESOLVED_BUYER_WINS, outcome = DisputeOutcome.BUYER_WINS, "
-                + "reviewedByAdminId = adminId, reviewedAt = Instant.now(), resolutionNote rồi save; "
-                + "(4) gọi ticketStateMachineService.transition(ticketId, TicketStatus.RESOLVED_BUYER_WINS); "
-                + "(5) CUỐI CÙNG mới publish DisputeResolvedEvent với outcome = BUYER_WINS. "
-                + "Nhớ thêm @Transactional và KHÔNG gọi trực tiếp module reputation.");
+        if (disputeId == null) {
+            throw new BusinessRuleViolationException("ID khiếu nại không được để trống.");
+        }
+        if (adminId == null) {
+            throw new BusinessRuleViolationException("ID quản trị viên không được để trống.");
+        }
+        if (resolutionNote == null || resolutionNote.trim().isEmpty()) {
+            throw new BusinessRuleViolationException("Ghi chú phán quyết của quản trị viên không được để trống.");
+        }
+
+        // (1) Tra Dispute, từ chối nếu đã có phán quyết
+        Dispute dispute = disputeRepository.findById(disputeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khiếu nại với ID: " + disputeId));
+
+        DisputeStatus currentStatus = dispute.getStatus();
+        if (currentStatus == DisputeStatus.RESOLVED_BUYER_WINS || currentStatus == DisputeStatus.RESOLVED_SELLER_WINS) {
+            throw new BusinessRuleViolationException("Khiếu nại #" + disputeId + " đã có phán quyết trước đó: " + currentStatus);
+        }
+        if (currentStatus == DisputeStatus.WITHDRAWN) {
+            throw new BusinessRuleViolationException("Khiếu nại #" + disputeId + " đã được người mua rút đơn.");
+        }
+
+        // (2) Gọi refundBuyerUseCase.refundWithForfeitedDeposit(ticketId, resolutionNote) ĐỒNG BỘ
+        // để hoàn 100% escrow cho người mua và tịch thu cọc người bán, nhận về ForfeitBreakdown
+        ForfeitBreakdown breakdown = refundBuyerUseCase.refundWithForfeitedDeposit(
+                dispute.getTicketId(), resolutionNote.trim());
+
+        // (3) Lưu snapshot totalDeposit/founderCut/buyerCompensation từ ForfeitBreakdown vào Dispute,
+        // gán status = RESOLVED_BUYER_WINS, outcome = DisputeOutcome.BUYER_WINS,
+        // reviewedByAdminId = adminId, reviewedAt = Instant.now(), resolutionNote rồi save
+        Instant now = Instant.now();
+        dispute.setTotalDeposit(breakdown != null ? breakdown.getTotalDeposit() : BigDecimal.ZERO);
+        dispute.setFounderCut(breakdown != null ? breakdown.getFounderCut() : BigDecimal.ZERO);
+        dispute.setBuyerCompensation(breakdown != null ? breakdown.getBuyerCompensation() : BigDecimal.ZERO);
+        dispute.setStatus(DisputeStatus.RESOLVED_BUYER_WINS);
+        dispute.setOutcome(DisputeOutcome.BUYER_WINS);
+        dispute.setReviewedByAdminId(adminId);
+        dispute.setReviewedAt(now);
+        dispute.setResolutionNote(resolutionNote.trim());
+
+        Dispute savedDispute = disputeRepository.save(dispute);
+
+        // (4) Gọi ticketStateMachineService.transition(ticketId, TicketStatus.RESOLVED_BUYER_WINS)
+        ticketStateMachineService.transition(dispute.getTicketId(), TicketStatus.RESOLVED_BUYER_WINS);
+
+        // (5) CUỐI CÙNG mới publish DisputeResolvedEvent với outcome = BUYER_WINS
+        // KHÔNG gọi trực tiếp module reputation (nguyên tắc 2)
+        DisputeResolvedEvent event = new DisputeResolvedEvent(
+                savedDispute.getId(),
+                savedDispute.getTicketId(),
+                savedDispute.getEscrowTransactionId(),
+                savedDispute.getDepositId(),
+                savedDispute.getBuyerId(),
+                savedDispute.getSellerId(),
+                DisputeOutcome.BUYER_WINS,
+                savedDispute.getTotalDeposit(),
+                savedDispute.getFounderCut(),
+                savedDispute.getBuyerCompensation(),
+                adminId,
+                now
+        );
+        eventPublisher.publishEvent(event);
+        log.info("[ReviewDispute] Admin #{} phán quyết BUYER_WINS cho khiếu nại #{}", adminId, disputeId);
+
+        return savedDispute;
     }
 
     /**
@@ -123,16 +208,73 @@ public class ReviewDisputeUseCase {
      * @param resolutionNote ghi chú giải thích căn cứ phán quyết
      * @return hồ sơ khiếu nại sau khi đã phán quyết
      */
+    @Transactional
     public Dispute resolveSellerWins(Long disputeId, Long adminId, String resolutionNote) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: theo đúng trình tự đã chốt — "
-                + "(1) tra Dispute, từ chối nếu đã có phán quyết; "
-                + "(2) gọi releaseFundsUseCase.release(ticketId, CompletionReason.DISPUTE_RESOLVED_SELLER_WINS) "
-                + "ĐỒNG BỘ để giải ngân cho người bán và hoàn đủ cọc; "
-                + "(3) gán status = RESOLVED_SELLER_WINS, outcome = DisputeOutcome.SELLER_WINS, "
-                + "reviewedByAdminId = adminId, reviewedAt = Instant.now(), resolutionNote rồi save "
-                + "(cọc không bị tịch thu nên founderCut và buyerCompensation để 0); "
-                + "(4) gọi ticketStateMachineService.transition(ticketId, TicketStatus.RESOLVED_SELLER_WINS); "
-                + "(5) CUỐI CÙNG mới publish DisputeResolvedEvent với outcome = SELLER_WINS. "
-                + "Nhớ thêm @Transactional và KHÔNG gọi trực tiếp module reputation.");
+        if (disputeId == null) {
+            throw new BusinessRuleViolationException("ID khiếu nại không được để trống.");
+        }
+        if (adminId == null) {
+            throw new BusinessRuleViolationException("ID quản trị viên không được để trống.");
+        }
+        if (resolutionNote == null || resolutionNote.trim().isEmpty()) {
+            throw new BusinessRuleViolationException("Ghi chú phán quyết của quản trị viên không được để trống.");
+        }
+
+        // (1) Tra Dispute, từ chối nếu đã có phán quyết
+        Dispute dispute = disputeRepository.findById(disputeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khiếu nại với ID: " + disputeId));
+
+        DisputeStatus currentStatus = dispute.getStatus();
+        if (currentStatus == DisputeStatus.RESOLVED_BUYER_WINS || currentStatus == DisputeStatus.RESOLVED_SELLER_WINS) {
+            throw new BusinessRuleViolationException("Khiếu nại #" + disputeId + " đã có phán quyết trước đó: " + currentStatus);
+        }
+        if (currentStatus == DisputeStatus.WITHDRAWN) {
+            throw new BusinessRuleViolationException("Khiếu nại #" + disputeId + " đã được người mua rút đơn.");
+        }
+
+        // (2) Gọi releaseFundsUseCase.release(ticketId, CompletionReason.DISPUTE_RESOLVED_SELLER_WINS) ĐỒNG BỘ
+        // để giải ngân cho người bán và hoàn đủ cọc
+        releaseFundsUseCase.release(dispute.getTicketId(), CompletionReason.DISPUTE_RESOLVED_SELLER_WINS);
+
+        // (3) Gán status = RESOLVED_SELLER_WINS, outcome = DisputeOutcome.SELLER_WINS,
+        // reviewedByAdminId = adminId, reviewedAt = Instant.now(), resolutionNote rồi save
+        // (cọc không bị tịch thu nên founderCut và buyerCompensation để 0)
+        Instant now = Instant.now();
+        dispute.setStatus(DisputeStatus.RESOLVED_SELLER_WINS);
+        dispute.setOutcome(DisputeOutcome.SELLER_WINS);
+        dispute.setReviewedByAdminId(adminId);
+        dispute.setReviewedAt(now);
+        dispute.setResolutionNote(resolutionNote.trim());
+        dispute.setFounderCut(BigDecimal.ZERO);
+        dispute.setBuyerCompensation(BigDecimal.ZERO);
+        if (dispute.getTotalDeposit() == null) {
+            dispute.setTotalDeposit(BigDecimal.ZERO);
+        }
+
+        Dispute savedDispute = disputeRepository.save(dispute);
+
+        // (4) Gọi ticketStateMachineService.transition(ticketId, TicketStatus.RESOLVED_SELLER_WINS)
+        ticketStateMachineService.transition(dispute.getTicketId(), TicketStatus.RESOLVED_SELLER_WINS);
+
+        // (5) CUỐI CÙNG mới publish DisputeResolvedEvent với outcome = SELLER_WINS
+        // KHÔNG gọi trực tiếp module reputation (nguyên tắc 2)
+        DisputeResolvedEvent event = new DisputeResolvedEvent(
+                savedDispute.getId(),
+                savedDispute.getTicketId(),
+                savedDispute.getEscrowTransactionId(),
+                savedDispute.getDepositId(),
+                savedDispute.getBuyerId(),
+                savedDispute.getSellerId(),
+                DisputeOutcome.SELLER_WINS,
+                savedDispute.getTotalDeposit(),
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                adminId,
+                now
+        );
+        eventPublisher.publishEvent(event);
+        log.info("[ReviewDispute] Admin #{} phán quyết SELLER_WINS cho khiếu nại #{}", adminId, disputeId);
+
+        return savedDispute;
     }
 }
