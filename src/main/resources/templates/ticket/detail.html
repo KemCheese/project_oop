@@ -16,7 +16,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${ticket.title} + ' - TicketPass'">Chi tiet ve - TicketPass</title>
+    <title th:text="${ticket.title} + ' - TicketPass'">Chi tiết vé - TicketPass</title>
     <style>
         /* ===== Design Tokens ===== */
         :root {
@@ -489,8 +489,8 @@
         <div class="header-inner">
             <a th:href="@{/}" class="site-logo">TicketPass</a>
             <nav class="header-nav">
-                <a th:href="@{/tickets}">Ve dang ban</a>
-                <a th:href="@{/login}">Dang nhap</a>
+                <a th:href="@{/tickets}">Vé đang bán</a>
+                <a th:href="@{/login}">Đăng nhập</a>
             </nav>
         </div>
     </header>
@@ -500,9 +500,9 @@
 
         <!-- Breadcrumb -->
         <div class="breadcrumb">
-            <a th:href="@{/tickets}">Ve dang ban</a>
+            <a th:href="@{/tickets}">Vé đang bán</a>
             <span class="sep">/</span>
-            <span th:text="${ticket.title}">Chi tiet</span>
+            <span th:text="${ticket.title}">Chi tiết</span>
         </div>
 
         <div class="detail-grid">
@@ -511,9 +511,9 @@
             <div>
                 <div class="ticket-image-wrap">
                     <img th:if="${ticket.ticketImageUrl != null}" th:src="${ticket.ticketImageUrl}"
-                        alt="Anh ve cong khai">
+                        alt="Ảnh vé công khai">
                     <div th:if="${ticket.ticketImageUrl == null}" class="image-placeholder">
-                        Chua co anh ve
+                        Chưa có ảnh vé
                     </div>
                 </div>
 
@@ -522,8 +522,8 @@
                           && (ticket.status.name() == 'TRANSFERRED'
                               || ticket.status.name() == 'AWAITING_USE'
                               || ticket.status.name() == 'AUTO_COMPLETE')}">
-                    <div class="qr-section-title">Anh QR check-in (chi ban thay)</div>
-                    <img th:src="${ticket.qrImageUrl}" alt="Anh QR ve">
+                    <div class="qr-section-title">Ảnh QR check-in (chỉ bạn thấy)</div>
+                    <img th:src="${ticket.qrImageUrl}" alt="Ảnh QR vé">
                 </div>
             </div>
 
@@ -539,8 +539,8 @@
                 </div>
 
                 <!-- Title -->
-                <h1 class="ticket-title" th:text="${ticket.title}">Ten ve</h1>
-                <div class="ticket-event" th:text="${ticket.eventName}">Ten su kien</div>
+                <h1 class="ticket-title" th:text="${ticket.title}">Tên vé</h1>
+                <div class="ticket-event" th:text="${ticket.eventName}">Tên sự kiện</div>
 
                 <!-- Price -->
                 <div class="price-block">
@@ -548,7 +548,7 @@
                         th:text="${#numbers.formatDecimal(ticket.salePrice, 0, 'COMMA', 0, 'POINT')} + ' VND'">100.000
                         VND</div>
                     <div class="original-price" th:if="${ticket.originalPrice != null}">
-                        Gia goc: <span
+                        Giá gốc: <span
                             th:text="${#numbers.formatDecimal(ticket.originalPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'">150.000
                             VND</span>
                     </div>
@@ -557,21 +557,21 @@
                 <!-- Info Table -->
                 <div class="info-table">
                     <div class="info-row" th:if="${ticket.venue != null && !ticket.venue.isBlank()}">
-                        <span class="info-label">Dia diem</span>
+                        <span class="info-label">Địa điểm</span>
                         <span class="info-value" th:text="${ticket.venue}"></span>
                     </div>
                     <div class="info-row" th:if="${ticket.seatInfo != null && !ticket.seatInfo.isBlank()}">
-                        <span class="info-label">Ghe / Cho</span>
+                        <span class="info-label">Ghế / Chỗ</span>
                         <span class="info-value" th:text="${ticket.seatInfo}"></span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">Thoi gian</span>
+                        <span class="info-label">Thời gian</span>
                         <span class="info-value"
                             th:text="${#temporals.format(ticket.eventStartAt, 'HH:mm - dd/MM/yyyy')}">20:00 -
                             15/10/2026</span>
                     </div>
                     <div class="info-row" th:if="${ticket.createdAt != null}">
-                        <span class="info-label">Ngay dang</span>
+                        <span class="info-label">Ngày đăng</span>
                         <span class="info-value"
                             th:text="${#temporals.format(ticket.createdAt, 'dd/MM/yyyy')}">01/10/2026</span>
                     </div>
@@ -580,14 +580,14 @@
                 <!-- Transfer Instruction (hien khi co) -->
                 <div class="transfer-box"
                     th:if="${ticket.transferInstruction != null && !ticket.transferInstruction.isBlank()}">
-                    <div class="transfer-box-title">Huong dan chuyen ve</div>
+                    <div class="transfer-box-title">Hướng dẫn chuyển vé</div>
                     <div class="transfer-box-content" th:text="${ticket.transferInstruction}"></div>
                 </div>
 
                 <!-- Dispute Window (hien khi dang cho khieu nai) -->
                 <div class="dispute-info" th:if="${ticket.disputeWindowClosesAt != null
                      && (ticket.status.name() == 'AWAITING_USE')}">
-                    Cua so khieu nai dong luc:
+                    Cửa sổ khiếu nại đóng lúc:
                     <strong th:text="${#temporals.format(ticket.disputeWindowClosesAt, 'HH:mm dd/MM/yyyy')}">12:00
                         20/10/2026</strong>
                 </div>
@@ -597,19 +597,19 @@
 
                     <!-- Guest: chua dang nhap → nut dang nhap de mua -->
                     <a th:if="${currentUserId == null && ticket.status.name() == 'LISTED'}" th:href="@{/login}"
-                        class="btn btn-primary">Dang nhap de mua ve nay</a>
+                        class="btn btn-primary">Đăng nhập để mua vé này</a>
 
                     <!-- Seller: ve LISTED → nut huy listing -->
                     <div th:if="${isSeller != null && isSeller && ticket.status.name() == 'LISTED'}">
                         <button type="button" class="btn btn-danger-outline"
                             onclick="document.getElementById('cancelSection').style.display='block'; this.style.display='none';">
-                            Huy dang ve
+                            Hủy đăng vé
                         </button>
                         <div id="cancelSection" class="cancel-form" style="display:none;">
                             <form method="post" th:action="@{/tickets/{id}/cancel(id=${ticket.id})}">
                                 <input type="text" name="reason" class="cancel-reason"
-                                    placeholder="Ly do huy (bat buoc)" required maxlength="500">
-                                <button type="submit" class="btn btn-danger-outline">Xac nhan huy</button>
+                                    placeholder="Lý do hủy (bắt buộc)" required maxlength="500">
+                                <button type="submit" class="btn btn-danger-outline">Xác nhận hủy</button>
                             </form>
                         </div>
                     </div>
@@ -617,17 +617,17 @@
                     <!-- Seller: ve DEPOSIT_LOCKED → nut xac nhan da chuyen ve -->
                     <form th:if="${isSeller != null && isSeller && ticket.status.name() == 'DEPOSIT_LOCKED'}"
                         method="post" th:action="@{/tickets/{id}/transfer(id=${ticket.id})}">
-                        <button type="submit" class="btn btn-primary">Xac nhan da chuyen ve</button>
+                        <button type="submit" class="btn btn-primary">Xác nhận đã chuyển vé</button>
                     </form>
 
                     <!-- Buyer: ve TRANSFERRED → nut xac nhan da nhan ve -->
                     <form th:if="${isBuyer != null && isBuyer && ticket.status.name() == 'TRANSFERRED'}" method="post"
                         th:action="@{/tickets/{id}/received(id=${ticket.id})}">
-                        <button type="submit" class="btn btn-success">Xac nhan da nhan ve</button>
+                        <button type="submit" class="btn btn-success">Xác nhận đã nhận vé</button>
                     </form>
 
                     <!-- Back to list -->
-                    <a th:href="@{/tickets}" class="btn btn-outline">Quay lai danh sach</a>
+                    <a th:href="@{/tickets}" class="btn btn-outline">Quay lại danh sách</a>
 
                 </div>
 

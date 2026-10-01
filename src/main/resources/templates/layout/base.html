@@ -300,24 +300,24 @@
             <a href="/" class="site-brand">TicketPass</a>
             
             <nav class="site-nav">
-                <a th:href="@{/tickets}">Ve dang ban</a>
+                <a th:href="@{/tickets}">Vé đang bán</a>
                 <!-- Neu co User session, hien thi menu khac -->
                 <th:block th:if="${#authorization.expression('isAuthenticated()')}">
-                    <a th:href="@{/profile}">Ho so</a>
+                    <a th:href="@{/profile}">Hồ sơ</a>
                 </th:block>
             </nav>
 
             <div class="nav-actions">
                 <!-- Chua dang nhap -->
                 <th:block th:if="${!#authorization.expression('isAuthenticated()')}">
-                    <a th:href="@{/login}" class="btn btn-outline">Dang nhap</a>
-                    <a th:href="@{/register}" class="btn btn-brand">Dang ky</a>
+                    <a th:href="@{/login}" class="btn btn-outline">Đăng nhập</a>
+                    <a th:href="@{/register}" class="btn btn-brand">Đăng ký</a>
                 </th:block>
                 
                 <!-- Da dang nhap -->
                 <th:block th:if="${#authorization.expression('isAuthenticated()')}">
                     <form th:action="@{/logout}" method="post">
-                        <button type="submit" class="btn btn-outline">Dang xuat</button>
+                        <button type="submit" class="btn btn-outline">Đăng xuất</button>
                     </form>
                 </th:block>
             </div>
@@ -332,7 +332,7 @@
     <!-- Footer -->
     <footer class="site-footer">
         <div class="site-footer-inner">
-            TicketPass &copy; 2026. Nen tang giao dich ve an toan.
+            TicketPass &copy; 2026. Nền tảng giao dịch vé an toàn.
         </div>
     </footer>
 

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Dang nhap - TicketPass</title>
+    <title>Đăng nhập - TicketPass</title>
 </head>
 <body>
-    <div th:replace="~{layout/base :: layout('Dang nhap - TicketPass', ~{::content})}">
+    <div th:replace="~{layout/base :: layout('Đăng nhập - TicketPass', ~{::content})}">
         <content>
             <style>
                 .auth-wrapper {
@@ -88,17 +88,17 @@
             </style>
 
             <div class="auth-wrapper">
-                <h1 class="auth-title">Dang nhap</h1>
+                <h1 class="auth-title">Đăng nhập</h1>
 
                 <!-- Alerts -->
                 <div class="auth-alert error" th:if="${param.error}">
-                    Email hoac mat khau khong dung.
+                    Email hoặc mật khẩu không đúng.
                 </div>
                 <div class="auth-alert success" th:if="${param.logout}">
-                    Ban da dang xuat thanh cong.
+                    Bạn đã đăng xuất thành công.
                 </div>
                 <div class="auth-alert success" th:if="${param.registered}">
-                    Dang ky thanh cong. Vui long dang nhap.
+                    Đăng ký thành công. Vui lòng đăng nhập.
                 </div>
 
                 <form method="post" action="/login">
@@ -108,15 +108,15 @@
                     </div>
                     
                     <div class="field">
-                        <label class="field-label" for="password">Mat khau</label>
+                        <label class="field-label" for="password">Mật khẩu</label>
                         <input type="password" id="password" name="password" class="field-input" required placeholder="••••••••">
                     </div>
                     
-                    <button type="submit" class="btn btn-brand btn-submit">Dang nhap vao he thong</button>
+                    <button type="submit" class="btn btn-brand btn-submit">Đăng nhập vào hệ thống</button>
                 </form>
 
                 <div class="auth-footer">
-                    Chua co tai khoan? <a th:href="@{/register}">Dang ky ngay</a>
+                    Chưa có tài khoản? <a th:href="@{/register}">Đăng ký ngay</a>
                 </div>
             </div>
             

@@ -15,7 +15,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dang ve moi - TicketPass</title>
+    <title>Đăng vé mới - TicketPass</title>
     <style>
         /* ===== Design Tokens ===== */
         :root {
@@ -351,8 +351,8 @@
         <div class="header-inner">
             <a th:href="@{/}" class="site-logo">TicketPass</a>
             <nav class="header-nav">
-                <a th:href="@{/tickets}">Ve dang ban</a>
-                <a th:href="@{/profile}">Ho so</a>
+                <a th:href="@{/tickets}">Vé đang bán</a>
+                <a th:href="@{/profile}">Hồ sơ</a>
             </nav>
         </div>
     </header>
@@ -360,29 +360,29 @@
     <!-- ===== Main Content ===== -->
     <div class="page-container">
 
-        <h1 class="page-title">Dang ve moi</h1>
-        <p class="page-subtitle">Dien day du thong tin ve va tai len anh de dang ban tren san.</p>
-
-        <!-- Global Errors -->
-        <div class="global-error" th:if="${#fields.hasGlobalErrors()}" th:each="err : ${#fields.globalErrors()}"
-            th:text="${err}"></div>
+        <h1 class="page-title">Đăng vé mới</h1>
+        <p class="page-subtitle">Điền đầy đủ thông tin vé và tải lên ảnh để đăng bán trên sàn.</p>
 
         <form method="post" th:action="@{/tickets}" th:object="${createTicketRequest}" enctype="multipart/form-data"
             novalidate>
+
+            <!-- Global Errors -->
+            <div class="global-error" th:if="${#fields.hasErrors('global')}" th:each="err : ${#fields.errors('global')}"
+                th:text="${err}"></div>
 
             <div class="form-card">
 
                 <!-- Section: Thong tin co ban -->
                 <div class="form-section">
-                    <div class="form-section-title">Thong tin co ban</div>
+                    <div class="form-section-title">Thông tin cơ bản</div>
 
                     <div class="field">
                         <label class="field-label" for="ticketType">
-                            Loai ve <span class="required">*</span>
+                            Loại vé <span class="required">*</span>
                         </label>
                         <select id="ticketType" th:field="*{ticketType}"
                             th:classappend="${#fields.hasErrors('ticketType')} ? 'has-error'" class="field-input">
-                            <option value="">-- Chon loai ve --</option>
+                            <option value="">-- Chọn loại vé --</option>
                             <option th:each="type : ${ticketTypes}" th:value="${type.name()}" th:text="${type.name()}">
                             </option>
                         </select>
@@ -392,17 +392,17 @@
 
                     <div class="field">
                         <label class="field-label" for="title">
-                            Tieu de ve <span class="required">*</span>
+                            Tiêu đề vé <span class="required">*</span>
                         </label>
                         <input type="text" id="title" th:field="*{title}" maxlength="200"
                             th:classappend="${#fields.hasErrors('title')} ? 'has-error'" class="field-input"
-                            placeholder="VD: Ve xem phim Avengers 20h ngay 15/10">
+                            placeholder="VD: Vé xem phim Avengers 20h ngày 15/10">
                         <div class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
                     </div>
 
                     <div class="field">
                         <label class="field-label" for="eventName">
-                            Ten su kien <span class="required">*</span>
+                            Tên sự kiện <span class="required">*</span>
                         </label>
                         <input type="text" id="eventName" th:field="*{eventName}" maxlength="200"
                             th:classappend="${#fields.hasErrors('eventName')} ? 'has-error'" class="field-input"
@@ -413,12 +413,12 @@
 
                     <div class="field-row">
                         <div class="field">
-                            <label class="field-label" for="venue">Dia diem</label>
+                            <label class="field-label" for="venue">Địa điểm</label>
                             <input type="text" id="venue" th:field="*{venue}" maxlength="255" class="field-input"
-                                placeholder="VD: CGV Vincom Ba Trieu">
+                                placeholder="VD: CGV Vincom Bà Triệu">
                         </div>
                         <div class="field">
-                            <label class="field-label" for="seatInfo">Thong tin ghe</label>
+                            <label class="field-label" for="seatInfo">Thông tin ghế</label>
                             <input type="text" id="seatInfo" th:field="*{seatInfo}" maxlength="120" class="field-input"
                                 placeholder="VD: H7, H8">
                         </div>
@@ -426,7 +426,7 @@
 
                     <div class="field">
                         <label class="field-label" for="eventStartAt">
-                            Thoi gian su kien <span class="required">*</span>
+                            Thời gian sự kiện <span class="required">*</span>
                         </label>
                         <input type="datetime-local" id="eventStartAt" th:field="*{eventStartAt}"
                             th:classappend="${#fields.hasErrors('eventStartAt')} ? 'has-error'" class="field-input">
@@ -437,12 +437,12 @@
 
                 <!-- Section: Gia ban -->
                 <div class="form-section">
-                    <div class="form-section-title">Gia ve</div>
+                    <div class="form-section-title">Giá vé</div>
 
                     <div class="field-row">
                         <div class="field">
                             <label class="field-label" for="originalPrice">
-                                Gia goc (VND) <span class="required">*</span>
+                                Giá gốc (VND) <span class="required">*</span>
                             </label>
                             <input type="number" id="originalPrice" th:field="*{originalPrice}" min="0" step="1000"
                                 th:classappend="${#fields.hasErrors('originalPrice')} ? 'has-error'" class="field-input"
@@ -452,30 +452,30 @@
                         </div>
                         <div class="field">
                             <label class="field-label" for="salePrice">
-                                Gia ban (VND) <span class="required">*</span>
+                                Giá bán (VND) <span class="required">*</span>
                             </label>
                             <input type="number" id="salePrice" th:field="*{salePrice}" min="1000" step="1000"
                                 th:classappend="${#fields.hasErrors('salePrice')} ? 'has-error'" class="field-input"
                                 placeholder="0">
                             <div class="field-error" th:if="${#fields.hasErrors('salePrice')}" th:errors="*{salePrice}">
                             </div>
-                            <div class="field-hint">Gia ban khong duoc vuot qua gia goc.</div>
+                            <div class="field-hint">Giá bán không được vượt quá giá gốc.</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Section: Nha phat hanh -->
                 <div class="form-section">
-                    <div class="form-section-title">Nha phat hanh (tuy chon)</div>
+                    <div class="form-section-title">Nhà phát hành (tùy chọn)</div>
 
                     <div class="field-row">
                         <div class="field">
-                            <label class="field-label" for="providerName">Don vi phat hanh</label>
+                            <label class="field-label" for="providerName">Đơn vị phát hành</label>
                             <input type="text" id="providerName" th:field="*{providerName}" maxlength="100"
                                 class="field-input" placeholder="VD: CGV, Ticketbox">
                         </div>
                         <div class="field">
-                            <label class="field-label" for="providerOrderCode">Ma don hang</label>
+                            <label class="field-label" for="providerOrderCode">Mã đơn hàng</label>
                             <input type="text" id="providerOrderCode" th:field="*{providerOrderCode}" maxlength="120"
                                 class="field-input" placeholder="VD: ORD-123456">
                         </div>
@@ -484,11 +484,11 @@
 
                 <!-- Section: Upload anh -->
                 <div class="form-section">
-                    <div class="form-section-title">Anh ve</div>
+                    <div class="form-section-title">Ảnh vé</div>
 
                     <div class="field">
                         <label class="field-label">
-                            Anh ve cong khai <span class="required">*</span>
+                            Ảnh vé công khai <span class="required">*</span>
                         </label>
                         <div class="file-upload-area"
                             th:classappend="${#fields.hasErrors('ticketImageStorageKey')} ? 'has-error'"
@@ -503,8 +503,8 @@
                                     <line x1="12" y1="3" x2="12" y2="15" />
                                 </svg>
                             </div>
-                            <div class="upload-text">Chon anh ve cong khai</div>
-                            <div class="upload-hint">Nguoi mua se thay anh nay truoc khi mua. JPG, PNG (toi da 25MB)
+                            <div class="upload-text">Chọn ảnh vé công khai</div>
+                            <div class="upload-hint">Người mua sẽ thấy ảnh này trước khi mua. JPG, PNG (tối đa 25MB)
                             </div>
                             <div class="file-name" id="ticketImageName"></div>
                         </div>
@@ -514,7 +514,7 @@
 
                     <div class="field">
                         <label class="field-label">
-                            Anh QR an (check-in) <span class="required">*</span>
+                            Ảnh QR ẩn (check-in) <span class="required">*</span>
                         </label>
                         <div class="file-upload-area"
                             th:classappend="${#fields.hasErrors('qrImageStorageKey')} ? 'has-error'" id="qrImageArea">
@@ -529,9 +529,9 @@
                                     <path d="M14 14h3v3h-3zM20 14v3h-3M14 20h3M20 20" />
                                 </svg>
                             </div>
-                            <div class="upload-text">Chon anh QR an</div>
-                            <div class="upload-hint">Anh nay chi duoc mo khoa cho nguoi mua sau khi thanh toan va dat
-                                coc.</div>
+                            <div class="upload-text">Chọn ảnh QR ẩn</div>
+                            <div class="upload-hint">Ảnh này chỉ được mở khóa cho người mua sau khi thanh toán và đặt
+                                cọc.</div>
                             <div class="file-name" id="qrImageName"></div>
                         </div>
                         <div class="field-error" th:if="${#fields.hasErrors('qrImageStorageKey')}"
@@ -543,8 +543,8 @@
 
             <!-- Actions -->
             <div class="form-actions">
-                <a th:href="@{/tickets}" class="btn btn-secondary">Huy</a>
-                <button type="submit" class="btn btn-primary">Dang ve</button>
+                <a th:href="@{/tickets}" class="btn btn-secondary">Hủy</a>
+                <button type="submit" class="btn btn-primary">Đăng vé</button>
             </div>
 
         </form>

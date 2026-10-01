@@ -16,7 +16,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ve dang ban - TicketPass</title>
+    <title>Vé đang bán - TicketPass</title>
     <style>
         /* ===== Design Tokens ===== */
         :root {
@@ -350,8 +350,8 @@
         <div class="header-inner">
             <a th:href="@{/}" class="site-logo">TicketPass</a>
             <nav class="header-nav">
-                <a th:href="@{/tickets}">Ve dang ban</a>
-                <a th:href="@{/login}">Dang nhap</a>
+                <a th:href="@{/tickets}">Vé đang bán</a>
+                <a th:href="@{/login}">Đăng nhập</a>
             </nav>
         </div>
     </header>
@@ -361,13 +361,13 @@
 
         <!-- Page Header -->
         <div class="page-header">
-            <h1 class="page-title">Ve dang ban</h1>
-            <a th:href="@{/tickets/new}" class="btn-create">Dang ve moi</a>
+            <h1 class="page-title">Vé đang bán</h1>
+            <a th:href="@{/tickets/new}" class="btn-create">Đăng vé mới</a>
         </div>
 
         <!-- Filter Bar -->
         <div class="filter-bar">
-            <a th:href="@{/tickets}" th:classappend="${selectedType == null} ? ' active'" class="filter-btn">Tat ca</a>
+            <a th:href="@{/tickets}" th:classappend="${selectedType == null} ? ' active'" class="filter-btn">Tất cả</a>
             <a th:each="type : ${ticketTypes}" th:href="@{/tickets(ticketType=${type.name()})}" th:text="${type.name()}"
                 th:classappend="${selectedType != null && selectedType.toUpperCase() == type.name()} ? ' active'"
                 th:class="'filter-btn type-' + ${type.name()}" class="filter-btn"></a>
@@ -380,20 +380,20 @@
                 <div class="card-image-wrap">
                     <img th:if="${t.thumbnailUrl != null}" th:src="${t.thumbnailUrl}" alt="Anh ve">
                     <div th:if="${t.thumbnailUrl == null}" class="card-image-placeholder">
-                        Chua co anh
+                        Chưa có ảnh
                     </div>
                     <span class="card-badge" th:classappend="'type-' + ${t.ticketType.name()}"
                         th:text="${t.ticketType.name()}"></span>
                 </div>
 
                 <div class="card-body">
-                    <div class="card-title" th:text="${t.title}">Ten ve</div>
-                    <div class="card-event" th:text="${t.eventName}">Ten su kien</div>
+                    <div class="card-title" th:text="${t.title}">Tên vé</div>
+                    <div class="card-event" th:text="${t.eventName}">Tên sự kiện</div>
                     <div class="card-meta">
                         <span class="card-date"
                             th:text="${#temporals.format(t.eventStartAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</span>
                         <span class="card-price"
-                            th:text="${#numbers.formatDecimal(t.salePrice, 0, 'COMMA', 0, 'POINT')} + 'd'">100.000d</span>
+                            th:text="${#numbers.formatDecimal(t.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'">100.000đ</span>
                     </div>
                 </div>
             </a>
@@ -408,8 +408,8 @@
                     <path d="M10 4v16" />
                 </svg>
             </div>
-            <h3>Chua co ve nao duoc rao ban</h3>
-            <p>Hay la nguoi dau tien dang ve tren san.</p>
+            <h3>Chưa có vé nào được rao bán</h3>
+            <p>Hãy là người đầu tiên đăng vé trên sàn.</p>
         </div>
 
     </div>
