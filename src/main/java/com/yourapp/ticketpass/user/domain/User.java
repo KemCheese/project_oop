@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -95,6 +96,9 @@ public class User {
     private Instant createdAt;
 
     private Instant updatedAt;
+
+    @Version
+    private Long version;
 
     @PrePersist
     void onCreate() {

@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <title>Đăng nhập - TicketPass</title>
 </head>
+
 <body>
     <div th:replace="~{layout/base :: layout('Đăng nhập - TicketPass', ~{::content})}">
         <content>
@@ -15,6 +17,7 @@
                     border-radius: var(--radius-lg);
                     padding: var(--spacing-xl);
                 }
+
                 .auth-title {
                     font-size: 24px;
                     font-weight: 700;
@@ -22,7 +25,7 @@
                     text-align: center;
                     margin-bottom: var(--spacing-lg);
                 }
-                
+
                 .auth-alert {
                     padding: 12px 16px;
                     border-radius: var(--radius-sm);
@@ -30,18 +33,23 @@
                     font-size: 14px;
                     text-align: center;
                 }
+
                 .auth-alert.error {
                     background-color: var(--color-danger-surface);
                     color: var(--color-danger);
                     border: 1px solid var(--color-danger-border);
                 }
+
                 .auth-alert.success {
                     background-color: var(--color-success-surface);
                     color: var(--color-success);
                     border: 1px solid var(--color-success-border);
                 }
 
-                .field { margin-bottom: var(--spacing-md); }
+                .field {
+                    margin-bottom: var(--spacing-md);
+                }
+
                 .field-label {
                     display: block;
                     font-size: 13px;
@@ -49,6 +57,7 @@
                     color: var(--color-brand);
                     margin-bottom: var(--spacing-xs);
                 }
+
                 .field-input {
                     width: 100%;
                     padding: 10px 12px;
@@ -61,11 +70,12 @@
                     transition: all var(--transition-fast);
                     outline: none;
                 }
+
                 .field-input:focus {
                     border-color: var(--color-primary);
                     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
                 }
-                
+
                 .btn-submit {
                     width: 100%;
                     padding: 12px;
@@ -78,10 +88,12 @@
                     font-size: 14px;
                     color: var(--color-text-muted);
                 }
+
                 .auth-footer a {
                     color: var(--color-primary);
                     font-weight: 600;
                 }
+
                 .auth-footer a:hover {
                     text-decoration: underline;
                 }
@@ -101,17 +113,19 @@
                     Đăng ký thành công. Vui lòng đăng nhập.
                 </div>
 
-                <form method="post" action="/login">
+                <form method="post" th:action="@{/login}">
                     <div class="field">
                         <label class="field-label" for="username">Email</label>
-                        <input type="email" id="username" name="username" class="field-input" required maxlength="255" placeholder="nhap.email@cua-ban.com">
+                        <input type="email" id="username" name="username" class="field-input" required maxlength="255"
+                            placeholder="nhap.email@cua-ban.com">
                     </div>
-                    
+
                     <div class="field">
                         <label class="field-label" for="password">Mật khẩu</label>
-                        <input type="password" id="password" name="password" class="field-input" required placeholder="••••••••">
+                        <input type="password" id="password" name="password" class="field-input" required
+                            placeholder="••••••••">
                     </div>
-                    
+
                     <button type="submit" class="btn btn-brand btn-submit">Đăng nhập vào hệ thống</button>
                 </form>
 
@@ -119,8 +133,9 @@
                     Chưa có tài khoản? <a th:href="@{/register}">Đăng ký ngay</a>
                 </div>
             </div>
-            
+
         </content>
     </div>
 </body>
+
 </html>

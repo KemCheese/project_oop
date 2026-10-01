@@ -12,6 +12,7 @@ import com.yourapp.ticketpass.ticket.domain.ValidationResult;
 import com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest;
 import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -74,7 +75,9 @@ public class TransferTicketService {
         ticket.setEventName(request.getEventName());
         ticket.setVenue(request.getVenue());
         ticket.setSeatInfo(request.getSeatInfo());
-        ticket.setEventStartAt(request.getEventStartAt());
+        ticket.setEventStartAt(request.getEventStartAt() != null
+                ? request.getEventStartAt().atZone(ZoneId.systemDefault()).toInstant()
+                : null);
         ticket.setOriginalPrice(request.getOriginalPrice());
         ticket.setSalePrice(request.getSalePrice());
         ticket.setProviderName(request.getProviderName());

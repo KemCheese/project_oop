@@ -386,7 +386,7 @@ SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             .requestMatchers("/", "/tickets", "/tickets/*", "/register", "/login", "/css/**").permitAll()
             .requestMatchers("/admin/**").hasRole("ADMIN")
             .anyRequest().authenticated())
-        .formLogin(form -> form.loginPage("/login").defaultSuccessUrl("/", true))
+        .formLogin(form -> form.loginPage("/login").defaultSuccessUrl("/tickets", false))
         .logout(logout -> logout.logoutSuccessUrl("/"))
         .build();
 }
