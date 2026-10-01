@@ -1,12 +1,27 @@
 package com.yourapp.ticketpass.ticket.web;
 
+import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
+import com.yourapp.ticketpass.shared.storage.FileStorageService;
+import com.yourapp.ticketpass.shared.storage.StoredFileRef;
 import com.yourapp.ticketpass.ticket.application.TransferTicketService;
+import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
+import com.yourapp.ticketpass.ticket.domain.TicketStatus;
+import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest;
+import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
+import com.yourapp.ticketpass.ticket.web.dto.TicketSummaryResponse;
+import com.yourapp.ticketpass.user.domain.User;
+import com.yourapp.ticketpass.user.domain.UserRepository;
 import jakarta.validation.Valid;
+import java.io.IOException;
+import java.security.Principal;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,6 +60,17 @@ public class TicketController {
 
     private final TicketRepository ticketRepository;
 
+    private final FileStorageService fileStorageService;
+
+    private final UserRepository userRepository;
+
+    /**
+     * Lấy danh sách loại vé khả dụng (bỏ qua TRAIN bị deprecated).
+     */
+    private TicketType[] getActiveTicketTypes() {
+        return new TicketType[] { TicketType.MOVIE, TicketType.CONCERT, TicketType.BUS };
+    }
+
     /**
      * Danh sach ve dang duoc rao ban.
      *
@@ -54,10 +80,28 @@ public class TicketController {
      */
     @GetMapping
     public String list(@RequestParam(required = false) String ticketType, Model model) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Nap ve dang ban qua ticketRepository.findByStatus(LISTED) hoac "
-                        + "findListedByType khi co bo loc, map sang TicketSummaryResponse, dua vao model duoi khoa "
-                        + "\"tickets\" va tra ve view \"ticket/list\".");
+        List<Ticket> tickets;
+
+        if (ticketType != null && !ticketType.isBlank()) {
+            try {
+                TicketType type = TicketType.valueOf(ticketType.toUpperCase());
+                tickets = ticketRepository.findListedByType(type);
+            } catch (IllegalArgumentException e) {
+                // Loai ve khong hop le → tra ve tat ca ve dang ban
+                tickets = ticketRepository.findByStatus(TicketStatus.LISTED);
+            }
+        } else {
+            tickets = ticketRepository.findByStatus(TicketStatus.LISTED);
+        }
+
+        List<TicketSummaryResponse> summaries = tickets.stream()
+                .map(this::toSummary)
+                .collect(Collectors.toList());
+
+        model.addAttribute("tickets", summaries);
+        model.addAttribute("ticketTypes", getActiveTicketTypes());
+        model.addAttribute("selectedType", ticketType);
+        return "ticket/list";
     }
 
     /**
@@ -68,11 +112,23 @@ public class TicketController {
      * @return ten view "ticket/detail"
      */
     @GetMapping("/{id}")
-    public String detail(@PathVariable Long id, Model model) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Nap ve qua ticketRepository.findById, khong thay thi nem "
-                        + "ResourceNotFoundException(\"Ticket\", id), map sang TicketResponse kem URL anh, dua vao "
-                        + "model duoi khoa \"ticket\" va tra ve view \"ticket/detail\".");
+    public String detail(@PathVariable Long id, Model model, Principal principal) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", id));
+
+        TicketResponse response = toResponse(ticket);
+        model.addAttribute("ticket", response);
+
+        // Xac dinh vai tro cua nguoi dang xem de hien thi nut hanh dong phu hop
+        if (principal != null) {
+            Long currentUserId = resolveUserId(principal);
+            model.addAttribute("currentUserId", currentUserId);
+            model.addAttribute("isSeller", ticket.getSellerId().equals(currentUserId));
+            model.addAttribute("isBuyer",
+                    ticket.getBuyerId() != null && ticket.getBuyerId().equals(currentUserId));
+        }
+
+        return "ticket/detail";
     }
 
     /**
@@ -83,54 +139,100 @@ public class TicketController {
      */
     @GetMapping("/new")
     public String createForm(Model model) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Dua CreateTicketRequest rong va danh sach TicketType vao model, "
-                        + "roi tra ve view \"ticket/create\".");
+        model.addAttribute("createTicketRequest", new CreateTicketRequest());
+        model.addAttribute("ticketTypes", getActiveTicketTypes());
+        return "ticket/create";
     }
 
     /**
      * Tao listing moi tu form dang ve.
      *
      * @param request du lieu form da qua Bean Validation
+     * @param bindingResult ket qua validation, dung de tra loi form khi co loi
      * @param ticketImage anh ve nguoi ban tai len
      * @param qrImage anh ma QR nguoi ban tai len
+     * @param principal nguoi dang dang nhap
+     * @param model model de truyen du lieu sang view khi co loi
      * @return chuyen huong sang trang chi tiet ve vua tao
      */
     @PostMapping
     public String create(@Valid @ModelAttribute CreateTicketRequest request,
-                         @RequestParam("ticketImage") MultipartFile ticketImage,
-                         @RequestParam("qrImage") MultipartFile qrImage) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Upload hai file qua FileStorageService de lay storage key, gan vao request, "
-                        + "lay sellerId tu phien dang nhap, goi transferTicketService.createListing, roi redirect sang "
-                        + "\"/tickets/{id}\" cua ve vua tao.");
+                         BindingResult bindingResult,
+                         @RequestParam(value = "ticketImage", required = false) MultipartFile ticketImage,
+                         @RequestParam(value = "qrImage", required = false) MultipartFile qrImage,
+                         Principal principal,
+                         Model model) {
+        // Validate file upload: phai co ca hai anh
+        if (ticketImage == null || ticketImage.isEmpty()) {
+            bindingResult.rejectValue("ticketImageStorageKey", "required",
+                    "Phai upload anh ve cong khai.");
+        }
+        if (qrImage == null || qrImage.isEmpty()) {
+            bindingResult.rejectValue("qrImageStorageKey", "required",
+                    "Phai upload anh QR an (anh check-in bi mat).");
+        }
+
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("ticketTypes", getActiveTicketTypes());
+            return "ticket/create";
+        }
+
+        // Upload 2 file anh qua FileStorageService
+        try {
+            StoredFileRef ticketImageRef = fileStorageService.store(
+                    "tickets",
+                    ticketImage.getOriginalFilename(),
+                    ticketImage.getInputStream(),
+                    ticketImage.getSize(),
+                    ticketImage.getContentType());
+            request.setTicketImageStorageKey(ticketImageRef.getStorageKey());
+
+            StoredFileRef qrImageRef = fileStorageService.store(
+                    "tickets-qr",
+                    qrImage.getOriginalFilename(),
+                    qrImage.getInputStream(),
+                    qrImage.getSize(),
+                    qrImage.getContentType());
+            request.setQrImageStorageKey(qrImageRef.getStorageKey());
+        } catch (IOException e) {
+            bindingResult.reject("file.upload.error",
+                    "Khong the tai anh len. Vui long thu lai.");
+            model.addAttribute("ticketTypes", TicketType.values());
+            return "ticket/create";
+        }
+
+        Long sellerId = resolveUserId(principal);
+        TicketResponse created = transferTicketService.createListing(request, sellerId);
+
+        return "redirect:/tickets/" + created.getId();
     }
 
     /**
      * Nguoi ban danh dau da chuyen ve cho nguoi mua.
      *
      * @param id id cua ve
+     * @param principal nguoi dang dang nhap (seller)
      * @return chuyen huong sang trang chi tiet ve
      */
     @PostMapping("/{id}/transfer")
-    public String markTransferred(@PathVariable Long id) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Lay sellerId tu phien dang nhap, goi "
-                        + "transferTicketService.markTransferred(id, sellerId), roi redirect ve \"/tickets/{id}\".");
+    public String markTransferred(@PathVariable Long id, Principal principal) {
+        Long sellerId = resolveUserId(principal);
+        transferTicketService.markTransferred(id, sellerId);
+        return "redirect:/tickets/" + id;
     }
 
     /**
      * Nguoi mua xac nhan da nhan duoc ve.
      *
      * @param id id cua ve
+     * @param principal nguoi dang dang nhap (buyer)
      * @return chuyen huong sang trang chi tiet ve
      */
     @PostMapping("/{id}/received")
-    public String markReceived(@PathVariable Long id) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Lay buyerId tu phien dang nhap, goi "
-                        + "transferTicketService.markAwaitingUse(id, buyerId), roi redirect ve \"/tickets/{id}\" "
-                        + "kem thong bao thoi diem dong cua so khieu nai.");
+    public String markReceived(@PathVariable Long id, Principal principal) {
+        Long buyerId = resolveUserId(principal);
+        transferTicketService.markAwaitingUse(id, buyerId);
+        return "redirect:/tickets/" + id;
     }
 
     /**
@@ -138,12 +240,76 @@ public class TicketController {
      *
      * @param id id cua ve
      * @param reason ly do huy
+     * @param principal nguoi dang dang nhap (seller)
      * @return chuyen huong ve danh sach ve
      */
     @PostMapping("/{id}/cancel")
-    public String cancel(@PathVariable Long id, @RequestParam String reason) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Lay sellerId tu phien dang nhap, goi "
-                        + "transferTicketService.cancelListing(id, sellerId, reason), roi redirect ve \"/tickets\".");
+    public String cancel(@PathVariable Long id, @RequestParam String reason,
+                         Principal principal) {
+        Long sellerId = resolveUserId(principal);
+        transferTicketService.cancelListing(id, sellerId, reason);
+        return "redirect:/tickets";
+    }
+
+    // ========================= Helper methods =========================
+
+    /**
+     * Lay userId (Long) tu Principal. UserDetailsServiceImpl dung email lam username,
+     * nen principal.getName() tra ve email → tim User qua UserRepository de lay id.
+     */
+    private Long resolveUserId(Principal principal) {
+        String email = principal.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
+        return user.getId();
+    }
+
+    /** Map entity Ticket sang DTO TicketSummaryResponse (ban gon, dung cho danh sach). */
+    private TicketSummaryResponse toSummary(Ticket ticket) {
+        TicketSummaryResponse summary = new TicketSummaryResponse();
+        summary.setId(ticket.getId());
+        summary.setTicketType(ticket.getTicketType());
+        summary.setStatus(ticket.getStatus());
+        summary.setTitle(ticket.getTitle());
+        summary.setEventName(ticket.getEventName());
+        summary.setEventStartAt(ticket.getEventStartAt());
+        summary.setSalePrice(ticket.getSalePrice());
+        if (ticket.getTicketImageStorageKey() != null
+                && !ticket.getTicketImageStorageKey().isBlank()) {
+            summary.setThumbnailUrl(
+                    fileStorageService.buildPublicUrl(ticket.getTicketImageStorageKey()));
+        }
+        return summary;
+    }
+
+    /** Map entity Ticket sang DTO TicketResponse day du (dung cho trang chi tiet). */
+    private TicketResponse toResponse(Ticket ticket) {
+        TicketResponse response = new TicketResponse();
+        response.setId(ticket.getId());
+        response.setSellerId(ticket.getSellerId());
+        response.setBuyerId(ticket.getBuyerId());
+        response.setTicketType(ticket.getTicketType());
+        response.setStatus(ticket.getStatus());
+        response.setTitle(ticket.getTitle());
+        response.setEventName(ticket.getEventName());
+        response.setVenue(ticket.getVenue());
+        response.setSeatInfo(ticket.getSeatInfo());
+        response.setEventStartAt(ticket.getEventStartAt());
+        response.setOriginalPrice(ticket.getOriginalPrice());
+        response.setSalePrice(ticket.getSalePrice());
+        response.setTransferInstruction(ticket.getTransferInstruction());
+        response.setDisputeWindowClosesAt(ticket.getDisputeWindowClosesAt());
+        response.setCreatedAt(ticket.getCreatedAt());
+        if (ticket.getTicketImageStorageKey() != null
+                && !ticket.getTicketImageStorageKey().isBlank()) {
+            response.setTicketImageUrl(
+                    fileStorageService.buildPublicUrl(ticket.getTicketImageStorageKey()));
+        }
+        if (ticket.getQrImageStorageKey() != null
+                && !ticket.getQrImageStorageKey().isBlank()) {
+            response.setQrImageUrl(
+                    fileStorageService.buildPublicUrl(ticket.getQrImageStorageKey()));
+        }
+        return response;
     }
 }

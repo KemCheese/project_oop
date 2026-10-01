@@ -36,5 +36,7 @@ public class ReputationResponse {
 
     private Integer disputesWon;
 
+    private BigDecimal totalGmv;
+
     private Instant lastTransactionAt;
 }

@@ -38,56 +38,32 @@ public class UserQueryService {
      * @return người dùng nếu tồn tại
      */
     public Optional<User> findById(Long userId) {
-        return userRepository.findById(userId);
+        throw new UnsupportedOperationException(
+                "TODO [Người C] Prompt 2: delegate sang userRepository.findById(userId).");
     }
 
     /**
      * Tìm người dùng theo email.
      *
-     * <p>Email được chuẩn hoá về chữ thường và loại bỏ khoảng trắng đầu/cuối trước khi
-     * truy vấn, đảm bảo khớp với cách lưu trữ trong {@code RegisterUserUseCase.register()}.</p>
-     *
      * @param email email đăng nhập
      * @return người dùng nếu tồn tại
      */
     public Optional<User> findByEmail(String email) {
-        if (email == null || email.isBlank()) {
-            return Optional.empty();
-        }
-        return userRepository.findByEmail(email.trim().toLowerCase());
+        throw new UnsupportedOperationException(
+                "TODO [Người C] Prompt 2: chuẩn hoá email về chữ thường rồi delegate sang "
+                        + "userRepository.findByEmail.");
     }
 
     /**
      * Liệt kê người dùng theo trạng thái, phục vụ màn hình quản trị.
      *
-     * <p>Trả về DTO rút gọn {@link UserSummaryResponse}. Trường {@code reputationScore}
-     * được để {@code null} — tầng {@code web} (AdminController) sẽ lắp thêm từ module
-     * {@code reputation} nếu cần.</p>
-     *
      * @param status trạng thái cần lọc
      * @return danh sách bản rút gọn của người dùng
      */
     public List<UserSummaryResponse> listByStatus(UserStatus status) {
-        return userRepository.findByStatus(status).stream()
-                .map(this::mapToSummary)
-                .toList();
-    }
-
-    /**
-     * Chuyển đổi entity {@code User} sang DTO rút gọn {@code UserSummaryResponse}.
-     *
-     * <p>Trường {@code reputationScore} để {@code null} — tầng web sẽ lắp thêm
-     * nếu cần hiển thị. Không chứa thông tin nhạy cảm (số tài khoản ngân hàng,
-     * số điện thoại).</p>
-     */
-    private UserSummaryResponse mapToSummary(User user) {
-        UserSummaryResponse summary = new UserSummaryResponse();
-        summary.setId(user.getId());
-        summary.setEmail(user.getEmail());
-        summary.setFullName(user.getFullName());
-        summary.setRole(user.getRole());
-        summary.setStatus(user.getStatus());
-        // reputationScore → null, tầng web lắp thêm từ module reputation
-        return summary;
+        throw new UnsupportedOperationException(
+                "TODO [Người C] Prompt 2: gọi userRepository.findByStatus(status) rồi map từng User "
+                        + "sang UserSummaryResponse; để trống reputationScore cho tầng web lắp thêm "
+                        + "từ module reputation.");
     }
 }

@@ -16,7 +16,6 @@ import com.yourapp.ticketpass.ticket.domain.TicketType;
  * <pre>
  * MOVIE   :  2 gio  sau khi chuyen ve
  * CONCERT : 24 gio  sau khi chuyen ve
- * TRAIN   :  6 gio  sau khi chuyen ve
  * BUS     :  3 gio  sau khi chuyen ve
  * </pre>
  *
@@ -28,7 +27,7 @@ import com.yourapp.ticketpass.ticket.domain.TicketType;
  *
  * <p><b>Trạng thái hiện tại: CHƯA CÓ HIỆN THỰC — cố ý để trống cho Prompt 2.</b> Người B sẽ tạo
  * {@code dispute/adapter/MovieDisputeWindowPolicy}, {@code ConcertDisputeWindowPolicy},
- * {@code TrainDisputeWindowPolicy}, {@code BusDisputeWindowPolicy}. Spring sẽ tiêm toàn bộ các
+ * {@code BusDisputeWindowPolicy}. Spring sẽ tiêm toàn bộ các
  * bean này vào {@code List<DisputeWindowPolicy>} của {@code FileDisputeUseCase}, và use case
  * chọn đúng chiến lược qua {@code resolvePolicy(ticketType)} dựa trên {@link #supportedType()}.
  * Nhờ vậy, thêm một loại vé mới chỉ cần thêm một class, không sửa use case.</p>
@@ -50,7 +49,7 @@ public interface DisputeWindowPolicy {
      * Độ dài cửa sổ khiếu nại tính từ lúc vé được chuyển cho người mua.
      *
      * @return khoảng thời gian cho phép khiếu nại: 2 giờ với MOVIE, 24 giờ với CONCERT,
-     *         6 giờ với TRAIN, 3 giờ với BUS
+     *         3 giờ với BUS
      */
     Duration windowAfterTransfer();
 

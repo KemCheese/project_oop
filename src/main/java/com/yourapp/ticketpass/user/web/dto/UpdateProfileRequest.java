@@ -27,6 +27,6 @@ public class UpdateProfileRequest {
     @Size(max = 150)
     private String fullName;
 
-    @Pattern(regexp = "^$|^0\\d{9}$", message = "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0")
+    @Pattern(regexp = "^0\\d{9}$", message = "So dien thoai phai gom 10 chu so va bat dau bang 0")
     private String phoneNumber;
 }
