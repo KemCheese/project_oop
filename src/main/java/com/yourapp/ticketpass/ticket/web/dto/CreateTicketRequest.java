@@ -7,10 +7,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * DTO request: du lieu nguoi ban nhap o form dang ve.
@@ -48,7 +49,8 @@ public class CreateTicketRequest {
 
     @NotNull
     @Future
-    private Instant eventStartAt;
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
+    private LocalDateTime eventStartAt;
 
     @NotNull
     @DecimalMin("0")

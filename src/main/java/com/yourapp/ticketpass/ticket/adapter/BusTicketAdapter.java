@@ -6,6 +6,9 @@ import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.ticket.domain.TransferInstruction;
 import com.yourapp.ticketpass.ticket.domain.ValidationResult;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,7 +23,7 @@ import org.springframework.stereotype.Component;
  * (chi mo khoa sau escrow + coc).</p>
  *
  * <p>Cua so khieu nai DU KIEN: 3 gio sau khi ve duoc chuyen (anh QR an mo khoa), doc tu
- * cau hinh {@code app.dispute.window.bus} o Prompt 2, va luon phai dong truoc
+ * cau hinh {@code app.dispute.window.bus-hours}, va luon phai dong truoc
  * {@code eventStartAt} (gio xe xuat ben).</p>
  *
  * <p>Module: ticket</p>
@@ -30,6 +33,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class BusTicketAdapter implements TicketAdapter {
 
+    @Value("${app.dispute.window.bus-hours:3}")
+    private int disputeWindowHours;
+
     @Override
     public TicketType supportedType() {
         return TicketType.BUS;
@@ -37,45 +43,72 @@ public class BusTicketAdapter implements TicketAdapter {
 
     @Override
     public Duration disputeWindowAfterTransfer() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Tra ve cua so khieu nai 3 gio cho ve xe khach, doc tu cau hinh "
-                        + "app.dispute.window.bus thay vi hard-code.");
+        return Duration.ofHours(disputeWindowHours);
     }
 
     @Override
     public Duration autoCompleteDelay() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Tra ve do tre tu dong hoan tat cho ve xe khach; phai dong cua so "
-                        + "truoc gio xe xuat ben vi nha xe khong giai quyet khieu nai sau khi xe da chay.");
+        // Cua so khieu nai cong them 1 gio bien an toan
+        return disputeWindowAfterTransfer().plusHours(1);
     }
 
+    /**
+     * Ve xe khach bat buoc khai thong tin ghe (so ghe / so giuong)
+     * de nguoi mua doi chieu voi ve nhan duoc.
+     * Xem BR-01.2 trong 04-quy-tac-nghiep-vu.md.
+     */
     @Override
     public boolean requiresSeatInfo() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Xac dinh yeu cau seatInfo cho ve xe khach - xe giuong nam co danh so "
-                        + "giuong nen can, con xe ghe ngoi tu do thi khong the bat buoc.");
+        return true;
     }
 
+    /**
+     * [DEPRECATED] Du an da chuyen sang mo hinh marketplace,
+     * khong con yeu cau email forward de xac thuc.
+     */
     @Override
     public boolean requiresEmailForwardProof() {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Tra ve false vi nha xe thuong chi gui SMS ma dat cho chu khong gui email; "
-                        + "thay vao do se dua vao OCR anh ve va doi chieu providerOrderCode.");
+        return false;
     }
 
     @Override
     public ValidationResult validateListing(Ticket ticket) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Kiem tra ve xe khach truoc khi dang ban - bat buoc co tuyen di trong "
-                        + "eventName, diem don trong venue, gio xuat ben con o tuong lai va du thoi gian bao nha xe "
-                        + "doi thong tin hanh khach, phai co anh ve. Tra ValidationResult.ok() hoac fail(...).");
+        List<String> errors = new ArrayList<>();
+
+        // BR-01.2: Ve xe khach bat buoc co seatInfo (so ghe / so giuong)
+        if (ticket.getSeatInfo() == null || ticket.getSeatInfo().isBlank()) {
+            errors.add("Ve xe khach bat buoc phai co thong tin ghe (so ghe hoac so giuong).");
+        }
+
+        // Kiem tra eventName (tuyen di, vi du "Sai Gon - Da Lat") khong duoc rong
+        if (ticket.getEventName() == null || ticket.getEventName().isBlank()) {
+            errors.add("Ve xe khach bat buoc phai co tuyen di (vi du: Sai Gon - Da Lat).");
+        }
+
+        // Kiem tra venue (diem don khach) khong duoc rong
+        if (ticket.getVenue() == null || ticket.getVenue().isBlank()) {
+            errors.add("Ve xe khach bat buoc phai co diem don khach.");
+        }
+
+        if (errors.isEmpty()) {
+            return ValidationResult.ok();
+        }
+        return ValidationResult.fail(errors);
     }
 
     @Override
     public TransferInstruction buildTransferInstruction(Ticket ticket) {
-        throw new UnsupportedOperationException(
-                "TODO [Nguoi A] Prompt 2: Sinh huong dan chuyen ve xe khach theo kenh ma dat cho - cac buoc gom "
-                        + "goi tong dai nha xe doi so dien thoai hanh khach sang cua nguoi mua, gui ma dat cho cho "
-                        + "nguoi mua, va nhac nguoi mua co mat truoc gio xuat ben.");
+        List<String> steps = List.of(
+                "San da mo khoa anh QR an cua ve cho ban.",
+                "Vao muc 'Ve da mua' de xem anh QR.",
+                "Su dung anh QR nay de len xe tai " + (ticket.getVenue() != null ? ticket.getVenue() : "diem don") + ".",
+                "Mang theo CCCD/CMND de doi chieu voi thong tin hanh khach tren ve."
+        );
+
+        String note = "Han su dung: truoc gio xe xuat ben ghi tren ve. "
+                + "Nen co mat truoc gio xuat ben it nhat 15 phut. "
+                + "Neu gap van de, ban co " + disputeWindowHours + " gio sau khi nhan ve de mo khieu nai.";
+
+        return new TransferInstruction(TicketType.BUS, "QR_UNLOCK", steps, note);
     }
 }

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<!--
+  Danh sach ve dang ban tren san TicketPass.
+  Hien thi grid card ve, ho tro loc theo loai ve.
+  Dung CSS custom properties (design tokens) de dam bao tinh nhat quan.
+
+  Model attributes:
+    - tickets       : List<TicketSummaryResponse>
+    - ticketTypes   : TicketType[]
+    - selectedType  : String (null khi khong loc)
+
+  Chu so huu: Nguoi A
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vé đang bán - TicketPass</title>
+    <style>
+        /* ===== Design Tokens ===== */
+        :root {
+            --font-base: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --color-primary: #1e40af;
+            --color-primary-hover: #1e3a8a;
+            --color-primary-surface: #eff6ff;
+            --color-accent: #c2410c;
+            --color-accent-hover: #9a3412;
+            --color-surface: #ffffff;
+            --color-bg: #f1f5f9;
+            --color-border: #e2e8f0;
+            --color-text: #0f172a;
+            --color-text-secondary: #475569;
+            --color-text-muted: #94a3b8;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: 0.2s ease;
+        }
+
+        /* ===== Reset & Base ===== */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-base);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== Header ===== */
+        .site-header {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+
+        .site-logo {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-primary);
+            text-decoration: none;
+            letter-spacing: -0.3px;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-nav a {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--transition);
+        }
+
+        .header-nav a:hover {
+            color: var(--color-primary);
+        }
+
+        /* ===== Page Layout ===== */
+        .page-container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 32px 24px 64px;
+        }
+
+        /* ===== Page Header ===== */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--color-text);
+        }
+
+        .btn-create {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            background: var(--color-primary);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            cursor: pointer;
+            transition: background var(--transition);
+        }
+
+        .btn-create:hover {
+            background: var(--color-primary-hover);
+        }
+
+        /* ===== Filter Bar ===== */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 28px;
+        }
+
+        .filter-btn {
+            padding: 7px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid var(--color-border);
+            border-radius: 20px;
+            background: var(--color-surface);
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .filter-btn.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: #fff;
+        }
+
+        /* ===== Ticket Grid ===== */
+        .ticket-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        /* ===== Ticket Card ===== */
+        .ticket-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow var(--transition), transform var(--transition);
+        }
+
+        .ticket-card:hover {
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-2px);
+        }
+
+        .card-image-wrap {
+            position: relative;
+            aspect-ratio: 16 / 10;
+            background: #e8ecf1;
+            overflow: hidden;
+        }
+
+        .card-image-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Placeholder khi khong co anh */
+        .card-image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-muted);
+            font-size: 13px;
+        }
+
+        .card-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 10px;
+            border-radius: 4px;
+            background: var(--color-primary);
+            color: #fff;
+        }
+
+        .card-badge.type-CONCERT {
+            background: #7c3aed;
+        }
+
+        .card-badge.type-BUS {
+            background: #0d9488;
+        }
+
+        .card-body {
+            padding: 14px 16px 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text);
+            line-height: 1.4;
+            margin-bottom: 4px;
+            /* Xu ly ten dai: tu dong cat dong */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+        }
+
+        .card-event {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-bottom: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .card-meta {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .card-date {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .card-price {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--color-accent);
+            white-space: nowrap;
+        }
+
+        /* ===== Empty State ===== */
+        .empty-state {
+            text-align: center;
+            padding: 64px 24px;
+            color: var(--color-text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 640px) {
+            .page-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-create {
+                justify-content: center;
+            }
+
+            .ticket-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-container {
+                padding: 20px 16px 48px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== Header ===== -->
+    <header class="site-header">
+        <div class="header-inner">
+            <a th:href="@{/}" class="site-logo">TicketPass</a>
+            <nav class="header-nav">
+                <a th:href="@{/tickets}">Vé đang bán</a>
+                <a th:href="@{/login}">Đăng nhập</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ===== Main Content ===== -->
+    <div class="page-container">
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Vé đang bán</h1>
+            <a th:href="@{/tickets/new}" class="btn-create">Đăng vé mới</a>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <a th:href="@{/tickets}" th:classappend="${selectedType == null} ? ' active'" class="filter-btn">Tất cả</a>
+            <a th:each="type : ${ticketTypes}" th:href="@{/tickets(ticketType=${type.name()})}" th:text="${type.name()}"
+                th:classappend="${selectedType != null && selectedType.toUpperCase() == type.name()} ? ' active'"
+                th:class="'filter-btn type-' + ${type.name()}" class="filter-btn"></a>
+        </div>
+
+        <!-- Ticket Grid -->
+        <div class="ticket-grid" th:if="${!tickets.isEmpty()}">
+            <a th:each="t : ${tickets}" th:href="@{/tickets/{id}(id=${t.id})}" class="ticket-card">
+
+                <div class="card-image-wrap">
+                    <img th:if="${t.thumbnailUrl != null}" th:src="${t.thumbnailUrl}" alt="Anh ve">
+                    <div th:if="${t.thumbnailUrl == null}" class="card-image-placeholder">
+                        Chưa có ảnh
+                    </div>
+                    <span class="card-badge" th:classappend="'type-' + ${t.ticketType.name()}"
+                        th:text="${t.ticketType.name()}"></span>
+                </div>
+
+                <div class="card-body">
+                    <div class="card-title" th:text="${t.title}">Tên vé</div>
+                    <div class="card-event" th:text="${t.eventName}">Tên sự kiện</div>
+                    <div class="card-meta">
+                        <span class="card-date"
+                            th:text="${#temporals.format(t.eventStartAt, 'dd/MM/yyyy HH:mm')}">01/01/2026</span>
+                        <span class="card-price"
+                            th:text="${#numbers.formatDecimal(t.salePrice, 0, 'COMMA', 0, 'POINT')} + 'đ'">100.000đ</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" th:if="${tickets.isEmpty()}">
+            <div class="empty-state-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                    <path d="M2 10h20" />
+                    <path d="M10 4v16" />
+                </svg>
+            </div>
+            <h3>Chưa có vé nào được rao bán</h3>
+            <p>Hãy là người đầu tiên đăng vé trên sàn.</p>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

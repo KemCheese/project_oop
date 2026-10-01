@@ -1,63 +1,206 @@
 <!DOCTYPE html>
-<!--
-  Trang dang ky tai khoan.
+<html xmlns:th="http://www.thymeleaf.org">
 
-  Form bind vao RegisterRequest (com.yourapp.ticketpass.user.web.dto.RegisterRequest)
-  duoi ten model attribute "registerRequest" - UserController.registerForm phai dat dung ten nay.
-  POST /register do UserController xu ly, khac voi POST /login (Spring Security xu ly).
-
-  Cac view con lai (index, user/profile, ticket/*, dispute/*, admin/*, reputation/*)
-  se do Prompt 2 bo sung.
--->
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dang ky - TicketPass</title>
+    <title>Đăng ký tài khoản - TicketPass</title>
 </head>
+
 <body>
+    <div th:replace="~{layout/base :: layout('Đăng ký tài khoản - TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .auth-wrapper {
+                    max-width: 480px;
+                    margin: 40px auto;
+                    background: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: var(--spacing-xl);
+                }
 
-<h1>Dang ky tai khoan</h1>
+                .auth-title {
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: var(--color-brand);
+                    text-align: center;
+                    margin-bottom: var(--spacing-lg);
+                }
 
-<form method="post" th:action="@{/register}" th:object="${registerRequest}">
+                .global-error {
+                    background-color: var(--color-danger-surface);
+                    border: 1px solid var(--color-danger-border);
+                    border-radius: var(--radius-sm);
+                    padding: 12px 16px;
+                    margin-bottom: var(--spacing-lg);
+                    font-size: 14px;
+                    color: var(--color-danger);
+                }
 
-    <div>
-        <label for="email">Email</label>
-        <input type="email" id="email" th:field="*{email}" maxlength="255">
-        <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                .field {
+                    margin-bottom: var(--spacing-md);
+                }
+
+                .field-row {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: var(--spacing-md);
+                }
+
+                .field-label {
+                    display: block;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--color-brand);
+                    margin-bottom: var(--spacing-xs);
+                }
+
+                .field-label .required {
+                    color: var(--color-danger);
+                    margin-left: 2px;
+                }
+
+                .field-input {
+                    width: 100%;
+                    padding: 10px 12px;
+                    font-size: 14px;
+                    font-family: inherit;
+                    color: var(--color-text-main);
+                    background: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-sm);
+                    transition: all var(--transition-fast);
+                    outline: none;
+                }
+
+                .field-input:focus {
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+                }
+
+                .field-input.has-error {
+                    border-color: var(--color-danger);
+                }
+
+                .field-input.has-error:focus {
+                    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+                }
+
+                .field-error {
+                    display: block;
+                    font-size: 12px;
+                    color: var(--color-danger);
+                    margin-top: 4px;
+                }
+
+                .btn-submit {
+                    width: 100%;
+                    padding: 12px;
+                    margin-top: var(--spacing-md);
+                }
+
+                .auth-footer {
+                    margin-top: var(--spacing-lg);
+                    text-align: center;
+                    font-size: 14px;
+                    color: var(--color-text-muted);
+                }
+
+                .auth-footer a {
+                    color: var(--color-primary);
+                    font-weight: 600;
+                }
+
+                .auth-footer a:hover {
+                    text-decoration: underline;
+                }
+
+                @media (max-width: 480px) {
+                    .field-row {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .auth-wrapper {
+                        padding: var(--spacing-lg);
+                        margin: 20px auto;
+                    }
+                }
+            </style>
+
+            <div class="auth-wrapper">
+                <h1 class="auth-title">Tạo tài khoản TicketPass</h1>
+
+                <form method="post" th:action="@{/register}" th:object="${registerRequest}" novalidate>
+
+                    <div class="global-error" th:if="${#fields.hasGlobalErrors()}"
+                        th:each="err : ${#fields.globalErrors()}" th:text="${err}"></div>
+
+                    <div class="field">
+                        <label class="field-label" for="email">
+                            Email <span class="required">*</span>
+                        </label>
+                        <input type="email" id="email" th:field="*{email}" maxlength="255"
+                            th:classappend="${#fields.hasErrors('email')} ? 'has-error'" class="field-input"
+                            placeholder="nhap.email@cua-ban.com">
+                        <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                    </div>
+
+                    <div class="field-row">
+                        <div class="field">
+                            <label class="field-label" for="password">
+                                Mật khẩu <span class="required">*</span>
+                            </label>
+                            <input type="password" id="password" th:field="*{password}"
+                                th:classappend="${#fields.hasErrors('password')} ? 'has-error'" class="field-input"
+                                placeholder="Tối thiểu 6 ký tự">
+                            <span class="field-error" th:if="${#fields.hasErrors('password')}"
+                                th:errors="*{password}"></span>
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label" for="confirmPassword">
+                                Nhập lại mật khẩu <span class="required">*</span>
+                            </label>
+                            <input type="password" id="confirmPassword" th:field="*{confirmPassword}"
+                                th:classappend="${#fields.hasErrors('confirmPassword')} ? 'has-error'"
+                                class="field-input" placeholder="••••••••">
+                            <span class="field-error" th:if="${#fields.hasErrors('confirmPassword')}"
+                                th:errors="*{confirmPassword}"></span>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="fullName">
+                            Họ và tên <span class="required">*</span>
+                        </label>
+                        <input type="text" id="fullName" th:field="*{fullName}" maxlength="150"
+                            th:classappend="${#fields.hasErrors('fullName')} ? 'has-error'" class="field-input"
+                            placeholder="VD: Nguyen Minh Tuan">
+                        <span class="field-error" th:if="${#fields.hasErrors('fullName')}"
+                            th:errors="*{fullName}"></span>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="phoneNumber">
+                            Số điện thoại
+                        </label>
+                        <input type="text" id="phoneNumber" th:field="*{phoneNumber}" maxlength="20"
+                            th:classappend="${#fields.hasErrors('phoneNumber')} ? 'has-error'" class="field-input"
+                            placeholder="VD: 0912345678">
+                        <span class="field-error" th:if="${#fields.hasErrors('phoneNumber')}"
+                            th:errors="*{phoneNumber}"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-brand btn-submit">Hoàn tất đăng ký</button>
+
+                </form>
+
+                <div class="auth-footer">
+                    Đã có tài khoản? <a th:href="@{/login}">Đăng nhập ngay</a>
+                </div>
+            </div>
+
+        </content>
     </div>
-
-    <div>
-        <label for="password">Mat khau</label>
-        <input type="password" id="password" th:field="*{password}">
-        <span th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
-    </div>
-
-    <div>
-        <label for="confirmPassword">Nhap lai mat khau</label>
-        <input type="password" id="confirmPassword" th:field="*{confirmPassword}">
-        <span th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></span>
-    </div>
-
-    <div>
-        <label for="fullName">Ho va ten</label>
-        <input type="text" id="fullName" th:field="*{fullName}" maxlength="150">
-        <span th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></span>
-    </div>
-
-    <div>
-        <label for="phoneNumber">So dien thoai</label>
-        <input type="text" id="phoneNumber" th:field="*{phoneNumber}" maxlength="20">
-        <span th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></span>
-    </div>
-
-    <div>
-        <button type="submit">Dang ky</button>
-    </div>
-
-</form>
-
-<p>Da co tai khoan? <a th:href="@{/login}">Dang nhap</a></p>
-
 </body>
+
 </html>

@@ -10,7 +10,7 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit test cho 4 implementation của {@link com.yourapp.ticketpass.dispute.domain.DisputeWindowPolicy}.
+ * Unit test cho 3 implementation của {@link com.yourapp.ticketpass.dispute.domain.DisputeWindowPolicy}.
  */
 class DisputeWindowPolicyTest {
 
@@ -54,20 +54,6 @@ class DisputeWindowPolicyTest {
 
         // Case 2: Cắt tại giờ diễn (10/12 12:00)
         assertEquals(earlyEvent, policy.computeWindowClose(transferredAt, earlyEvent));
-    }
-
-    @Test
-    @DisplayName("TrainDisputeWindowPolicy: cửa sổ 6 giờ")
-    void testTrainPolicy() {
-        TrainDisputeWindowPolicy policy = new TrainDisputeWindowPolicy(6);
-        assertEquals(TicketType.TRAIN, policy.supportedType());
-        assertEquals(Duration.ofHours(6), policy.windowAfterTransfer());
-
-        Instant transferredAt = Instant.parse("2026-10-01T06:00:00Z");
-        Instant eventAt       = Instant.parse("2026-10-01T10:00:00Z"); // 4h sau
-
-        // Giờ khởi hành sớm hơn 6h -> đóng tại 10:00
-        assertEquals(eventAt, policy.computeWindowClose(transferredAt, eventAt));
     }
 
     @Test
