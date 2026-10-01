@@ -8,6 +8,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CsrfFilter;
+import com.yourapp.ticketpass.shared.security.CsrfDeferredTokenInitFilter;
 
 /**
  * Cấu hình bảo mật của ứng dụng: ai được vào đường dẫn nào, đăng nhập/đăng xuất ra sao,
@@ -86,7 +88,9 @@ public class SecurityConfig {
                 // Miễn CSRF cho H2 Console (dev tool) và MoMo IPN (server-to-server callback)
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers("/h2-console/**", "/payment/momo/ipn")
-                );
+                )
+                // Ép nạp sớm CSRF Token và khởi tạo Session trước khi Thymeleaf render HTML lớn vượt buffer Tomcat
+                .addFilterAfter(new CsrfDeferredTokenInitFilter(), CsrfFilter.class);
 
         return http.build();
     }
