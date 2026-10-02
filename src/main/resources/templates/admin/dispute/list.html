@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Quản trị tranh chấp - Admin TicketPass</title>
+</head>
+
+<body>
+    <div th:replace="~{layout/base :: layout('Quản trị tranh chấp - Admin TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .admin-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 16px;
+                    margin-bottom: 24px;
+                }
+
+                .stat-cards-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 16px;
+                    margin-bottom: 24px;
+                }
+
+                .stat-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 20px;
+                    box-shadow: var(--shadow-card);
+                }
+
+                .stat-number {
+                    font-size: 28px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    margin: 6px 0;
+                }
+
+                .dispute-table-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    box-shadow: var(--shadow-card);
+                    overflow: hidden;
+                }
+
+                .table-responsive {
+                    width: 100%;
+                    overflow-x: auto;
+                }
+
+                .custom-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    text-align: left;
+                    font-size: 13px;
+                }
+
+                .custom-table th {
+                    background-color: #fafbfc;
+                    color: var(--color-text-secondary);
+                    font-weight: 700;
+                    padding: 14px 16px;
+                    border-bottom: 1px solid var(--color-border);
+                    white-space: nowrap;
+                }
+
+                .custom-table td {
+                    padding: 14px 16px;
+                    border-bottom: 1px solid #f1f5f9;
+                    color: var(--color-text-main);
+                    vertical-align: middle;
+                }
+
+                .custom-table tr:hover {
+                    background-color: #f8fafc;
+                }
+
+                @media (max-width: 768px) {
+                    .stat-cards-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+            </style>
+
+            <div class="admin-header">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span class="badge badge-brand" style="background-color: #0f172a; color: #fff;">
+                            <i class="fa-solid fa-lock"></i> ROLE_ADMIN
+                        </span>
+                        <span style="font-size: 13px; color: var(--color-text-muted);">Trung tâm kiểm soát giao dịch</span>
+                    </div>
+                    <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand);">
+                        Quản Trị Khiếu Nại &amp; Phán Quyết Tranh Chấp
+                    </h1>
+                </div>
+
+                <a th:href="@{/tickets}" class="btn btn-outline btn-sm">
+                    <i class="fa-solid fa-store"></i> Xem sàn vé
+                </a>
+            </div>
+
+            <!-- Stat KPI Cards -->
+            <div class="stat-cards-grid">
+                <div class="stat-card">
+                    <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">
+                        Chờ Admin Xử Lý
+                    </div>
+                    <div class="stat-number" style="color: var(--color-primary);" th:text="${count ?: 0}">
+                        0
+                    </div>
+                    <div style="font-size: 12px; color: var(--color-text-muted);">
+                        Hồ sơ đang mở cần xem xét
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">
+                        Quá Hạn Phản Hồi (24h)
+                    </div>
+                    <div class="stat-number" style="color: var(--color-danger);" th:text="${overdueCount ?: 0}">
+                        0
+                    </div>
+                    <div style="font-size: 12px; color: var(--color-danger);">
+                        Người bán không giải trình, ưu tiên xử Buyer thắng
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">
+                        Cơ Chế Phán Quyết
+                    </div>
+                    <div class="stat-number" style="font-size: 18px; color: var(--color-success); margin: 12px 0;">
+                        Ký Quỹ + Phạt Cọc 50%
+                    </div>
+                    <div style="font-size: 12px; color: var(--color-text-muted);">
+                        Thực thi tự động sau phán quyết
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dispute Table -->
+            <div class="dispute-table-card">
+                <div style="padding: 16px 20px; border-bottom: 1px solid var(--color-border); font-weight: 700; font-size: 15px; color: var(--color-brand);">
+                    Danh Sách Tranh Chấp Đang Chờ Phán Quyết
+                </div>
+
+                <div th:if="${#lists.isEmpty(disputes)}" class="empty-state" style="margin: 0; border: none; border-radius: 0;">
+                    <div class="empty-icon" style="color: #22c55e;">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <h2 class="empty-title">Không có khiếu nại nào tồn đọng</h2>
+                    <p class="empty-desc">
+                        Tuyệt vời. Hiện tại toàn bộ giao dịch trên sàn đều hoạt động ổn định và không có tranh chấp cần xử lý.
+                    </p>
+                </div>
+
+                <div th:if="${!#lists.isEmpty(disputes)}" class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Mã hồ sơ</th>
+                                <th>Vé liên quan</th>
+                                <th>Người mua</th>
+                                <th>Người bán</th>
+                                <th>Lý do</th>
+                                <th>Trạng thái</th>
+                                <th>Hạn giải trình</th>
+                                <th style="text-align: right;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="d : ${disputes}">
+                                <td>
+                                    <strong style="color: var(--color-brand);" th:text="'#' + ${d.id}">#1</strong>
+                                </td>
+                                <td>
+                                    <a th:href="@{/tickets/{id}(id=${d.ticketId})}"
+                                       style="color: var(--color-primary); font-weight: 600;"
+                                       th:text="'Vé #' + ${d.ticketId}">
+                                        Vé #101
+                                    </a>
+                                </td>
+                                <td>
+                                    <span th:text="'User #' + ${d.buyerId}">User #2</span>
+                                </td>
+                                <td>
+                                    <span th:text="'User #' + ${d.sellerId}">User #1</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-warning" th:text="${d.reason != null ? d.reason.name() : 'TICKET_INVALID'}">
+                                        TICKET_INVALID
+                                    </span>
+                                </td>
+                                <td>
+                                    <span th:if="${d.status != null and d.status.name() == 'AWAITING_SELLER_RESPONSE'}" class="badge badge-neutral">
+                                        Chờ phản hồi
+                                    </span>
+                                    <span th:if="${d.status != null and d.status.name() == 'SELLER_RESPONDED'}" class="badge badge-info">
+                                        Đã giải trình
+                                    </span>
+                                    <span th:if="${d.status != null and d.status.name() == 'UNDER_REVIEW'}" class="badge badge-warning">
+                                        Đang đối soát
+                                    </span>
+                                    <span th:if="${d.status != null and d.status.name() == 'EXPIRED'}" class="badge badge-danger">
+                                        Quá hạn 24h
+                                    </span>
+                                </td>
+                                <td>
+                                    <span th:if="${d.sellerResponseDeadline != null}"
+                                          th:text="${#temporals.format(d.sellerResponseDeadline, 'dd/MM HH:mm', 'Asia/Ho_Chi_Minh')}">
+                                        12/10 18:00
+                                    </span>
+                                    <span th:unless="${d.sellerResponseDeadline != null}" style="color: var(--color-text-muted);">-</span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <a th:href="@{/admin/disputes/{id}(id=${d.id})}" class="btn btn-primary btn-sm">
+                                        <i class="fa-solid fa-gavel"></i> Xem &amp; Phán quyết
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </content>
+    </div>
+</body>
+
+</html>

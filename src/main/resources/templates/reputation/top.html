@@ -1,41 +1,200 @@
 <!DOCTYPE html>
-<!--
-  Bang xep hang nguoi ban uy tin nhat tren san.
-  Route: GET /reputation/top?limit=10
-  Model attributes:
-    - sellers (List<ReputationResponse>): danh sach nguoi ban sap xep giam dan theo diem
-    - limit (int): so luong hien thi
+<html xmlns:th="http://www.thymeleaf.org">
 
-  Chu so huu: Nguoi C (controller), Nguoi A (styling).
--->
-<div th:replace="~{layout/base :: layout('Bảng xếp hạng uy tín', ~{::content})}">
-    <content>
-        <h2 th:text="'Top ' + ${limit} + ' người bán uy tín nhất'">Bảng xếp hạng</h2>
+<head>
+    <title>Bảng xếp hạng uy tín - TicketPass</title>
+</head>
 
-        <div th:if="${#lists.isEmpty(sellers)}">
-            <p>Chưa có dữ liệu xếp hạng.</p>
-        </div>
+<body>
+    <div th:replace="~{layout/base :: layout('Bảng xếp hạng uy tín - TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .top-container {
+                    max-width: 860px;
+                    margin: 0 auto;
+                }
 
-        <table th:if="${!#lists.isEmpty(sellers)}" border="1" cellpadding="8" cellspacing="0">
-            <thead>
-                <tr>
-                    <th>Hạng</th>
-                    <th>Mã người dùng</th>
-                    <th>Điểm uy tín</th>
-                    <th>Giao dịch thành công</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="seller, iterStat : ${sellers}">
-                    <td th:text="${iterStat.count}">1</td>
-                    <td>
-                        <a th:href="@{/reputation/{id}(id=${seller.userId})}"
-                           th:text="'#' + ${seller.userId}">#1</a>
-                    </td>
-                    <td th:text="${seller.score != null ? seller.score.intValue() : 100}">100</td>
-                    <td th:text="${seller.successfulTransactions} ?: 0">0</td>
-                </tr>
-            </tbody>
-        </table>
-    </content>
-</div>
+                .top-header {
+                    text-align: center;
+                    margin-bottom: 32px;
+                }
+
+                .leaderboard-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    box-shadow: var(--shadow-card);
+                    overflow: hidden;
+                }
+
+                .leaderboard-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    text-align: left;
+                    font-size: 14px;
+                }
+
+                .leaderboard-table th {
+                    background-color: #fafbfc;
+                    color: var(--color-text-secondary);
+                    font-weight: 700;
+                    padding: 14px 20px;
+                    border-bottom: 1px solid var(--color-border);
+                }
+
+                .leaderboard-table td {
+                    padding: 16px 20px;
+                    border-bottom: 1px solid #f1f5f9;
+                    vertical-align: middle;
+                }
+
+                .leaderboard-table tr:hover {
+                    background-color: #f8fafc;
+                }
+
+                .rank-badge {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 800;
+                    font-size: 14px;
+                }
+
+                .rank-1 {
+                    background-color: #fef9c3;
+                    color: #a16207;
+                    border: 1px solid #fde047;
+                }
+
+                .rank-2 {
+                    background-color: #f1f5f9;
+                    color: #475569;
+                    border: 1px solid #cbd5e1;
+                }
+
+                .rank-3 {
+                    background-color: #ffedd5;
+                    color: #c2410c;
+                    border: 1px solid #fdba74;
+                }
+
+                .rank-other {
+                    color: var(--color-text-muted);
+                    font-weight: 600;
+                }
+            </style>
+
+            <div class="top-container">
+                <div class="top-header">
+                    <span class="badge badge-warning" style="margin-bottom: 8px;">
+                        <i class="fa-solid fa-trophy"></i> Bảng Vinh Danh
+                    </span>
+                    <h1 style="font-size: 28px; font-weight: 800; color: var(--color-brand); margin-bottom: 8px;">
+                        Top <span th:text="${limit ?: 10}">10</span> Người Bán Uy Tín Nhất Sàn
+                    </h1>
+                    <p style="font-size: 14px; color: var(--color-text-muted); max-width: 540px; margin: 0 auto;">
+                        Cộng đồng người bán trung thực được hệ thống ghi nhận và xếp hạng dựa trên điểm uy tín và số giao dịch thành công.
+                    </p>
+                </div>
+
+                <!-- Leaderboard Card -->
+                <div class="leaderboard-card">
+                    <div th:if="${#lists.isEmpty(sellers)}" class="empty-state" style="margin: 0; border: none; border-radius: 0;">
+                        <div class="empty-icon">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <h2 class="empty-title">Chưa có dữ liệu xếp hạng</h2>
+                        <p class="empty-desc">
+                            Hệ thống sẽ cập nhật danh sách ngay khi có các giao dịch chuyển nhượng vé hoàn tất đầu tiên.
+                        </p>
+                    </div>
+
+                    <div th:if="${!#lists.isEmpty(sellers)}" class="table-responsive">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px; text-align: center;">Hạng</th>
+                                    <th>Người bán</th>
+                                    <th style="text-align: center;">Điểm uy tín</th>
+                                    <th style="text-align: center;">Đơn thành công</th>
+                                    <th style="text-align: right;">Hồ sơ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="seller, iterStat : ${sellers}">
+                                    <!-- Rank Number -->
+                                    <td style="text-align: center;">
+                                        <span th:if="${iterStat.count == 1}" class="rank-badge rank-1">
+                                            <i class="fa-solid fa-crown" style="font-size: 13px;"></i>
+                                        </span>
+                                        <span th:if="${iterStat.count == 2}" class="rank-badge rank-2">
+                                            2
+                                        </span>
+                                        <span th:if="${iterStat.count == 3}" class="rank-badge rank-3">
+                                            3
+                                        </span>
+                                        <span th:if="${iterStat.count > 3}" class="rank-other" th:text="${iterStat.count}">
+                                            4
+                                        </span>
+                                    </td>
+
+                                    <!-- Seller ID -->
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <div style="width: 36px; height: 36px; border-radius: 50%; background-color: var(--color-brand-surface); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--color-brand); font-size: 13px;">
+                                                <i class="fa-solid fa-user"></i>
+                                            </div>
+                                            <div>
+                                                <a th:href="@{/reputation/{id}(id=${seller.userId})}"
+                                                   style="font-weight: 700; color: var(--color-brand);"
+                                                   th:text="'Thành viên #' + ${seller.userId}">
+                                                    Thành viên #1
+                                                </a>
+                                                <div style="font-size: 12px; color: var(--color-text-muted);">
+                                                    Người bán tích cực
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Score -->
+                                    <td style="text-align: center;">
+                                        <span style="font-size: 16px; font-weight: 800; color: var(--color-success);"
+                                              th:text="${seller.score != null ? seller.score.intValue() : 100}">
+                                            100
+                                        </span>
+                                        <span style="font-size: 11px; color: var(--color-text-muted);">/100</span>
+                                    </td>
+
+                                    <!-- Successful Transactions -->
+                                    <td style="text-align: center; font-weight: 600;" th:text="${seller.successfulTransactions ?: 0}">
+                                        0
+                                    </td>
+
+                                    <!-- Link to Detail -->
+                                    <td style="text-align: right;">
+                                        <a th:href="@{/reputation/{id}(id=${seller.userId})}" class="btn btn-outline btn-sm">
+                                            Xem chi tiết
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Footer Back Action -->
+                <div style="text-align: center; margin-top: 24px;">
+                    <a th:href="@{/tickets}" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-tags"></i> Khám phá vé đang bán trên sàn
+                    </a>
+                </div>
+            </div>
+        </content>
+    </div>
+</body>
+
+</html>
