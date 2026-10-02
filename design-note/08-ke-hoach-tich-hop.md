@@ -66,7 +66,7 @@ Dữ liệu chuẩn dùng cho kịch bản: **vé CONCERT, giá bán 2.000.000đ
 
 | Bước | Hành động | Kết quả mong đợi |
 |---|---|---|
-| 1 | Đăng ký 3 tài khoản: `seller@test.com`, `buyer@test.com`, `admin@test.com`. Tài khoản admin nâng vai `ADMIN` bằng câu SQL trực tiếp. | 3 bản ghi trong bảng `users`, mật khẩu đã băm BCrypt, mỗi tài khoản có một bản ghi điểm uy tín khởi tạo. |
+| 1 | **Khởi chạy ứng dụng** (Đã có `DataInitializer` tự động nạp sẵn 4 tài khoản `admin@test.com`, `seller@test.com`, `buyer@test.com`, `vip_seller@test.com` với mật khẩu `Password123@` và 3 vé mẫu). Không cần đăng ký thủ công hay can thiệp SQL nữa. | 4 bản ghi trong bảng `users`, mật khẩu đã băm BCrypt, điểm uy tín khởi tạo đầy đủ, 3 vé mẫu ở trạng thái `LISTED`. |
 | 2 | Đăng nhập bằng `seller@test.com`. | Vào được trang chủ, thanh điều hướng hiện tên người dùng và nút "Đăng vé". |
 | 3 | Seller đăng vé loại **CONCERT**, giá bán **2.000.000đ**, upload đủ ảnh công khai và ảnh QR ẩn. | Ảnh được lưu qua `FileStorageService`, DB có bản ghi `tickets`. |
 | 4 | Hệ thống kiểm tra hợp lệ, bỏ qua xác thực kỹ thuật. | Vé được tạo. |
