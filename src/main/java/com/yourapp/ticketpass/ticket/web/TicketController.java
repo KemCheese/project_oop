@@ -29,10 +29,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Controller MVC cho san marketplace ban ve — cac man hinh lien quan den ve.
@@ -46,7 +43,6 @@ import java.util.Map;
  * POST /tickets/{id}/transfer  -&gt; san mo khoa anh QR an cho buyer sau khi seller da khoa coc
  * POST /tickets/{id}/received  -&gt; buyer xac nhan da nhan ve (da xem duoc anh QR)
  * POST /tickets/{id}/cancel    -&gt; seller huy listing
- * GET  /tickets/api/my-tickets -&gt; tra ve JSON danh sach ve da mua va da ban cua user hien tai
  * </pre>
  *
  * <p>Tang {@code web} o day la lop mong: chi nhan input, uy quyen cho service, roi chon view.
@@ -270,16 +266,16 @@ public class TicketController {
     /**
      * API lay danh sach ve da mua va da ban cua user (tra ve JSON).
      */
-    @GetMapping("/api/my-tickets")
-    @ResponseBody
-    public Map<String, List<TicketSummaryResponse>> getMyTickets(Principal principal) {
+    @org.springframework.web.bind.annotation.GetMapping("/api/my-tickets")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public java.util.Map<String, java.util.List<TicketSummaryResponse>> getMyTickets(Principal principal) {
         Long userId = resolveUserId(principal);
-        List<TicketSummaryResponse> bought = ticketRepository.findByBuyerId(userId).stream()
-                .map(this::toSummary).collect(Collectors.toList());
-        List<TicketSummaryResponse> sold = ticketRepository.findBySellerId(userId).stream()
-                .map(this::toSummary).collect(Collectors.toList());
+        java.util.List<TicketSummaryResponse> bought = ticketRepository.findByBuyerId(userId).stream()
+                .map(this::toSummary).collect(java.util.stream.Collectors.toList());
+        java.util.List<TicketSummaryResponse> sold = ticketRepository.findBySellerId(userId).stream()
+                .map(this::toSummary).collect(java.util.stream.Collectors.toList());
         
-        Map<String, List<TicketSummaryResponse>> result = new HashMap<>();
+        java.util.Map<String, java.util.List<TicketSummaryResponse>> result = new java.util.HashMap<>();
         result.put("bought", bought);
         result.put("sold", sold);
         return result;

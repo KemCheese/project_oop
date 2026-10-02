@@ -213,44 +213,56 @@
                     <!-- Title & Type Header -->
                     <div style="margin-bottom: 20px;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'MOVIE'}" class="badge badge-movie">
+                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'MOVIE'}"
+                                class="badge badge-movie">
                                 <i class="fa-solid fa-film"></i> Vé xem phim
                             </span>
-                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'CONCERT'}" class="badge badge-concert">
+                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'CONCERT'}"
+                                class="badge badge-concert">
                                 <i class="fa-solid fa-music"></i> Vé concert
                             </span>
-                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'BUS'}" class="badge badge-bus">
+                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'BUS'}"
+                                class="badge badge-bus">
                                 <i class="fa-solid fa-bus"></i> Vé xe khách
                             </span>
 
                             <!-- Status Badge -->
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'LISTED'}" class="badge badge-success">
+                            <span th:if="${ticket.status != null and ticket.status.name() == 'LISTED'}"
+                                class="badge badge-success">
                                 <i class="fa-solid fa-circle-check"></i> Đang rao bán
                             </span>
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'ESCROW_HELD'}" class="badge badge-warning">
+                            <span th:if="${ticket.status != null and ticket.status.name() == 'ESCROW_HELD'}"
+                                class="badge badge-warning">
                                 <i class="fa-solid fa-hourglass-half"></i> Đã nạp ký quỹ
                             </span>
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'DEPOSIT_LOCKED'}" class="badge badge-warning">
+                            <span th:if="${ticket.status != null and ticket.status.name() == 'DEPOSIT_LOCKED'}"
+                                class="badge badge-warning">
                                 <i class="fa-solid fa-lock"></i> Đã khóa cọc
                             </span>
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED'}" class="badge badge-info">
+                            <span th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED'}"
+                                class="badge badge-info">
                                 <i class="fa-solid fa-truck"></i> Đã chuyển vé
                             </span>
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'AWAITING_USE'}" class="badge badge-success">
+                            <span th:if="${ticket.status != null and ticket.status.name() == 'AWAITING_USE'}"
+                                class="badge badge-success">
                                 <i class="fa-solid fa-qrcode"></i> Sẵn sàng sử dụng
                             </span>
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'COMPLETED'}" class="badge badge-success">
+                            <span th:if="${ticket.status != null and ticket.status.name() == 'COMPLETED'}"
+                                class="badge badge-success">
                                 <i class="fa-solid fa-check-double"></i> Giao dịch hoàn tất
                             </span>
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'DISPUTED'}" class="badge badge-danger">
+                            <span th:if="${ticket.status != null and ticket.status.name() == 'DISPUTED'}"
+                                class="badge badge-danger">
                                 <i class="fa-solid fa-triangle-exclamation"></i> Đang khiếu nại
                             </span>
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'CANCELLED'}" class="badge badge-neutral">
+                            <span th:if="${ticket.status != null and ticket.status.name() == 'CANCELLED'}"
+                                class="badge badge-neutral">
                                 <i class="fa-solid fa-ban"></i> Đã hủy
                             </span>
                         </div>
 
-                        <h1 style="font-size: 28px; font-weight: 800; color: var(--color-brand); line-height: 1.3;" th:text="${ticket.title}">
+                        <h1 style="font-size: 28px; font-weight: 800; color: var(--color-brand); line-height: 1.3;"
+                            th:text="${ticket.title}">
                             Tên vé chuyển nhượng
                         </h1>
                     </div>
@@ -258,11 +270,9 @@
                     <!-- Public Ticket Image -->
                     <div class="ticket-hero-media">
                         <img th:if="${ticket.ticketImageUrl != null and !ticket.ticketImageUrl.isEmpty()}"
-                             th:src="${ticket.ticketImageUrl}"
-                             th:alt="${ticket.title}"
-                             class="ticket-main-image" />
+                            th:src="${ticket.ticketImageUrl}" th:alt="${ticket.title}" class="ticket-main-image" />
                         <div th:unless="${ticket.ticketImageUrl != null and !ticket.ticketImageUrl.isEmpty()}"
-                             class="ticket-image-empty">
+                            class="ticket-image-empty">
                             <i class="fa-solid fa-ticket fa-3x" style="margin-bottom: 12px;"></i>
                             <p style="font-size: 14px; font-weight: 600;">Ảnh thông tin vé công khai</p>
                         </div>
@@ -271,29 +281,33 @@
                     <!-- Secret QR Check-in Box (Screen 6: Lifecycle-driven QR unlock) -->
                     <!-- UNLOCKED STATE: When status is AWAITING_USE or COMPLETED -->
                     <div th:if="${(ticket.status != null and (ticket.status.name() == 'AWAITING_USE' or ticket.status.name() == 'COMPLETED')) and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
-                         class="qr-unlocked-box">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-success); font-weight: 700; font-size: 16px;">
+                        class="qr-unlocked-box">
+                        <div
+                            style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-success); font-weight: 700; font-size: 16px;">
                             <i class="fa-solid fa-circle-check"></i> Mã Check-in QR Đã Mở Khóa An Toàn
                         </div>
                         <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 6px;">
-                            Bạn là chủ sở hữu hợp lệ của giao dịch này. Vui lòng xuất trình mã này tại quầy soát vé để check-in.
+                            Bạn là chủ sở hữu hợp lệ của giao dịch này. Vui lòng xuất trình mã này tại quầy soát vé để
+                            check-in.
                         </p>
 
                         <div th:if="${ticket.qrImageUrl != null and !ticket.qrImageUrl.isEmpty()}">
                             <img th:src="${ticket.qrImageUrl}" alt="Mã QR Check-in Bí Mật" class="qr-preview-img" />
                         </div>
                         <div th:unless="${ticket.qrImageUrl != null and !ticket.qrImageUrl.isEmpty()}"
-                             style="padding: 20px; font-size: 14px; color: var(--color-text-muted);">
+                            style="padding: 20px; font-size: 14px; color: var(--color-text-muted);">
                             [Mã QR check-in đã sẵn sàng trong hệ thống]
                         </div>
 
                         <!-- Dispute Window Countdown Notice (BR-09) -->
                         <div th:if="${ticket.disputeWindowClosesAt != null and ticket.status.name() == 'AWAITING_USE' and isBuyer}"
-                             style="margin-top: 14px; padding: 12px; background-color: #fff; border-radius: var(--radius-md); border: 1px solid #bbf7d0;">
+                            style="margin-top: 14px; padding: 12px; background-color: #fff; border-radius: var(--radius-md); border: 1px solid #bbf7d0;">
                             <div style="font-size: 13px; color: var(--color-brand); margin-bottom: 8px;">
                                 <i class="fa-regular fa-clock" style="color: var(--color-warning);"></i>
                                 Cửa sổ khiếu nại đóng lúc:
-                                <strong th:text="${#temporals.format(ticket.disputeWindowClosesAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời gian</strong>
+                                <strong
+                                    th:text="${#temporals.format(ticket.disputeWindowClosesAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời
+                                    gian</strong>
                             </div>
                             <a th:href="@{/disputes/new(ticketId=${ticket.id})}" class="btn btn-danger-outline btn-sm">
                                 <i class="fa-solid fa-triangle-exclamation"></i> Vé có vấn đề? Mở khiếu nại ngay
@@ -303,13 +317,14 @@
 
                     <!-- LOCKED STATE: When ticket is still in LISTED / ESCROW_HELD / DEPOSIT_LOCKED -->
                     <div th:unless="${(ticket.status != null and (ticket.status.name() == 'AWAITING_USE' or ticket.status.name() == 'COMPLETED')) and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
-                         class="qr-locked-box">
+                        class="qr-locked-box">
                         <i class="fa-solid fa-shield-halved fa-2x" style="color: #94a3b8; margin-bottom: 8px;"></i>
                         <h4 style="font-size: 15px; font-weight: 700; color: var(--color-brand); margin-bottom: 4px;">
                             Mã QR Check-in Đang Được Khóa Bảo Mật
                         </h4>
                         <p style="font-size: 13px; max-width: 480px; margin: 0 auto;">
-                            Cơ chế ảnh 2 lớp: Mã QR bí mật dùng để vào cổng chỉ tự động mở khóa sau khi người mua nạp 100% Escrow và người bán hoàn tất khóa cọc 50%.
+                            Cơ chế ảnh 2 lớp: Mã QR bí mật dùng để vào cổng chỉ tự động mở khóa sau khi người mua nạp
+                            100% Escrow và người bán hoàn tất khóa cọc 50%.
                         </p>
                     </div>
 
@@ -335,7 +350,8 @@
 
                         <div class="spec-item">
                             <div class="spec-label">Thời gian bắt đầu / Xuất bến</div>
-                            <div class="spec-value" th:text="${ticket.eventStartAt != null ? #temporals.format(ticket.eventStartAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : 'Chưa cập nhật'}">
+                            <div class="spec-value"
+                                th:text="${ticket.eventStartAt != null ? #temporals.format(ticket.eventStartAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : 'Chưa cập nhật'}">
                                 Thời gian
                             </div>
                         </div>
@@ -343,11 +359,13 @@
 
                     <!-- Transfer Instruction -->
                     <div th:if="${ticket.transferInstruction != null and !ticket.transferInstruction.isEmpty()}"
-                         style="background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 18px; margin-bottom: 24px;">
+                        style="background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 18px; margin-bottom: 24px;">
                         <h4 style="font-size: 14px; font-weight: 700; color: var(--color-brand); margin-bottom: 6px;">
-                            <i class="fa-solid fa-circle-info" style="color: var(--color-info);"></i> Hướng Dẫn Bàn Giao Từ Người Bán
+                            <i class="fa-solid fa-circle-info" style="color: var(--color-info);"></i> Hướng Dẫn Bàn Giao
+                            Từ Người Bán
                         </h4>
-                        <p style="font-size: 14px; color: var(--color-text-secondary); line-height: 1.5;" th:text="${ticket.transferInstruction}">
+                        <p style="font-size: 14px; color: var(--color-text-secondary); line-height: 1.5;"
+                            th:text="${ticket.transferInstruction}">
                             Hướng dẫn cụ thể khi nhận vé...
                         </p>
                     </div>
@@ -358,22 +376,23 @@
                     <!-- Pricing & Action Box -->
                     <div class="sidebar-box">
                         <div class="price-container">
-                            <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">
+                            <div
+                                style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">
                                 Giá Chuyển Nhượng
                             </div>
                             <div class="price-sale-row">
                                 <span class="price-sale"
-                                      th:text="${ticket.salePrice != null ? #numbers.formatDecimal(ticket.salePrice, 0, 'POINT', 0, 'POINT') + ' ₫' : 'Liên hệ'}">
+                                    th:text="${ticket.salePrice != null ? #numbers.formatDecimal(ticket.salePrice, 0, 'POINT', 0, 'POINT') + ' ₫' : 'Liên hệ'}">
                                     0 ₫
                                 </span>
                                 <span class="price-original"
-                                      th:if="${ticket.originalPrice != null and ticket.originalPrice.compareTo(ticket.salePrice) > 0}"
-                                      th:text="${#numbers.formatDecimal(ticket.originalPrice, 0, 'POINT', 0, 'POINT') + ' ₫'}">
+                                    th:if="${ticket.originalPrice != null and ticket.originalPrice.compareTo(ticket.salePrice) > 0}"
+                                    th:text="${#numbers.formatDecimal(ticket.originalPrice, 0, 'POINT', 0, 'POINT') + ' ₫'}">
                                     0 ₫
                                 </span>
                             </div>
                             <div th:if="${ticket.originalPrice != null and ticket.originalPrice.compareTo(ticket.salePrice) > 0}"
-                                 class="price-save-badge">
+                                class="price-save-badge">
                                 Tiết kiệm so với giá gốc
                             </div>
                         </div>
@@ -385,21 +404,24 @@
                                 <a th:href="@{/login}" class="btn btn-primary" style="width: 100%;">
                                     <i class="fa-regular fa-user"></i> Đăng nhập để mua vé
                                 </a>
-                                <p style="font-size: 12px; color: var(--color-text-muted); text-align: center; margin-top: 8px;">
+                                <p
+                                    style="font-size: 12px; color: var(--color-text-muted); text-align: center; margin-top: 8px;">
                                     Đăng ký tài khoản để được bảo vệ ký quỹ 100%
                                 </p>
                             </div>
 
                             <!-- Logged In User & Ticket is LISTED -->
-                            <div th:if="${currentUserId != null and ticket.status != null and ticket.status.name() == 'LISTED'}">
+                            <div
+                                th:if="${currentUserId != null and ticket.status != null and ticket.status.name() == 'LISTED'}">
                                 <!-- When viewing own ticket (Seller) -->
                                 <div th:if="${isSeller}">
                                     <div class="alert alert-info" style="margin-bottom: 12px; font-size: 13px;">
                                         <i class="fa-solid fa-user-tag"></i> Đây là vé do bạn đăng bán.
                                     </div>
                                     <form th:action="@{/tickets/{id}/cancel(id=${ticket.id})}" method="post">
+                                        <input type="hidden" name="reason" value="Người bán tự hủy" />
                                         <button type="submit" class="btn btn-danger-outline" style="width: 100%;"
-                                                onclick="return confirm('Bạn có chắc chắn muốn hủy đăng bán vé này không?');">
+                                            onclick="return confirm('Bạn có chắc chắn muốn hủy đăng bán vé này không?');">
                                             <i class="fa-solid fa-trash-can"></i> Hủy đăng bán vé
                                         </button>
                                     </form>
@@ -408,10 +430,11 @@
                                 <!-- When viewing as potential Buyer -->
                                 <div th:unless="${isSeller}">
                                     <a th:href="@{/payment/momo/return(orderId='DEMO-ESCROW-' + ${ticket.id}, amount=${ticket.salePrice}, resultCode='0')}"
-                                       class="btn btn-primary" style="width: 100%;">
+                                        class="btn btn-primary" style="width: 100%;">
                                         <i class="fa-solid fa-wallet"></i> Thanh toán Ký quỹ Escrow (MoMo)
                                     </a>
-                                    <p style="font-size: 12px; color: var(--color-text-muted); text-align: center; margin-top: 8px;">
+                                    <p
+                                        style="font-size: 12px; color: var(--color-text-muted); text-align: center; margin-top: 8px;">
                                         Tiền được sàn giữ an toàn, chỉ giải ngân sau khi bạn dùng vé thành công.
                                     </p>
                                 </div>
@@ -433,15 +456,18 @@
 
                     <!-- Seller Profile Card -->
                     <div class="sidebar-box">
-                        <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 10px;">
+                        <div
+                            style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 10px;">
                             Người Bán Vé Này
                         </div>
                         <div class="seller-card">
-                            <div class="seller-avatar" th:text="${seller != null and seller.fullName != null ? #strings.substring(seller.fullName, 0, 1) : 'U'}">
+                            <div class="seller-avatar"
+                                th:text="${seller != null and seller.fullName != null ? #strings.substring(seller.fullName, 0, 1) : 'U'}">
                                 U
                             </div>
                             <div class="seller-info">
-                                <div class="seller-name" th:text="${seller != null ? seller.fullName : 'Người bán'}">Họ tên người bán</div>
+                                <div class="seller-name" th:text="${seller != null ? seller.fullName : 'Người bán'}">Họ
+                                    tên người bán</div>
                                 <div style="font-size: 12px; color: var(--color-text-muted);">
                                     Thành viên TicketPass
                                 </div>
@@ -450,7 +476,7 @@
 
                         <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9;">
                             <a th:if="${seller != null}" th:href="@{/reputation/{id}(id=${seller.id})}"
-                               style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--color-primary);">
+                                style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--color-primary);">
                                 <span><i class="fa-solid fa-award"></i> Xem hồ sơ &amp; Điểm uy tín</span>
                                 <i class="fa-solid fa-chevron-right" style="font-size: 11px;"></i>
                             </a>
@@ -459,10 +485,13 @@
 
                     <!-- Safety Guarantee Box -->
                     <div class="sidebar-box" style="background-color: #fafbfc;">
-                        <h4 style="font-size: 13px; font-weight: 700; color: var(--color-brand); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-shield-halved" style="color: var(--color-success);"></i> Cam Kết Bảo Vệ TicketPass
+                        <h4
+                            style="font-size: 13px; font-weight: 700; color: var(--color-brand); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-shield-halved" style="color: var(--color-success);"></i> Cam Kết Bảo
+                            Vệ TicketPass
                         </h4>
-                        <ul style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; padding-left: 18px; margin: 0;">
+                        <ul
+                            style="font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; padding-left: 18px; margin: 0;">
                             <li>Giữ 100% tiền mua trong tài khoản ký quỹ.</li>
                             <li>Người bán đã khóa cọc 50% trước khi chuyển vé.</li>
                             <li>Hỗ trợ phân xử tranh chấp minh bạch qua Admin.</li>
