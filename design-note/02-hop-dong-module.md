@@ -339,5 +339,21 @@ Các quy chuẩn và cơ chế bảo vệ sau đây đã được Dev C hoàn th
    - File: [`ReputationResponse.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/reputation/web/dto/ReputationResponse.java), [`ReputationController.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/reputation/web/ReputationController.java), [`detail.html`](file:///d:/lam%20viec/FORK/project_oop/src/main/resources/templates/reputation/detail.html), [`top.html`](file:///d:/lam%20viec/FORK/project_oop/src/main/resources/templates/reputation/top.html).
    - Chi tiết: Đã loại bỏ hoàn toàn trường `totalGmv` khỏi API và giao diện uy tín công khai, bảo vệ bí mật kinh doanh và doanh số giao dịch của người dùng theo quy định bảo mật quyền riêng tư.
 
+---
+
+### 6.15. 🛡️ QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Dữ liệu thử nghiệm mẫu dùng chung toàn sàn (`DataInitializer`)
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (2026-10-02):** Nạp sẵn tài khoản và vé mẫu cho Dev A và Dev B chạy thử nghiệm.
+
+1. **Vị trí hiện thực:** [`src/main/java/com/yourapp/ticketpass/shared/infrastructure/data/DataInitializer.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/shared/infrastructure/data/DataInitializer.java).
+2. **Cơ chế kích hoạt:** Tự động kích hoạt khi chạy với profile không phải production (`!prod`), bảo đảm Idempotent (chỉ nạp khi `admin@test.com` chưa có trong CSDL).
+3. **Danh sách tài khoản dùng chung (Mật khẩu chuẩn: `Password123@`):**
+   - `admin@test.com`: Role `ADMIN`, dùng để test màn hình duyệt khiếu nại `/admin/disputes` của Dev B.
+   - `seller@test.com`: Role `USER`, nạp sẵn STK Vietcombank, sở hữu 2 vé mẫu (`CONCERT` và `MOVIE`).
+   - `buyer@test.com`: Role `USER`, dùng để test luồng mua vé, ký quỹ Escrow và mở khiếu nại.
+   - `vip_seller@test.com`: Role `USER`, có 25 giao dịch thành công, điểm uy tín 100, sở hữu vé mẫu `BUS`.
+4. **Vé mẫu sẵn có trên sàn:** 3 vé ở trạng thái `LISTED` (`CONCERT` 2.000.000đ, `MOVIE` 200.000đ, `BUS` 300.000đ). Dev A và Dev B có thể tương tác trực tiếp qua giao diện web ngay khi ứng dụng khởi động.
+
+
 
 
