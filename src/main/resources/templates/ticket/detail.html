@@ -554,6 +554,23 @@
                     </div>
                 </div>
 
+                <!-- Seller Info -->
+                <div class="seller-block"
+                    style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); margin-bottom: 20px; background: #fafafa; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 4px;">Người bán
+                        </div>
+                        <div style="font-size: 15px; font-weight: 600;">
+                            <span th:text="${seller.fullName}">Tên người bán</span>
+                        </div>
+                    </div>
+                    <div>
+                        <a th:href="@{/reputation/{id}(id=${seller.id})}" class="btn btn-outline"
+                            style="padding: 6px 12px; font-size: 12px; margin-top: 0; width: auto; display: inline-block;">Xem
+                            uy tín</a>
+                    </div>
+                </div>
+
                 <!-- Info Table -->
                 <div class="info-table">
                     <div class="info-row" th:if="${ticket.venue != null && !ticket.venue.isBlank()}">
@@ -599,6 +616,12 @@
                     <a th:if="${currentUserId == null && ticket.status.name() == 'LISTED'}" th:href="@{/login}"
                         class="btn btn-primary">Đăng nhập để mua vé này</a>
 
+                    <!-- Buyer: ve LISTED → nut mua ve -->
+                    <div th:if="${currentUserId != null && !isSeller && ticket.status.name() == 'LISTED'}">
+                        <button type="button" class="btn btn-primary" onclick="initEscrowPayment(this)">Mua vé ngay (Ký
+                            quỹ 100%)</button>
+                    </div>
+
                     <!-- Seller: ve LISTED → nut huy listing -->
                     <div th:if="${isSeller != null && isSeller && ticket.status.name() == 'LISTED'}">
                         <button type="button" class="btn btn-danger-outline"
@@ -637,6 +660,51 @@
 
     </div>
 
+    <!-- CSRF token for AJAX -->
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+
+    <script th:inline="javascript">
+        function initEscrowPayment(btn) {
+            const ticketId = /*[[${ticket.id}]]*/ null;
+            const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+            btn.disabled = true;
+            btn.innerText = 'Đang xử lý...';
+
+            fetch('/payment/escrow/init', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [csrfHeader]: csrfToken
+                },
+                body: JSON.stringify({
+                    ticketId: ticketId,
+                    paymentMethod: 'MOMO'
+                })
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error('API Payment chưa hoàn thiện hoặc có lỗi hệ thống!');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success && data.payUrl) {
+                        window.location.href = data.payUrl;
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                        btn.disabled = false;
+                        btn.innerText = 'Mua vé ngay (Ký quỹ 100%)';
+                    }
+                })
+                .catch(e => {
+                    alert('Lỗi: API /payment/escrow/init của Dev B chưa code xong (ném UnsupportedOperationException). Bạn phải hối thúc Dev B làm xong API này!');
+                    console.error(e);
+                    btn.disabled = false;
+                    btn.innerText = 'Mua vé ngay (Ký quỹ 100%)';
+                });
+        }
+    </script>
 </body>
 
 </html>
