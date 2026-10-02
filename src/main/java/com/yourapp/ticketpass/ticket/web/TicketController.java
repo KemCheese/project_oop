@@ -13,6 +13,7 @@ import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
 import com.yourapp.ticketpass.ticket.web.dto.TicketSummaryResponse;
 import com.yourapp.ticketpass.user.domain.User;
 import com.yourapp.ticketpass.user.domain.UserRepository;
+import com.yourapp.ticketpass.user.web.dto.UserSummaryResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.security.Principal;
@@ -118,6 +119,17 @@ public class TicketController {
 
         TicketResponse response = toResponse(ticket);
         model.addAttribute("ticket", response);
+
+        // Xac dinh thong tin seller (BR: Dung UserSummaryResponse de tranh leak thong tin ngan hang)
+        User seller = userRepository.findById(ticket.getSellerId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", ticket.getSellerId()));
+        UserSummaryResponse sellerSummary = new UserSummaryResponse();
+        sellerSummary.setId(seller.getId());
+        sellerSummary.setEmail(seller.getEmail());
+        sellerSummary.setFullName(seller.getFullName());
+        sellerSummary.setRole(seller.getRole());
+        sellerSummary.setStatus(seller.getStatus());
+        model.addAttribute("seller", sellerSummary);
 
         // Xac dinh vai tro cua nguoi dang xem de hien thi nut hanh dong phu hop
         if (principal != null) {
