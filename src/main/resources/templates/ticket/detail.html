@@ -518,8 +518,8 @@
                 </div>
 
                 <!-- QR Image: chi hien cho buyer sau khi ve o trang thai TRANSFERRED tro di -->
-                <div class="qr-section" th:if="${ticket.qrImageUrl != null && isBuyer != null && isBuyer
-                          && (ticket.status.name() == 'TRANSFERRED'
+                <div class="qr-section" th:if="${ticket.qrImageUrl != null and isBuyer != null and isBuyer
+                          and (ticket.status.name() == 'TRANSFERRED'
                               || ticket.status.name() == 'AWAITING_USE'
                               || ticket.status.name() == 'AUTO_COMPLETE')}">
                     <div class="qr-section-title">Ảnh QR check-in (chỉ bạn thấy)</div>
@@ -554,13 +554,30 @@
                     </div>
                 </div>
 
+                <!-- Seller Info -->
+                <div class="seller-block"
+                    style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); margin-bottom: 20px; background: #fafafa; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 4px;">Người bán
+                        </div>
+                        <div style="font-size: 15px; font-weight: 600;">
+                            <span th:text="${seller.fullName}">Tên người bán</span>
+                        </div>
+                    </div>
+                    <div>
+                        <a th:href="@{/reputation/{id}(id=${seller.id})}" class="btn btn-outline"
+                            style="padding: 6px 12px; font-size: 12px; margin-top: 0; width: auto; display: inline-block;">Xem
+                            uy tín</a>
+                    </div>
+                </div>
+
                 <!-- Info Table -->
                 <div class="info-table">
-                    <div class="info-row" th:if="${ticket.venue != null && !ticket.venue.isBlank()}">
+                    <div class="info-row" th:if="${ticket.venue != null and !ticket.venue.isBlank()}">
                         <span class="info-label">Địa điểm</span>
                         <span class="info-value" th:text="${ticket.venue}"></span>
                     </div>
-                    <div class="info-row" th:if="${ticket.seatInfo != null && !ticket.seatInfo.isBlank()}">
+                    <div class="info-row" th:if="${ticket.seatInfo != null and !ticket.seatInfo.isBlank()}">
                         <span class="info-label">Ghế / Chỗ</span>
                         <span class="info-value" th:text="${ticket.seatInfo}"></span>
                     </div>
@@ -579,14 +596,14 @@
 
                 <!-- Transfer Instruction (hien khi co) -->
                 <div class="transfer-box"
-                    th:if="${ticket.transferInstruction != null && !ticket.transferInstruction.isBlank()}">
+                    th:if="${ticket.transferInstruction != null and !ticket.transferInstruction.isBlank()}">
                     <div class="transfer-box-title">Hướng dẫn chuyển vé</div>
                     <div class="transfer-box-content" th:text="${ticket.transferInstruction}"></div>
                 </div>
 
                 <!-- Dispute Window (hien khi dang cho khieu nai) -->
                 <div class="dispute-info" th:if="${ticket.disputeWindowClosesAt != null
-                     && (ticket.status.name() == 'AWAITING_USE')}">
+                     and (ticket.status.name() == 'AWAITING_USE')}">
                     Cửa sổ khiếu nại đóng lúc:
                     <strong th:text="${#temporals.format(ticket.disputeWindowClosesAt, 'HH:mm dd/MM/yyyy')}">12:00
                         20/10/2026</strong>
@@ -596,11 +613,17 @@
                 <div class="action-group">
 
                     <!-- Guest: chua dang nhap → nut dang nhap de mua -->
-                    <a th:if="${currentUserId == null && ticket.status.name() == 'LISTED'}" th:href="@{/login}"
+                    <a th:if="${currentUserId == null and ticket.status.name() == 'LISTED'}" th:href="@{/login}"
                         class="btn btn-primary">Đăng nhập để mua vé này</a>
 
+                    <!-- Buyer: ve LISTED → nut mua ve -->
+                    <div th:if="${currentUserId != null and !isSeller and ticket.status.name() == 'LISTED'}">
+                        <button type="button" class="btn btn-primary" onclick="initEscrowPayment(this)">Mua vé ngay (Ký
+                            quỹ 100%)</button>
+                    </div>
+
                     <!-- Seller: ve LISTED → nut huy listing -->
-                    <div th:if="${isSeller != null && isSeller && ticket.status.name() == 'LISTED'}">
+                    <div th:if="${isSeller != null and isSeller and ticket.status.name() == 'LISTED'}">
                         <button type="button" class="btn btn-danger-outline"
                             onclick="document.getElementById('cancelSection').style.display='block'; this.style.display='none';">
                             Hủy đăng vé
@@ -615,13 +638,13 @@
                     </div>
 
                     <!-- Seller: ve DEPOSIT_LOCKED → nut xac nhan da chuyen ve -->
-                    <form th:if="${isSeller != null && isSeller && ticket.status.name() == 'DEPOSIT_LOCKED'}"
+                    <form th:if="${isSeller != null and isSeller and ticket.status.name() == 'DEPOSIT_LOCKED'}"
                         method="post" th:action="@{/tickets/{id}/transfer(id=${ticket.id})}">
                         <button type="submit" class="btn btn-primary">Xác nhận đã chuyển vé</button>
                     </form>
 
                     <!-- Buyer: ve TRANSFERRED → nut xac nhan da nhan ve -->
-                    <form th:if="${isBuyer != null && isBuyer && ticket.status.name() == 'TRANSFERRED'}" method="post"
+                    <form th:if="${isBuyer != null and isBuyer and ticket.status.name() == 'TRANSFERRED'}" method="post"
                         th:action="@{/tickets/{id}/received(id=${ticket.id})}">
                         <button type="submit" class="btn btn-success">Xác nhận đã nhận vé</button>
                     </form>
@@ -637,6 +660,51 @@
 
     </div>
 
+    <!-- CSRF token for AJAX -->
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+
+    <script th:inline="javascript">
+        function initEscrowPayment(btn) {
+            const ticketId = /*[[${ticket.id}]]*/ null;
+            const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
+            btn.disabled = true;
+            btn.innerText = 'Đang xử lý...';
+
+            fetch('/payment/escrow/init', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [csrfHeader]: csrfToken
+                },
+                body: JSON.stringify({
+                    ticketId: ticketId,
+                    paymentMethod: 'MOMO'
+                })
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error('API Payment chưa hoàn thiện hoặc có lỗi hệ thống!');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success && data.payUrl) {
+                        window.location.href = data.payUrl;
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                        btn.disabled = false;
+                        btn.innerText = 'Mua vé ngay (Ký quỹ 100%)';
+                    }
+                })
+                .catch(e => {
+                    alert('Lỗi: API /payment/escrow/init của Dev B chưa code xong (ném UnsupportedOperationException). Bạn phải hối thúc Dev B làm xong API này!');
+                    console.error(e);
+                    btn.disabled = false;
+                    btn.innerText = 'Mua vé ngay (Ký quỹ 100%)';
+                });
+        }
+    </script>
 </body>
 
 </html>
