@@ -96,231 +96,670 @@
                         grid-template-columns: 1fr;
                     }
                 }
+
+                /* Sidebar Layout */
+                .profile-layout-container {
+                    display: flex;
+                    gap: 30px;
+                    align-items: flex-start;
+                    max-width: 1100px;
+                    margin: 0 auto;
+                }
+
+                .profile-sidebar {
+                    width: 280px;
+                    flex-shrink: 0;
+                    background: var(--color-surface);
+                    padding: 24px;
+                    border-radius: var(--radius-lg);
+                    box-shadow: var(--shadow-card);
+                    border: 1px solid var(--color-border);
+                    position: sticky;
+                    top: 80px;
+                }
+
+                .profile-main {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .sidebar-menu {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                }
+
+                .sidebar-menu li {
+                    margin-bottom: 4px;
+                }
+
+                .sidebar-menu a {
+                    display: block;
+                    padding: 12px 16px;
+                    color: var(--color-text);
+                    text-decoration: none;
+                    border-radius: 6px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+
+                .sidebar-menu a:hover {
+                    background-color: #f1f5f9;
+                }
+
+                .sidebar-menu a.active {
+                    color: var(--color-primary);
+                    background-color: #f1f5f9;
+                    font-weight: bold;
+                }
+
+                .sidebar-submenu {
+                    list-style: none;
+                    padding-left: 12px;
+                    margin-top: 4px;
+                    display: none;
+                }
+
+                .sidebar-submenu.open {
+                    display: block;
+                }
+
+                .sidebar-submenu a {
+                    padding: 10px 16px;
+                    font-size: 14px;
+                    font-weight: normal;
+                    color: var(--color-text-muted);
+                }
+
+                .sidebar-submenu a:hover {
+                    color: var(--color-text);
+                    background-color: transparent;
+                }
+
+                .sidebar-submenu a.active {
+                    color: var(--color-primary);
+                    font-weight: 600;
+                    background-color: transparent;
+                }
+
+                .tab-pane {
+                    display: none;
+                }
+
+                .tab-pane.active {
+                    display: block;
+                    animation: fadeIn 0.3s;
+                }
+
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(5px);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                .order-filters {
+                    display: flex;
+                    gap: 24px;
+                    margin-bottom: 24px;
+                    border-bottom: 1px solid var(--color-border);
+                }
+
+                .order-filters button {
+                    background: none;
+                    border: none;
+                    padding: 12px 0;
+                    font-size: 15px;
+                    cursor: pointer;
+                    color: var(--color-text-muted);
+                    position: relative;
+                    font-weight: 500;
+                    transition: color 0.2s;
+                }
+
+                .order-filters button:focus {
+                    outline: none;
+                }
+
+                .order-filters button:hover {
+                    color: var(--color-text);
+                }
+
+                .order-filters button.active {
+                    color: var(--color-primary);
+                    font-weight: bold;
+                }
+
+                .order-filters button.active::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -1px;
+                    left: 0;
+                    right: 0;
+                    height: 3px;
+                    background-color: var(--color-primary);
+                    border-radius: 3px 3px 0 0;
+                }
+
+                .empty-state {
+                    text-align: center;
+                    padding: 60px 20px;
+                    background: white;
+                    border-radius: 8px;
+                    border: 1px dashed var(--color-border);
+                    color: var(--color-text-muted);
+                }
+
+                .empty-state i {
+                    font-size: 48px;
+                    color: #ddd;
+                    margin-bottom: 16px;
+                }
             </style>
 
-            <div class="profile-layout">
-                <div style="margin-bottom: 24px;">
-                    <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand); margin-bottom: 4px;">
-                        Hồ Sơ Cá Nhân &amp; Thiết Lập Tài Khoản
-                    </h1>
-                    <p style="font-size: 14px; color: var(--color-text-muted);">
-                        Quản lý thông tin định danh, điểm uy tín và tài khoản ngân hàng nhận tiền giải ngân
-                    </p>
-                </div>
-
-                <!-- Status Alerts -->
-                <div class="alert alert-success" th:if="${param.updated != null}">
-                    <i class="fa-solid fa-circle-check"></i> Thông tin cá nhân đã được cập nhật thành công.
-                </div>
-                <div class="alert alert-success" th:if="${param.bankUpdated != null}">
-                    <i class="fa-solid fa-circle-check"></i> Thông tin tài khoản ngân hàng nhận tiền đã được lưu an toàn.
-                </div>
-                <div class="alert alert-success" th:if="${param.avatarUpdated != null}">
-                    <i class="fa-solid fa-circle-check"></i> Ảnh đại diện mới đã được cập nhật thành công.
-                </div>
-                <div class="alert alert-danger" th:if="${param.avatarError != null}">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Tải ảnh thất bại. Tệp phải là ảnh (JPG, PNG, WebP) và dung lượng tối đa 5MB.
-                </div>
-
-                <!-- KHỐI 1 & 2: TỔNG QUAN TÀI KHOẢN & CHỈ SỐ UY TÍN -->
-                <div class="profile-header-grid">
-                    <!-- Tổng quan tài khoản -->
-                    <div class="profile-card">
-                        <div class="profile-card-title">
-                            <i class="fa-solid fa-user-circle" style="color: var(--color-primary);"></i>
-                            Thông Tin Tài Khoản
+            <div class="profile-layout-container">
+                <!-- SIDEBAR -->
+                <div class="profile-sidebar">
+                    <div class="avatar-wrapper"
+                        style="flex-direction: column; text-align: center; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--color-border); padding-bottom: 20px;">
+                        <img th:if="${profile.avatarUrl != null and !#strings.isEmpty(profile.avatarUrl)}"
+                            th:src="${profile.avatarUrl}" alt="Avatar" class="avatar-img"
+                            style="margin: 0 auto; width: 88px; height: 88px;" />
+                        <div th:unless="${profile.avatarUrl != null and !#strings.isEmpty(profile.avatarUrl)}"
+                            class="avatar-fallback" th:text="${#strings.substring(profile.fullName, 0, 1)}"
+                            style="margin: 0 auto; width: 88px; height: 88px; font-size: 32px;">
+                            U
                         </div>
-
-                        <div class="avatar-wrapper">
-                            <img th:if="${profile.avatarUrl != null and !#strings.isEmpty(profile.avatarUrl)}"
-                                 th:src="${profile.avatarUrl}" alt="Avatar" class="avatar-img" />
-                            <div th:unless="${profile.avatarUrl != null and !#strings.isEmpty(profile.avatarUrl)}"
-                                 class="avatar-fallback" th:text="${#strings.substring(profile.fullName, 0, 1)}">
-                                U
-                            </div>
-                            <div>
-                                <h3 style="font-size: 18px; font-weight: 700; color: var(--color-brand); margin: 0 0 4px 0;"
-                                    th:text="${profile.fullName}">
-                                    Họ và tên
-                                </h3>
-                                <p style="font-size: 13px; color: var(--color-text-muted); margin: 0 0 8px 0;" th:text="${profile.email}">
-                                    email@example.com
-                                </p>
-                                <span class="badge badge-brand" th:text="${profile.role}">USER</span>
-                                <span class="badge badge-success" th:text="${profile.status}">ACTIVE</span>
-                            </div>
-                        </div>
-
-                        <div class="info-row">
-                            <span class="info-label">Mã người dùng:</span>
-                            <span class="info-val" th:text="'#' + ${profile.id}">#1</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Số điện thoại:</span>
-                            <span class="info-val" th:text="${profile.phoneNumber ?: 'Chưa cập nhật'}">0901234567</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Ngày tham gia:</span>
-                            <span class="info-val" th:text="${profile.createdAt != null ? #temporals.format(profile.createdAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : 'Chưa có'}">01/01/2026</span>
+                        <div>
+                            <h3 style="font-size: 18px; font-weight: 700; color: var(--color-brand); margin: 0 0 4px 0;"
+                                th:text="${profile.fullName}">
+                                Họ và tên
+                            </h3>
+                            <p style="font-size: 13px; color: var(--color-text-muted); margin: 0 0 8px 0;"
+                                th:text="${profile.email}">
+                                email@example.com
+                            </p>
+                            <span class="badge badge-brand" th:text="${profile.role}">USER</span>
                         </div>
                     </div>
 
-                    <!-- Chỉ số uy tín -->
-                    <div class="profile-card">
-                        <div class="profile-card-title">
-                            <i class="fa-solid fa-award" style="color: var(--color-warning);"></i>
-                            Điểm Uy Tín &amp; Giao Dịch
-                        </div>
-
-                        <div style="text-align: center; padding: 12px 0 20px 0;">
-                            <div style="font-size: 40px; font-weight: 900; color: var(--color-primary); line-height: 1;"
-                                 th:text="${profile.reputationScore != null ? profile.reputationScore.intValue() : 100}">
-                                100
-                            </div>
-                            <div style="font-size: 12px; color: var(--color-text-muted); text-transform: uppercase; font-weight: 600; margin-top: 4px;">
-                                / 100 điểm uy tín hệ thống
-                            </div>
-                        </div>
-
-                        <div class="info-row">
-                            <span class="info-label">Tổng giao dịch tham gia:</span>
-                            <span class="info-val"><strong th:text="${profile.totalTransactions ?: 0}">0</strong> giao dịch</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Trạng thái xác minh:</span>
-                            <span class="info-val" style="color: var(--color-success);">
-                                <i class="fa-solid fa-check"></i> Đã kích hoạt
-                            </span>
-                        </div>
-
-                        <div style="margin-top: 16px; text-align: center;">
-                            <a th:href="@{'/reputation/' + ${profile.id}}" class="btn btn-outline btn-sm" style="width: 100%;">
-                                <i class="fa-solid fa-clock-rotate-left"></i> Xem chi tiết lịch sử uy tín của tôi
+                    <ul class="sidebar-menu">
+                        <li>
+                            <a class="active" onclick="switchTab('tab-account', this)">
+                                <i class="fa-solid fa-user-circle" style="width: 24px;"></i> Thông tin tài khoản
                             </a>
-                        </div>
-                    </div>
+                        </li>
+                        <li>
+                            <a onclick="toggleSubmenu(this)">
+                                <i class="fa-solid fa-ticket" style="width: 24px;"></i> Đơn hàng của tôi <i
+                                    class="fa-solid fa-chevron-down"
+                                    style="float: right; margin-top: 4px; font-size: 12px;"></i>
+                            </a>
+                            <ul class="sidebar-submenu" id="submenu-orders">
+                                <li><a onclick="switchTab('tab-orders-all', this)">Tất cả đơn hàng</a></li>
+                                <li><a onclick="switchTab('tab-orders-bought', this)">Vé đã mua</a></li>
+                                <li><a onclick="switchTab('tab-orders-sold', this)">Vé đã bán</a></li>
+                            </ul>
+                        </li>
+                    </ul>
                 </div>
 
-                <!-- KHỐI 3: FORM ĐỔI THÔNG TIN CÁ NHÂN -->
-                <div class="profile-card" style="margin-bottom: 24px;">
-                    <div class="profile-card-title">
-                        <i class="fa-solid fa-pen-to-square" style="color: var(--color-info);"></i>
-                        Cập Nhật Thông Tin Cá Nhân
+                <!-- MAIN CONTENT -->
+                <div class="profile-main">
+
+                    <!-- TAB 1: TÀI KHOẢN -->
+                    <div id="tab-account" class="tab-pane active">
+                        <div style="margin-bottom: 24px;">
+                            <h1
+                                style="font-size: 26px; font-weight: 800; color: var(--color-brand); margin-bottom: 4px;">
+                                Hồ Sơ Cá Nhân &amp; Thiết Lập
+                            </h1>
+                            <p style="font-size: 14px; color: var(--color-text-muted);">
+                                Quản lý thông tin định danh, điểm uy tín và tài khoản ngân hàng nhận tiền giải ngân
+                            </p>
+                        </div>
+
+                        <!-- Status Alerts -->
+                        <div class="alert alert-success" th:if="${param.updated != null}">
+                            <i class="fa-solid fa-circle-check"></i> Thông tin cá nhân đã được cập nhật thành công.
+                        </div>
+                        <div class="alert alert-success" th:if="${param.bankUpdated != null}">
+                            <i class="fa-solid fa-circle-check"></i> Thông tin tài khoản ngân hàng nhận tiền đã được lưu
+                            an toàn.
+                        </div>
+                        <div class="alert alert-success" th:if="${param.avatarUpdated != null}">
+                            <i class="fa-solid fa-circle-check"></i> Ảnh đại diện mới đã được cập nhật thành công.
+                        </div>
+                        <div class="alert alert-danger" th:if="${param.avatarError != null}">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Tải ảnh thất bại. Tệp phải là ảnh (JPG,
+                            PNG, WebP) và dung lượng tối đa 5MB.
+                        </div>
+
+                        <div class="profile-header-grid">
+                            <!-- Tổng quan tài khoản -->
+                            <div class="profile-card">
+                                <div class="profile-card-title">
+                                    <i class="fa-solid fa-address-card" style="color: var(--color-primary);"></i>
+                                    Chi tiết tài khoản
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Mã người dùng:</span>
+                                    <span class="info-val" th:text="'#' + ${profile.id}">#1</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Số điện thoại:</span>
+                                    <span class="info-val"
+                                        th:text="${profile.phoneNumber ?: 'Chưa cập nhật'}">0901234567</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Ngày tham gia:</span>
+                                    <span class="info-val"
+                                        th:text="${profile.createdAt != null ? #temporals.format(profile.createdAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : 'Chưa có'}">01/01/2026</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Trạng thái xác minh:</span>
+                                    <span class="info-val" style="color: var(--color-success);">
+                                        <i class="fa-solid fa-check"></i> Đã kích hoạt
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Chỉ số uy tín -->
+                            <div class="profile-card">
+                                <div class="profile-card-title">
+                                    <i class="fa-solid fa-award" style="color: var(--color-warning);"></i>
+                                    Điểm Uy Tín &amp; Giao Dịch
+                                </div>
+
+                                <div style="text-align: center; padding: 12px 0 20px 0;">
+                                    <div style="font-size: 40px; font-weight: 900; color: var(--color-primary); line-height: 1;"
+                                        th:text="${profile.reputationScore != null ? profile.reputationScore.intValue() : 100}">
+                                        100
+                                    </div>
+                                    <div
+                                        style="font-size: 12px; color: var(--color-text-muted); text-transform: uppercase; font-weight: 600; margin-top: 4px;">
+                                        / 100 điểm uy tín hệ thống
+                                    </div>
+                                </div>
+
+                                <div class="info-row">
+                                    <span class="info-label">Tổng giao dịch tham gia:</span>
+                                    <span class="info-val"><strong
+                                            th:text="${profile.totalTransactions ?: 0}">0</strong> giao dịch</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Trạng thái xác minh:</span>
+                                    <span class="info-val" style="color: var(--color-success);">
+                                        <i class="fa-solid fa-check"></i> Đã kích hoạt
+                                    </span>
+                                </div>
+
+                                <div style="margin-top: 16px; text-align: center;">
+                                    <a th:href="@{'/reputation/' + ${profile.id}}" class="btn btn-outline btn-sm"
+                                        style="width: 100%;">
+                                        <i class="fa-solid fa-clock-rotate-left"></i> Xem chi tiết lịch sử uy tín của
+                                        tôi
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- KHỐI 3: FORM ĐỔI THÔNG TIN CÁ NHÂN -->
+                        <div class="profile-card" style="margin-bottom: 24px;">
+                            <div class="profile-card-title">
+                                <i class="fa-solid fa-pen-to-square" style="color: var(--color-info);"></i>
+                                Cập Nhật Thông Tin Cá Nhân
+                            </div>
+
+                            <form method="post" th:action="@{/profile}" th:object="${updateProfileRequest}"
+                                style="max-width: 520px;">
+                                <div class="form-group">
+                                    <label class="form-label" for="fullName">Họ và tên <span
+                                            class="required">*</span></label>
+                                    <input type="text" id="fullName" th:field="*{fullName}" class="form-control"
+                                        th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"
+                                        maxlength="150" required />
+                                    <div th:if="${#fields.hasErrors('fullName')}" class="form-error"
+                                        th:errors="*{fullName}"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="phoneNumber">Số điện thoại (10 chữ số, bắt đầu bằng
+                                        0)</label>
+                                    <input type="tel" id="phoneNumber" th:field="*{phoneNumber}" class="form-control"
+                                        th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid' : ''"
+                                        maxlength="20" />
+                                    <div th:if="${#fields.hasErrors('phoneNumber')}" class="form-error"
+                                        th:errors="*{phoneNumber}"></div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fa-solid fa-floppy-disk"></i> Lưu thông tin cá nhân
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- KHỐI 4: FORM TẢI LÊN ẢNH ĐẠI DIỆN -->
+                        <div class="profile-card" style="margin-bottom: 24px;">
+                            <div class="profile-card-title">
+                                <i class="fa-solid fa-camera" style="color: var(--color-success);"></i>
+                                Thay Đổi Ảnh Đại Diện
+                            </div>
+                            <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 14px;">
+                                Chọn ảnh định dạng JPG, PNG hoặc WebP. Kích thước tối đa cho phép là 5MB.
+                            </p>
+
+                            <form method="post" th:action="@{/profile/avatar}" enctype="multipart/form-data"
+                                style="max-width: 520px;">
+                                <div class="form-group">
+                                    <input type="file" id="avatar" name="avatar"
+                                        accept="image/jpeg, image/png, image/webp" class="form-control" required />
+                                </div>
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Tải ảnh đại diện lên
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- KHỐI 5: FORM TÀI KHOẢN NGÂN HÀNG (RR-1 & RR-5) -->
+                        <div class="profile-card" style="margin-bottom: 24px;">
+                            <div class="profile-card-title">
+                                <i class="fa-solid fa-building-columns" style="color: var(--color-accent);"></i>
+                                Tài Khoản Ngân Hàng Nhận Tiền Giải Ngân
+                            </div>
+                            <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 16px;">
+                                Thông tin tài khoản để hệ thống tự động giải ngân số tiền bán vé sau khi giao dịch
+                                chuyển nhượng hoàn tất thành công.
+                            </p>
+
+                            <!-- Hiển thị tài khoản đã khai báo (che dấu số tài khoản theo RR-1 & RR-5) -->
+                            <div
+                                style="background-color: #fafbfc; padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px; border: 1px dashed var(--color-border);">
+                                <div
+                                    style="font-size: 12px; font-weight: 700; color: var(--color-brand); text-transform: uppercase; margin-bottom: 8px;">
+                                    Tài khoản hiện tại đang liên kết:
+                                </div>
+                                <div th:if="${maskedBankAccount != null}">
+                                    <div class="info-row">
+                                        <span class="info-label">Tên ngân hàng:</span>
+                                        <span class="info-val" th:text="${profile.bankName}">-</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Số tài khoản:</span>
+                                        <span class="info-val" style="font-family: monospace; letter-spacing: 1px;"
+                                            th:text="${maskedBankAccount}">-</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Chủ tài khoản:</span>
+                                        <span class="info-val" th:text="${profile.bankAccountHolder}">-</span>
+                                    </div>
+                                </div>
+                                <div th:unless="${maskedBankAccount != null}">
+                                    <div style="font-size: 13px; color: var(--color-warning); font-weight: 500;">
+                                        <i class="fa-solid fa-circle-exclamation"></i> Bạn chưa thiết lập tài khoản nhận
+                                        tiền. Cần cập nhật để nhận tiền khi bán vé.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form cập nhật số tài khoản mới (RR-5: không điền sẵn số tài khoản cũ) -->
+                            <form method="post" th:action="@{/profile/bank}" th:object="${updateBankAccountRequest}"
+                                style="max-width: 520px;">
+                                <div class="form-group">
+                                    <label class="form-label" for="bankName">Tên ngân hàng <span
+                                            class="required">*</span></label>
+                                    <input type="text" id="bankName" th:field="*{bankName}" class="form-control"
+                                        th:classappend="${#fields.hasErrors('bankName')} ? 'is-invalid' : ''"
+                                        placeholder="Ví dụ: Vietcombank, Techcombank, MB Bank..." maxlength="100"
+                                        required />
+                                    <div th:if="${#fields.hasErrors('bankName')}" class="form-error"
+                                        th:errors="*{bankName}"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="bankAccountNumber">Số tài khoản ngân hàng mới <span
+                                            class="required">*</span></label>
+                                    <input type="text" id="bankAccountNumber" th:field="*{bankAccountNumber}"
+                                        class="form-control"
+                                        th:classappend="${#fields.hasErrors('bankAccountNumber')} ? 'is-invalid' : ''"
+                                        placeholder="Nhập số tài khoản ngân hàng mới..." maxlength="50" required />
+                                    <span class="form-text">Vì lý do bảo mật tài chính, vui lòng nhập lại toàn bộ số tài
+                                        khoản mỗi khi bạn cập nhật.</span>
+                                    <div th:if="${#fields.hasErrors('bankAccountNumber')}" class="form-error"
+                                        th:errors="*{bankAccountNumber}"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="bankAccountHolder">Tên chủ tài khoản (viết hoa không
+                                        dấu) <span class="required">*</span></label>
+                                    <input type="text" id="bankAccountHolder" th:field="*{bankAccountHolder}"
+                                        class="form-control"
+                                        th:classappend="${#fields.hasErrors('bankAccountHolder')} ? 'is-invalid' : ''"
+                                        placeholder="Ví dụ: NGUYEN VAN A" maxlength="150" required />
+                                    <div th:if="${#fields.hasErrors('bankAccountHolder')}" class="form-error"
+                                        th:errors="*{bankAccountHolder}"></div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fa-solid fa-lock"></i> Lưu tài khoản ngân hàng
+                                </button>
+                            </form>
+                        </div>
+                    </div> <!-- End tab-account -->
+
+                    <!-- TAB 2: TẤT CẢ ĐƠN HÀNG -->
+                    <div id="tab-orders-all" class="tab-pane">
+                        <div style="margin-bottom: 24px;">
+                            <h1
+                                style="font-size: 26px; font-weight: 800; color: var(--color-brand); margin-bottom: 4px;">
+                                Tất Cả Đơn Hàng
+                            </h1>
+                            <p style="font-size: 14px; color: var(--color-text-muted);">
+                                Lịch sử toàn bộ giao dịch mua và bán vé của bạn
+                            </p>
+                        </div>
+                        <div class="empty-state">
+                            <i class="fa-solid fa-box-open"></i>
+                            <p>Bạn chưa có giao dịch nào.</p>
+                            <a th:href="@{/tickets}" class="btn btn-primary btn-sm" style="margin-top: 15px;">Khám phá
+                                vé ngay</a>
+                        </div>
+                        <div class="ticket-list-container" style="display: flex; flex-direction: column; gap: 16px;">
+                        </div>
                     </div>
 
-                    <form method="post" th:action="@{/profile}" th:object="${updateProfileRequest}" style="max-width: 520px;">
-                        <div class="form-group">
-                            <label class="form-label" for="fullName">Họ và tên <span class="required">*</span></label>
-                            <input type="text" id="fullName" th:field="*{fullName}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"
-                                   maxlength="150" required />
-                            <div th:if="${#fields.hasErrors('fullName')}" class="form-error" th:errors="*{fullName}"></div>
+                    <!-- TAB 3: VÉ ĐÃ MUA -->
+                    <div id="tab-orders-bought" class="tab-pane">
+                        <div style="margin-bottom: 24px;">
+                            <h1
+                                style="font-size: 26px; font-weight: 800; color: var(--color-brand); margin-bottom: 4px;">
+                                Vé Đã Mua
+                            </h1>
                         </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="phoneNumber">Số điện thoại (10 chữ số, bắt đầu bằng 0)</label>
-                            <input type="tel" id="phoneNumber" th:field="*{phoneNumber}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid' : ''"
-                                   maxlength="20" />
-                            <div th:if="${#fields.hasErrors('phoneNumber')}" class="form-error" th:errors="*{phoneNumber}"></div>
+                        <div class="order-filters" id="filters-bought">
+                            <button class="active" onclick="switchOrderFilter('filters-bought', 'all', this)">Tất
+                                cả</button>
+                            <button onclick="switchOrderFilter('filters-bought', 'success', this)">Thành công</button>
+                            <button onclick="switchOrderFilter('filters-bought', 'processing', this)">Đang xử
+                                lý</button>
+                            <button onclick="switchOrderFilter('filters-bought', 'cancelled', this)">Đã hủy</button>
                         </div>
-
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="fa-solid fa-floppy-disk"></i> Lưu thông tin cá nhân
-                        </button>
-                    </form>
-                </div>
-
-                <!-- KHỐI 4: FORM TẢI LÊN ẢNH ĐẠI DIỆN -->
-                <div class="profile-card" style="margin-bottom: 24px;">
-                    <div class="profile-card-title">
-                        <i class="fa-solid fa-camera" style="color: var(--color-success);"></i>
-                        Thay Đổi Ảnh Đại Diện
-                    </div>
-                    <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 14px;">
-                        Chọn ảnh định dạng JPG, PNG hoặc WebP. Kích thước tối đa cho phép là 5MB.
-                    </p>
-
-                    <form method="post" th:action="@{/profile/avatar}" enctype="multipart/form-data" style="max-width: 520px;">
-                        <div class="form-group">
-                            <input type="file" id="avatar" name="avatar" accept="image/jpeg, image/png, image/webp"
-                                   class="form-control" required />
+                        <div class="empty-state">
+                            <i class="fa-solid fa-ticket"></i>
+                            <p>Bạn chưa mua vé nào.</p>
+                            <a th:href="@{/tickets}" class="btn btn-primary btn-sm" style="margin-top: 15px;">Khám phá
+                                vé ngay</a>
                         </div>
-                        <button type="submit" class="btn btn-success btn-sm">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> Tải ảnh đại diện lên
-                        </button>
-                    </form>
-                </div>
-
-                <!-- KHỐI 5: FORM TÀI KHOẢN NGÂN HÀNG (RR-1 & RR-5) -->
-                <div class="profile-card" style="margin-bottom: 24px;">
-                    <div class="profile-card-title">
-                        <i class="fa-solid fa-building-columns" style="color: var(--color-accent);"></i>
-                        Tài Khoản Ngân Hàng Nhận Tiền Giải Ngân
-                    </div>
-                    <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 16px;">
-                        Thông tin tài khoản để hệ thống tự động giải ngân số tiền bán vé sau khi giao dịch chuyển nhượng hoàn tất thành công.
-                    </p>
-
-                    <!-- Hiển thị tài khoản đã khai báo (che dấu số tài khoản theo RR-1 & RR-5) -->
-                    <div style="background-color: #fafbfc; padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px; border: 1px dashed var(--color-border);">
-                        <div style="font-size: 12px; font-weight: 700; color: var(--color-brand); text-transform: uppercase; margin-bottom: 8px;">
-                            Tài khoản hiện tại đang liên kết:
-                        </div>
-                        <div th:if="${maskedBankAccount != null}">
-                            <div class="info-row">
-                                <span class="info-label">Tên ngân hàng:</span>
-                                <span class="info-val" th:text="${profile.bankName}">-</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Số tài khoản:</span>
-                                <span class="info-val" style="font-family: monospace; letter-spacing: 1px;" th:text="${maskedBankAccount}">-</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Chủ tài khoản:</span>
-                                <span class="info-val" th:text="${profile.bankAccountHolder}">-</span>
-                            </div>
-                        </div>
-                        <div th:unless="${maskedBankAccount != null}">
-                            <div style="font-size: 13px; color: var(--color-warning); font-weight: 500;">
-                                <i class="fa-solid fa-circle-exclamation"></i> Bạn chưa thiết lập tài khoản nhận tiền. Cần cập nhật để nhận tiền khi bán vé.
-                            </div>
+                        <div class="ticket-list-container" style="display: flex; flex-direction: column; gap: 16px;">
                         </div>
                     </div>
 
-                    <!-- Form cập nhật số tài khoản mới (RR-5: không điền sẵn số tài khoản cũ) -->
-                    <form method="post" th:action="@{/profile/bank}" th:object="${updateBankAccountRequest}" style="max-width: 520px;">
-                        <div class="form-group">
-                            <label class="form-label" for="bankName">Tên ngân hàng <span class="required">*</span></label>
-                            <input type="text" id="bankName" th:field="*{bankName}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('bankName')} ? 'is-invalid' : ''"
-                                   placeholder="Ví dụ: Vietcombank, Techcombank, MB Bank..." maxlength="100" required />
-                            <div th:if="${#fields.hasErrors('bankName')}" class="form-error" th:errors="*{bankName}"></div>
+                    <!-- TAB 4: VÉ ĐÃ BÁN -->
+                    <div id="tab-orders-sold" class="tab-pane">
+                        <div style="margin-bottom: 24px;">
+                            <h1
+                                style="font-size: 26px; font-weight: 800; color: var(--color-brand); margin-bottom: 4px;">
+                                Vé Đã Bán
+                            </h1>
                         </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="bankAccountNumber">Số tài khoản ngân hàng mới <span class="required">*</span></label>
-                            <input type="text" id="bankAccountNumber" th:field="*{bankAccountNumber}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('bankAccountNumber')} ? 'is-invalid' : ''"
-                                   placeholder="Nhập số tài khoản ngân hàng mới..." maxlength="50" required />
-                            <span class="form-text">Vì lý do bảo mật tài chính, vui lòng nhập lại toàn bộ số tài khoản mỗi khi bạn cập nhật.</span>
-                            <div th:if="${#fields.hasErrors('bankAccountNumber')}" class="form-error" th:errors="*{bankAccountNumber}"></div>
+                        <div class="order-filters" id="filters-sold">
+                            <button class="active" onclick="switchOrderFilter('filters-sold', 'all', this)">Tất
+                                cả</button>
+                            <button onclick="switchOrderFilter('filters-sold', 'success', this)">Thành công</button>
+                            <button onclick="switchOrderFilter('filters-sold', 'processing', this)">Đang xử lý</button>
+                            <button onclick="switchOrderFilter('filters-sold', 'cancelled', this)">Đã hủy</button>
                         </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="bankAccountHolder">Tên chủ tài khoản (viết hoa không dấu) <span class="required">*</span></label>
-                            <input type="text" id="bankAccountHolder" th:field="*{bankAccountHolder}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('bankAccountHolder')} ? 'is-invalid' : ''"
-                                   placeholder="Ví dụ: NGUYEN VAN A" maxlength="150" required />
-                            <div th:if="${#fields.hasErrors('bankAccountHolder')}" class="form-error" th:errors="*{bankAccountHolder}"></div>
+                        <div class="empty-state">
+                            <i class="fa-solid fa-store"></i>
+                            <p>Bạn chưa đăng bán vé nào.</p>
+                            <a th:href="@{/tickets/new}" class="btn btn-outline btn-sm" style="margin-top: 15px;">Đăng
+                                vé ngay</a>
                         </div>
+                        <div class="ticket-list-container" style="display: flex; flex-direction: column; gap: 16px;">
+                        </div>
+                    </div>
 
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="fa-solid fa-lock"></i> Lưu tài khoản ngân hàng
-                        </button>
-                    </form>
-                </div>
-            </div>
+                </div> <!-- End profile-main -->
+            </div> <!-- End profile-layout-container -->
+
+            <script>
+                function toggleSubmenu(el) {
+                    const submenu = el.nextElementSibling;
+                    submenu.classList.toggle('open');
+                    const icon = el.querySelector('.fa-chevron-down');
+                    if (submenu.classList.contains('open')) {
+                        icon.style.transform = 'rotate(180deg)';
+                    } else {
+                        icon.style.transform = 'rotate(0deg)';
+                    }
+                }
+
+                function switchTab(tabId, el) {
+                    document.querySelectorAll('.tab-pane').forEach(tab => tab.classList.remove('active'));
+                    document.getElementById(tabId).classList.add('active');
+
+                    document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+                    el.classList.add('active');
+                }
+
+                function getStatusCategory(status) {
+                    if (status === 'COMPLETED') return 'success';
+                    if (status === 'CANCELLED') return 'cancelled';
+                    return 'processing';
+                }
+
+                function switchOrderFilter(containerId, filterType, el) {
+                    const container = document.getElementById(containerId).closest('.tab-pane');
+                    const filters = container.querySelector('.order-filters');
+                    filters.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    el.classList.add('active');
+
+                    const tickets = container.querySelectorAll('.ticket-item');
+                    let visibleCount = 0;
+                    tickets.forEach(ticket => {
+                        const status = ticket.getAttribute('data-status');
+                        const category = getStatusCategory(status);
+
+                        if (filterType === 'all' || category === filterType) {
+                            ticket.style.display = 'flex';
+                            visibleCount++;
+                        } else {
+                            ticket.style.display = 'none';
+                        }
+                    });
+
+                    const emptyState = container.querySelector('.empty-state');
+                    if (visibleCount === 0) {
+                        emptyState.style.display = 'block';
+                    } else {
+                        emptyState.style.display = 'none';
+                    }
+                }
+
+                function formatPrice(price) {
+                    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+                }
+
+                function getStatusBadge(status) {
+                    let text = 'Đang xử lý';
+                    let bg = 'var(--color-info)';
+                    if (status === 'LISTED') { text = 'Đang bán'; bg = 'var(--color-primary)'; }
+                    if (status === 'PAYMENT_ESCROWED') { text = 'Chờ khóa cọc'; bg = 'var(--color-warning)'; }
+                    if (status === 'DEPOSIT_LOCKED') { text = 'Đã khóa cọc'; bg = 'var(--color-success)'; }
+                    if (status === 'TRANSFERRED') { text = 'Đã chuyển vé'; bg = 'var(--color-success)'; }
+                    if (status === 'AWAITING_USE') { text = 'Chờ sự kiện'; bg = 'var(--color-warning)'; }
+                    if (status === 'COMPLETED') { text = 'Hoàn tất'; bg = 'var(--color-success)'; }
+                    if (status === 'CANCELLED') { text = 'Đã hủy'; bg = 'var(--color-text-muted)'; }
+
+                    return `<span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; color: white; background-color: ${bg};">${text}</span>`;
+                }
+
+                function renderTickets(tickets, containerId) {
+                    const tabPane = document.getElementById(containerId);
+                    const container = tabPane.querySelector('.ticket-list-container');
+                    const emptyState = tabPane.querySelector('.empty-state');
+
+                    container.innerHTML = '';
+
+                    if (tickets && tickets.length > 0) {
+                        emptyState.style.display = 'none';
+                        tickets.forEach(ticket => {
+                            const dateStr = ticket.eventStartAt ? new Date(ticket.eventStartAt).toLocaleString('vi-VN') : 'N/A';
+                            const html = `
+                                <div class="ticket-item profile-card" data-status="${ticket.status}" style="display: flex; gap: 16px; align-items: center; padding: 16px; margin-bottom: 0;">
+                                    <div style="width: 100px; height: 100px; flex-shrink: 0; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-border); background: var(--color-surface-hover);">
+                                        ${ticket.thumbnailUrl ? `<img src="${ticket.thumbnailUrl}" style="width: 100%; height: 100%; object-fit: cover;" />` : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-ticket" style="font-size: 32px; color: #ccc;"></i></div>`}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                            <div>
+                                                <h4 style="margin: 0 0 4px 0; color: var(--color-brand);">${ticket.eventName || 'Sự kiện'}</h4>
+                                                <div style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 8px;">
+                                                    <i class="fa-solid fa-clock"></i> ${dateStr}
+                                                </div>
+                                            </div>
+                                            <div style="text-align: right;">
+                                                <div style="font-size: 18px; font-weight: 800; color: var(--color-primary);">${formatPrice(ticket.salePrice)}</div>
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; border-top: 1px dashed #f1f5f9; padding-top: 12px;">
+                                            <div>${getStatusBadge(ticket.status)}</div>
+                                            <a href="/tickets/${ticket.id}" class="btn btn-outline btn-sm">Chi tiết</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            container.insertAdjacentHTML('beforeend', html);
+                        });
+                    } else {
+                        emptyState.style.display = 'block';
+                    }
+                }
+
+                // Fetch data when DOM loads
+                document.addEventListener('DOMContentLoaded', () => {
+                    fetch('/tickets/api/my-tickets')
+                        .then(res => {
+                            if (!res.ok) throw new Error('Failed to fetch');
+                            return res.json();
+                        })
+                        .then(data => {
+                            renderTickets(data.bought, 'tab-orders-bought');
+                            renderTickets(data.sold, 'tab-orders-sold');
+                            const allTickets = (data.bought || []).concat(data.sold || []).sort((a, b) => b.id - a.id);
+                            renderTickets(allTickets, 'tab-orders-all');
+                        })
+                        .catch(err => {
+                            console.error("Lỗi khi tải danh sách vé:", err);
+                        });
+                });
+            </script>
         </content>
     </div>
 </body>

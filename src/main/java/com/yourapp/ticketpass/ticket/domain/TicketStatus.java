@@ -45,5 +45,8 @@ public enum TicketStatus {
     RESOLVED_BUYER_WINS,
 
     /** Tranh chap ket thuc: nguoi ban thang, tien escrow duoc giai ngan cho nguoi ban. */
-    RESOLVED_SELLER_WINS
+    RESOLVED_SELLER_WINS,
+
+    /** Ve da bi huy do nguoi ban tu huy khi con o trang thai LISTED. */
+    CANCELLED
 }

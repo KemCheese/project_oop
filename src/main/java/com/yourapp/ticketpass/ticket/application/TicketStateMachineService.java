@@ -44,7 +44,7 @@ public class TicketStateMachineService {
     // de nguoi doc thay ro "co y khong co loi ra", khong phai "quen".
     private static final Map<TicketStatus, Set<TicketStatus>> ALLOWED =
             new EnumMap<>(Map.of(
-                    TicketStatus.LISTED,               EnumSet.of(TicketStatus.PAYMENT_ESCROWED),
+                    TicketStatus.LISTED,               EnumSet.of(TicketStatus.PAYMENT_ESCROWED, TicketStatus.CANCELLED),
                     TicketStatus.PAYMENT_ESCROWED,      EnumSet.of(TicketStatus.DEPOSIT_LOCKED),
                     TicketStatus.DEPOSIT_LOCKED,         EnumSet.of(TicketStatus.TRANSFERRED),
                     TicketStatus.TRANSFERRED,            EnumSet.of(TicketStatus.AWAITING_USE),
@@ -54,7 +54,8 @@ public class TicketStateMachineService {
                                                                      TicketStatus.RESOLVED_SELLER_WINS),
                     TicketStatus.AUTO_COMPLETE,           EnumSet.noneOf(TicketStatus.class),
                     TicketStatus.RESOLVED_BUYER_WINS,     EnumSet.noneOf(TicketStatus.class),
-                    TicketStatus.RESOLVED_SELLER_WINS,    EnumSet.noneOf(TicketStatus.class)
+                    TicketStatus.RESOLVED_SELLER_WINS,    EnumSet.noneOf(TicketStatus.class),
+                    TicketStatus.CANCELLED,               EnumSet.noneOf(TicketStatus.class)
             ));
 
     private final TicketRepository ticketRepository;
@@ -139,6 +140,7 @@ public class TicketStateMachineService {
             case AUTO_COMPLETE:
             case RESOLVED_BUYER_WINS:
             case RESOLVED_SELLER_WINS:
+            case CANCELLED:
                 // Giao dich ket thuc (terminal state)
                 ticket.setCompletedAt(now);
                 break;
