@@ -33,6 +33,12 @@
                     gap: 20px;
                 }
 
+                @media (max-width: 640px) {
+                    .ticket-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+
                 .ticket-card {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
@@ -193,6 +199,95 @@
                     background-color: var(--color-danger-surface);
                 }
 
+                /* Pagination Controls (Anti-Slop Modern UI) */
+                .pagination-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 14px;
+                    margin-top: 36px;
+                    padding-top: 24px;
+                    border-top: 1px solid var(--color-border);
+                }
+
+                .pagination-nav {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                .page-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 40px;
+                    height: 40px;
+                    padding: 0 12px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--color-text-main);
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    text-decoration: none;
+                    transition: all var(--transition-base);
+                    box-shadow: var(--shadow-sm);
+                    user-select: none;
+                }
+
+                .page-btn:hover:not(.disabled):not(.active) {
+                    color: var(--color-primary);
+                    border-color: var(--color-primary-border);
+                    background-color: var(--color-primary-surface);
+                    transform: translateY(-1px);
+                    box-shadow: var(--shadow-card);
+                }
+
+                .page-btn:active:not(.disabled) {
+                    transform: scale(0.96);
+                }
+
+                .page-btn.active {
+                    background-color: var(--color-primary);
+                    color: #ffffff;
+                    border-color: var(--color-primary);
+                    cursor: default;
+                    box-shadow: 0 2px 6px rgba(231, 26, 15, 0.3);
+                }
+
+                .page-btn.disabled {
+                    opacity: 0.4;
+                    cursor: not-allowed;
+                    background-color: var(--color-bg);
+                    border-color: var(--color-border);
+                    color: var(--color-text-muted);
+                    box-shadow: none;
+                    pointer-events: none;
+                }
+
+                .pagination-info {
+                    font-size: 13px;
+                    color: var(--color-text-muted);
+                    font-weight: 500;
+                    text-align: center;
+                }
+
+                @media (max-width: 640px) {
+                    .pagination-container {
+                        margin-top: 24px;
+                        gap: 10px;
+                    }
+
+                    .page-btn {
+                        min-width: 36px;
+                        height: 36px;
+                        padding: 0 8px;
+                        font-size: 13px;
+                    }
+                }
+
             </style>
 
             <div class="page-header">
@@ -301,6 +396,79 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Pagination (Chỉ hiển thị khi có nhiều hơn 1 trang) -->
+            <div th:if="${totalPages > 1}" class="pagination-container">
+                <nav class="pagination-nav" aria-label="Điều hướng phân trang sàn vé">
+                    <!-- Nút Trang trước -->
+                    <a th:if="${hasPrevious}"
+                       th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${currentPage - 1})}"
+                       class="page-btn"
+                       title="Trang trước"
+                       aria-label="Trang trước">
+                        <i class="fa-solid fa-chevron-left" style="font-size: 11px; margin-right: 4px;"></i> Trước
+                    </a>
+                    <span th:unless="${hasPrevious}" class="page-btn disabled" aria-disabled="true">
+                        <i class="fa-solid fa-chevron-left" style="font-size: 11px; margin-right: 4px;"></i> Trước
+                    </span>
+
+                    <!-- Danh sách các số trang -->
+                    <th:block th:each="p : ${pageNumbers}">
+                        <a th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${p})}"
+                           class="page-btn"
+                           th:classappend="${p == currentPage} ? 'active' : ''"
+                           th:text="${p + 1}"
+                           th:title="'Trang ' + ${p + 1}"
+                           th:attr="aria-current=${p == currentPage} ? 'page' : null">
+                            1
+                        </a>
+                    </th:block>
+
+                    <!-- Nút Trang sau -->
+                    <a th:if="${hasNext}"
+                       th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${currentPage + 1})}"
+                       class="page-btn"
+                       title="Trang sau"
+                       aria-label="Trang sau">
+                        Sau <i class="fa-solid fa-chevron-right" style="font-size: 11px; margin-left: 4px;"></i>
+                    </a>
+                    <span th:unless="${hasNext}" class="page-btn disabled" aria-disabled="true">
+                        Sau <i class="fa-solid fa-chevron-right" style="font-size: 11px; margin-left: 4px;"></i>
+                    </span>
+                </nav>
+
+                <!-- Dòng trạng thái tiến độ hiển thị -->
+                <div class="pagination-info">
+                    Hiển thị <strong th:text="${startItem}">1</strong>–<strong th:text="${endItem}">16</strong> trong tổng số <strong th:text="${totalElements}">48</strong> vé (Trang <span th:text="${currentPage + 1}">1</span> / <span th:text="${totalPages}">3</span>)
+                </div>
+            </div>
+
+            <!-- Client Screen Detector: Tự động đo màn hình và đặt cookie tp_page_size (0 request thừa) -->
+            <script>
+                (function() {
+                    function getTargetPageSize() {
+                        var w = window.innerWidth;
+                        if (w >= 1400) return 20; // 5 cột x 4 dòng
+                        if (w >= 1024) return 16; // 4 cột x 4 dòng
+                        if (w > 640) return 8;    // 2 cột x 4 dòng
+                        return 4;                 // 1 cột x 4 dòng
+                    }
+                    function syncPageSizeCookie() {
+                        var targetSize = getTargetPageSize();
+                        var cookieMatch = document.cookie.match(/(?:^|; )tp_page_size=([^;]*)/);
+                        var currentSize = cookieMatch ? cookieMatch[1] : null;
+                        if (currentSize != targetSize) {
+                            document.cookie = 'tp_page_size=' + targetSize + ';path=/;max-age=2592000;SameSite=Lax';
+                        }
+                    }
+                    syncPageSizeCookie();
+                    var resizeTimer;
+                    window.addEventListener('resize', function() {
+                        clearTimeout(resizeTimer);
+                        resizeTimer = setTimeout(syncPageSizeCookie, 300);
+                    });
+                })();
+            </script>
         </content>
     </div>
 </body>

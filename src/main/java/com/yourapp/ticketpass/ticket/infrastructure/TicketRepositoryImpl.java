@@ -8,7 +8,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -68,6 +70,12 @@ public class TicketRepositoryImpl implements TicketRepository {
     public List<Ticket> searchListed(String keyword, TicketType ticketType) {
         String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
         return ticketJpaRepository.searchListedTickets(TicketStatus.LISTED, ticketType, cleanKeyword);
+    }
+
+    @Override
+    public Page<Ticket> searchListed(String keyword, TicketType ticketType, Pageable pageable) {
+        String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        return ticketJpaRepository.searchListedTickets(TicketStatus.LISTED, ticketType, cleanKeyword, pageable);
     }
 
     @Override

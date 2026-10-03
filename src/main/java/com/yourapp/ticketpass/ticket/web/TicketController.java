@@ -18,14 +18,20 @@ import com.yourapp.ticketpass.user.web.dto.UserSummaryResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -87,6 +93,9 @@ public class TicketController {
     @GetMapping
     public String list(@RequestParam(required = false) String ticketType,
                        @RequestParam(required = false) String keyword,
+                       @RequestParam(defaultValue = "0") int page,
+                       @RequestParam(required = false) Integer size,
+                       @CookieValue(name = "tp_page_size", required = false) Integer cookiePageSize,
                        Model model) {
         TicketType type = null;
         if (ticketType != null && !ticketType.isBlank()) {
@@ -100,17 +109,68 @@ public class TicketController {
         }
 
         String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        List<Ticket> tickets = ticketRepository.searchListed(cleanKeyword, type);
 
-        List<TicketSummaryResponse> summaries = tickets.stream()
+        // Xac dinh so ve moi trang (uu tien param size > cookie tu dong theo man hinh > default 16)
+        int pageSize = 16;
+        if (size != null && size >= 1 && size <= 50) {
+            pageSize = size;
+        } else if (cookiePageSize != null && cookiePageSize >= 1 && cookiePageSize <= 50) {
+            pageSize = cookiePageSize;
+        }
+
+        int targetPage = Math.max(0, page);
+        Pageable pageable = PageRequest.of(targetPage, pageSize, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+        Page<Ticket> ticketPage = ticketRepository.searchListed(cleanKeyword, type, pageable);
+
+        // Neu page vuot qua tong so trang do thay doi pageSize/loc, chuyen ve trang cuoi kha dung
+        if (targetPage >= ticketPage.getTotalPages() && ticketPage.getTotalPages() > 0) {
+            targetPage = ticketPage.getTotalPages() - 1;
+            pageable = PageRequest.of(targetPage, pageSize, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+            ticketPage = ticketRepository.searchListed(cleanKeyword, type, pageable);
+        }
+
+        List<TicketSummaryResponse> summaries = ticketPage.getContent().stream()
                 .map(this::toSummary)
                 .collect(Collectors.toList());
+
+        int totalPages = ticketPage.getTotalPages();
+        int currentPage = ticketPage.getNumber();
+        long totalElements = ticketPage.getTotalElements();
+        long startItem = totalElements == 0 ? 0 : (long) currentPage * pageSize + 1;
+        long endItem = Math.min((long) (currentPage + 1) * pageSize, totalElements);
+        List<Integer> pageNumbers = calculatePageNumbers(currentPage, totalPages);
 
         model.addAttribute("tickets", summaries);
         model.addAttribute("ticketTypes", getActiveTicketTypes());
         model.addAttribute("selectedType", ticketType);
         model.addAttribute("keyword", cleanKeyword != null ? cleanKeyword : "");
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("totalElements", totalElements);
+        model.addAttribute("pageSize", pageSize);
+        model.addAttribute("hasPrevious", ticketPage.hasPrevious());
+        model.addAttribute("hasNext", ticketPage.hasNext());
+        model.addAttribute("pageNumbers", pageNumbers);
+        model.addAttribute("startItem", startItem);
+        model.addAttribute("endItem", endItem);
         return "ticket/list";
+    }
+
+    private List<Integer> calculatePageNumbers(int currentPage, int totalPages) {
+        List<Integer> pages = new ArrayList<>();
+        if (totalPages <= 1) {
+            return pages;
+        }
+        int maxButtons = 5;
+        int start = Math.max(0, currentPage - maxButtons / 2);
+        int end = Math.min(totalPages - 1, start + maxButtons - 1);
+        if (end - start + 1 < maxButtons) {
+            start = Math.max(0, end - maxButtons + 1);
+        }
+        for (int i = start; i <= end; i++) {
+            pages.add(i);
+        }
+        return pages;
     }
 
     /**

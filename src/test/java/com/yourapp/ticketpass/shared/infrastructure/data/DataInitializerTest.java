@@ -192,18 +192,27 @@ class DataInitializerTest {
         }
 
         @Test
-        @DisplayName("Khởi tạo 3 vé mẫu ở trạng thái LISTED (CONCERT, MOVIE, BUS) với giá bán hợp lệ")
+        @DisplayName("Khởi tạo 53 vé mẫu ở trạng thái LISTED (CONCERT, MOVIE, BUS) với giá bán hợp lệ")
         void shouldCreateThreeListedTickets() {
             // Act
             dataInitializer.run();
 
             // Assert
-            verify(ticketRepository, times(3)).save(ticketCaptor.capture());
+            verify(ticketRepository, times(53)).save(ticketCaptor.capture());
             List<Ticket> tickets = ticketCaptor.getAllValues();
-            assertThat(tickets).hasSize(3);
+            assertThat(tickets).hasSize(53);
 
             // Mọi vé đều phải ở trạng thái LISTED
             assertThat(tickets).allMatch(t -> t.getStatus() == TicketStatus.LISTED);
+
+            // Đếm số lượng từng loại vé (3 vé cơ sở + 50 vé test phân trang: 24 phim, 14 concert, 12 xe khách)
+            long movieCount = tickets.stream().filter(t -> t.getTicketType() == TicketType.MOVIE).count();
+            long concertCount = tickets.stream().filter(t -> t.getTicketType() == TicketType.CONCERT).count();
+            long busCount = tickets.stream().filter(t -> t.getTicketType() == TicketType.BUS).count();
+
+            assertThat(movieCount).isEqualTo(25); // 1 + 24
+            assertThat(concertCount).isEqualTo(15); // 1 + 14
+            assertThat(busCount).isEqualTo(13); // 1 + 12
 
             // Vé Concert (2tr)
             Ticket concert = tickets.stream()

@@ -5,6 +5,7 @@ import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -69,6 +70,26 @@ public interface TicketJpaRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> searchListedTickets(@Param("status") TicketStatus status,
                                      @Param("ticketType") TicketType ticketType,
                                      @Param("keyword") String keyword);
+
+    /**
+     * Tim kiem ve dang rao ban theo trang thai, loai ve, tu khoa va phan trang.
+     *
+     * @param status trang thai can loc (thuong la LISTED)
+     * @param ticketType loai ve can loc (neu null thi bo qua loc theo loai)
+     * @param keyword tu khoa tim kiem
+     * @param pageable thong tin phan trang
+     * @return trang ve thoa man dieu kien
+     */
+    @Query(value = "SELECT t FROM Ticket t WHERE t.status = :status AND " +
+           "(:ticketType IS NULL OR t.ticketType = :ticketType) AND " +
+           "(:keyword IS NULL OR :keyword = '' OR LOWER(t.eventName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')))",
+           countQuery = "SELECT COUNT(t) FROM Ticket t WHERE t.status = :status AND " +
+           "(:ticketType IS NULL OR t.ticketType = :ticketType) AND " +
+           "(:keyword IS NULL OR :keyword = '' OR LOWER(t.eventName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Ticket> searchListedTickets(@Param("status") TicketStatus status,
+                                     @Param("ticketType") TicketType ticketType,
+                                     @Param("keyword") String keyword,
+                                     Pageable pageable);
 
     /**
      * Tim kiem danh sach ve dang rao ban theo tu khoa, sap xep theo thoi gian tao moi nhat va phan trang (dung cho autocomplete).

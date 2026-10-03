@@ -5,7 +5,10 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import jakarta.servlet.http.Cookie;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -92,5 +95,46 @@ class TicketSearchWebIntegrationTest {
         mockMvc.perform(get("/tickets/suggestions"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("[]"));
+    }
+
+    @Test
+    @DisplayName("GET /tickets đọc cookie tp_page_size và áp dụng đúng pageSize")
+    void testPagination_readsCookiePageSize() throws Exception {
+        mockMvc.perform(get("/tickets").cookie(new Cookie("tp_page_size", "4")))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("pageSize", 4))
+                .andExpect(model().attribute("currentPage", 0));
+    }
+
+    @Test
+    @DisplayName("GET /tickets?page=0&size=2 phân trang thành công và hiển thị thanh pagination khi totalPages > 1")
+    void testPagination_rendersPaginationBarWhenMultiplePages() throws Exception {
+        mockMvc.perform(get("/tickets")
+                        .param("page", "0")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("totalPages", 27))
+                .andExpect(model().attribute("hasPrevious", false))
+                .andExpect(model().attribute("hasNext", true))
+                .andExpect(content().string(containsString("class=\"pagination-container\"")))
+                .andExpect(content().string(containsString("class=\"pagination-nav\"")))
+                .andExpect(content().string(containsString("Hiển thị")));
+    }
+
+    @Test
+    @DisplayName("GET /tickets?keyword=KhongTonTaiXYZ ẩn hoàn toàn thanh phân trang khi totalPages <= 1")
+    void testPagination_hidesPaginationBarWhenSinglePageOrEmpty() throws Exception {
+        mockMvc.perform(get("/tickets").param("keyword", "KhongTonTaiXYZ"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("totalPages", 0))
+                .andExpect(content().string(not(containsString("class=\"pagination-container\""))));
+    }
+
+    @Test
+    @DisplayName("GET /tickets?page=999 vượt quá tổng số trang được xử lý an toàn không quăng lỗi 500")
+    void testPagination_pageOutOfBoundsClampedGracefully() throws Exception {
+        mockMvc.perform(get("/tickets").param("page", "999"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("currentPage", 3));
     }
 }

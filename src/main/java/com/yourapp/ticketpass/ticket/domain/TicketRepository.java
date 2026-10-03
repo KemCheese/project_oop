@@ -3,6 +3,8 @@ package com.yourapp.ticketpass.ticket.domain;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Port luu tru cua module {@code ticket}, khai bao o tang domain.
@@ -75,6 +77,16 @@ public interface TicketRepository {
      * @return danh sach ve dang ban thoa man dieu kien
      */
     List<Ticket> searchListed(String keyword, TicketType ticketType);
+
+    /**
+     * Tim kiem va loc cac ve dang rao ban theo tu khoa, loai ve va ho tro phan trang.
+     *
+     * @param keyword tu khoa tim kiem theo ten su kien hoac tieu de
+     * @param ticketType loai ve can loc
+     * @param pageable thong tin phan trang va sap xep
+     * @return trang ve thoa man dieu kien
+     */
+    Page<Ticket> searchListed(String keyword, TicketType ticketType, Pageable pageable);
 
     /**
      * Lay danh sach ve dang rao ban phuc vu goi y tim kiem nhanh (autocomplete).
