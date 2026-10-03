@@ -25,51 +25,6 @@
                     color: var(--color-text-muted);
                 }
 
-                /* Filter Tabs */
-                .filter-bar {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    flex-wrap: wrap;
-                    gap: 16px;
-                    margin-bottom: 28px;
-                    background-color: var(--color-surface);
-                    padding: 14px 18px;
-                    border-radius: var(--radius-lg);
-                    border: 1px solid var(--color-border);
-                    box-shadow: var(--shadow-sm);
-                }
-
-                .filter-tabs {
-                    display: flex;
-                    gap: 8px;
-                    flex-wrap: wrap;
-                }
-
-                .filter-tab {
-                    padding: 8px 16px;
-                    border-radius: var(--radius-md);
-                    font-size: 13px;
-                    font-weight: 600;
-                    color: var(--color-text-secondary);
-                    background-color: var(--color-bg);
-                    border: 1px solid var(--color-border);
-                    transition: all var(--transition-base);
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                }
-
-                .filter-tab:hover {
-                    color: var(--color-primary);
-                    border-color: var(--color-primary-border);
-                }
-
-                .filter-tab.active {
-                    background-color: var(--color-primary);
-                    color: #ffffff;
-                    border-color: var(--color-primary);
-                }
 
                 /* Ticket Grid */
                 .ticket-grid {
@@ -238,58 +193,6 @@
                     background-color: var(--color-danger-surface);
                 }
 
-                /* Filter Search Form inside Filter Bar */
-                .filter-search-form {
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                    background-color: var(--color-bg);
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-full);
-                    padding: 2px 4px 2px 12px;
-                    transition: all var(--transition-base);
-                }
-
-                .filter-search-form:focus-within {
-                    background-color: var(--color-surface);
-                    border-color: var(--color-primary);
-                    box-shadow: 0 0 0 3px rgba(231, 26, 15, 0.1);
-                }
-
-                .filter-search-icon {
-                    color: var(--color-text-muted);
-                    font-size: 12px;
-                    margin-right: 6px;
-                }
-
-                .filter-search-input {
-                    border: none;
-                    background: transparent;
-                    font-size: 13px;
-                    font-family: inherit;
-                    color: var(--color-text-main);
-                    width: 180px;
-                    padding: 6px 0;
-                    outline: none;
-                }
-
-                .filter-search-input::placeholder {
-                    color: var(--color-text-muted);
-                    font-size: 12px;
-                }
-
-                .filter-search-clear {
-                    color: var(--color-text-muted);
-                    padding: 4px 6px;
-                    font-size: 12px;
-                    text-decoration: none;
-                    display: inline-flex;
-                    align-items: center;
-                }
-
-                .filter-search-clear:hover {
-                    color: var(--color-danger);
-                }
             </style>
 
             <div class="page-header">
@@ -297,53 +200,6 @@
                 <p class="page-desc">Danh sách vé điện tử chính chủ có ký quỹ bảo vệ từ TicketPass</p>
             </div>
 
-            <!-- Filter Navigation Bar -->
-            <div class="filter-bar">
-                <div class="filter-tabs">
-                    <a th:href="@{/tickets(keyword=${keyword != null and !keyword.isEmpty() ? keyword : null})}"
-                       class="filter-tab"
-                       th:classappend="${selectedType == null or selectedType.isEmpty()} ? 'active' : ''">
-                        <i class="fa-solid fa-layer-group"></i> Tất cả vé
-                    </a>
-                    <a th:href="@{/tickets(ticketType='MOVIE', keyword=${keyword != null and !keyword.isEmpty() ? keyword : null})}"
-                       class="filter-tab"
-                       th:classappend="${selectedType != null and selectedType.toUpperCase() == 'MOVIE'} ? 'active' : ''">
-                        <i class="fa-solid fa-film"></i> Vé xem phim
-                    </a>
-                    <a th:href="@{/tickets(ticketType='CONCERT', keyword=${keyword != null and !keyword.isEmpty() ? keyword : null})}"
-                       class="filter-tab"
-                       th:classappend="${selectedType != null and selectedType.toUpperCase() == 'CONCERT'} ? 'active' : ''">
-                        <i class="fa-solid fa-music"></i> Vé concert
-                    </a>
-                    <a th:href="@{/tickets(ticketType='BUS', keyword=${keyword != null and !keyword.isEmpty() ? keyword : null})}"
-                       class="filter-tab"
-                       th:classappend="${selectedType != null and selectedType.toUpperCase() == 'BUS'} ? 'active' : ''">
-                        <i class="fa-solid fa-bus"></i> Vé xe khách
-                    </a>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                    <!-- In-page Search Form -->
-                    <form th:action="@{/tickets}" method="get" class="filter-search-form" role="search" id="pageSearchForm">
-                        <input type="hidden" name="ticketType" th:if="${selectedType != null and !selectedType.isEmpty()}" th:value="${selectedType}" />
-                        <i class="fa-solid fa-magnifying-glass filter-search-icon"></i>
-                        <input type="text" name="keyword" th:value="${keyword}" placeholder="Lọc tên sự kiện..." class="filter-search-input" id="pageSearchInput" autocomplete="off" />
-                        <a th:if="${keyword != null and !keyword.isEmpty()}"
-                           th:href="@{/tickets(ticketType=${selectedType})}"
-                           class="filter-search-clear" title="Xóa tìm kiếm">
-                            <i class="fa-solid fa-xmark"></i>
-                        </a>
-                        <button type="submit" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 12px; border-radius: var(--radius-full);">Lọc</button>
-
-                        <!-- Autocomplete Dropdown for In-Page Search -->
-                        <div class="search-suggestions-dropdown" id="pageSuggestionsDropdown" style="display: none; min-width: 280px;"></div>
-                    </form>
-
-                    <a th:href="@{/tickets/new}" class="btn btn-primary btn-sm">
-                        <i class="fa-solid fa-plus"></i> Đăng vé bán
-                    </a>
-                </div>
-            </div>
 
             <!-- Search Results Meta Bar -->
             <div th:if="${keyword != null and !keyword.isEmpty()}" class="search-meta-bar">

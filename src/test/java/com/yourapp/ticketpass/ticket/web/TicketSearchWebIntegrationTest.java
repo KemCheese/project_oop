@@ -31,13 +31,12 @@ class TicketSearchWebIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("GET /tickets hiển thị thanh tìm kiếm trên header và các tab loại vé")
+    @DisplayName("GET /tickets hiển thị thanh tìm kiếm trên header và các mục phân loại vé")
     void testGetTickets_rendersSearchBarAndTabs() throws Exception {
         mockMvc.perform(get("/tickets"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("class=\"nav-search-form\"")))
                 .andExpect(content().string(containsString("placeholder=\"Tìm sự kiện, phim, tuyến xe...\"")))
-                .andExpect(content().string(containsString("class=\"filter-search-form\"")))
                 .andExpect(content().string(containsString("Tất cả vé")));
     }
 
