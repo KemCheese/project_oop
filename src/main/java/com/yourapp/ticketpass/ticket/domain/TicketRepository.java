@@ -68,6 +68,25 @@ public interface TicketRepository {
     List<Ticket> findListedByType(TicketType ticketType);
 
     /**
+     * Tim kiem va loc cac ve dang rao ban ({@link TicketStatus#LISTED}) theo tu khoa va loai ve.
+     *
+     * @param keyword tu khoa tim kiem theo ten su kien hoac tieu de (co the null hoac trong)
+     * @param ticketType loai ve can loc (co the null neu tim tat ca loai ve)
+     * @return danh sach ve dang ban thoa man dieu kien
+     */
+    List<Ticket> searchListed(String keyword, TicketType ticketType);
+
+    /**
+     * Lay danh sach ve dang rao ban phuc vu goi y tim kiem nhanh (autocomplete).
+     * Sap xep theo thoi gian dang moi nhat va gioi han so luong tra ve.
+     *
+     * @param keyword tu khoa tim kiem theo ten su kien hoac tieu de
+     * @param limit so luong ban ghi toi da (thuong la 5)
+     * @return danh sach ve thoa man dieu kien
+     */
+    List<Ticket> findTopSuggestions(String keyword, int limit);
+
+    /**
      * Lay cac ve den han tu dong hoan tat: dang o trang thai chi dinh va
      * cua so khieu nai da dong truoc moc thoi gian dua vao.
      *

@@ -10,6 +10,7 @@ import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest;
 import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
+import com.yourapp.ticketpass.ticket.web.dto.TicketSuggestionResponse;
 import com.yourapp.ticketpass.ticket.web.dto.TicketSummaryResponse;
 import com.yourapp.ticketpass.user.domain.User;
 import com.yourapp.ticketpass.user.domain.UserRepository;
@@ -17,9 +18,11 @@ import com.yourapp.ticketpass.user.web.dto.UserSummaryResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.security.Principal;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -73,27 +77,30 @@ public class TicketController {
     }
 
     /**
-     * Danh sach ve dang duoc rao ban.
+     * Danh sach ve dang duoc rao ban, ho tro tim kiem theo ten su kien va loc theo loai ve.
      *
      * @param ticketType loc theo loai ve, tuy chon
+     * @param keyword tu khoa tim kiem theo ten su kien hoac tieu de, tuy chon
      * @param model model de truyen du lieu sang view
      * @return ten view "ticket/list"
      */
     @GetMapping
-    public String list(@RequestParam(required = false) String ticketType, Model model) {
-        List<Ticket> tickets;
-
+    public String list(@RequestParam(required = false) String ticketType,
+                       @RequestParam(required = false) String keyword,
+                       Model model) {
+        TicketType type = null;
         if (ticketType != null && !ticketType.isBlank()) {
             try {
-                TicketType type = TicketType.valueOf(ticketType.toUpperCase());
-                tickets = ticketRepository.findListedByType(type);
+                type = TicketType.valueOf(ticketType.toUpperCase());
             } catch (IllegalArgumentException e) {
-                // Loai ve khong hop le → tra ve tat ca ve dang ban
-                tickets = ticketRepository.findByStatus(TicketStatus.LISTED);
+                // Loai ve khong hop le -> bo qua loc theo loai
+                type = null;
+                ticketType = null;
             }
-        } else {
-            tickets = ticketRepository.findByStatus(TicketStatus.LISTED);
         }
+
+        String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        List<Ticket> tickets = ticketRepository.searchListed(cleanKeyword, type);
 
         List<TicketSummaryResponse> summaries = tickets.stream()
                 .map(this::toSummary)
@@ -102,7 +109,30 @@ public class TicketController {
         model.addAttribute("tickets", summaries);
         model.addAttribute("ticketTypes", getActiveTicketTypes());
         model.addAttribute("selectedType", ticketType);
+        model.addAttribute("keyword", cleanKeyword != null ? cleanKeyword : "");
         return "ticket/list";
+    }
+
+    /**
+     * API tra ve danh sach toi da 5 ve goi y nhanh (live autocomplete) theo tu khoa va thoi gian dang gan nhat.
+     *
+     * @param keyword tu khoa tim kiem theo ten su kien hoac tieu de
+     * @return danh sach toi da 5 goi y ve
+     */
+    @GetMapping("/suggestions")
+    @ResponseBody
+    public ResponseEntity<List<TicketSuggestionResponse>> suggestions(@RequestParam(required = false) String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        List<Ticket> tickets = ticketRepository.findTopSuggestions(keyword.trim(), 5);
+
+        List<TicketSuggestionResponse> responses = tickets.stream()
+                .map(this::toSuggestion)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
     }
 
     /**
@@ -341,5 +371,39 @@ public class TicketController {
                     fileStorageService.buildPublicUrl(ticket.getQrImageStorageKey()));
         }
         return response;
+    }
+
+    private TicketSuggestionResponse toSuggestion(Ticket ticket) {
+        String label = "Vé";
+        if (ticket.getTicketType() != null) {
+            switch (ticket.getTicketType()) {
+                case MOVIE -> label = "Phim";
+                case CONCERT -> label = "Concert";
+                case BUS -> label = "Xe khách";
+                default -> label = "Vé";
+            }
+        }
+
+        String formattedPrice = "Liên hệ";
+        if (ticket.getSalePrice() != null) {
+            formattedPrice = String.format("%,d ₫", ticket.getSalePrice().longValue()).replace(',', '.');
+        }
+
+        String thumbnailUrl = null;
+        if (ticket.getTicketImageStorageKey() != null && !ticket.getTicketImageStorageKey().isBlank()) {
+            thumbnailUrl = fileStorageService.buildPublicUrl(ticket.getTicketImageStorageKey());
+        }
+
+        return TicketSuggestionResponse.builder()
+                .id(ticket.getId())
+                .title(ticket.getTitle())
+                .eventName(ticket.getEventName())
+                .ticketType(ticket.getTicketType())
+                .ticketTypeLabel(label)
+                .formattedPrice(formattedPrice)
+                .thumbnailUrl(thumbnailUrl)
+                .detailUrl("/tickets/" + ticket.getId())
+                .venue(ticket.getVenue())
+                .build();
     }
 }
