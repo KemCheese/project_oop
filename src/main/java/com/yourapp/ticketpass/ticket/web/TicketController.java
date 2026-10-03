@@ -263,6 +263,24 @@ public class TicketController {
         return "redirect:/tickets";
     }
 
+    /**
+     * API lay danh sach ve da mua va da ban cua user (tra ve JSON).
+     */
+    @org.springframework.web.bind.annotation.GetMapping("/api/my-tickets")
+    @org.springframework.web.bind.annotation.ResponseBody
+    public java.util.Map<String, java.util.List<TicketSummaryResponse>> getMyTickets(Principal principal) {
+        Long userId = resolveUserId(principal);
+        java.util.List<TicketSummaryResponse> bought = ticketRepository.findByBuyerId(userId).stream()
+                .map(this::toSummary).collect(java.util.stream.Collectors.toList());
+        java.util.List<TicketSummaryResponse> sold = ticketRepository.findBySellerId(userId).stream()
+                .map(this::toSummary).collect(java.util.stream.Collectors.toList());
+        
+        java.util.Map<String, java.util.List<TicketSummaryResponse>> result = new java.util.HashMap<>();
+        result.put("bought", bought);
+        result.put("sold", sold);
+        return result;
+    }
+
     // ========================= Helper methods =========================
 
     /**

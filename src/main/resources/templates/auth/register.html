@@ -10,195 +10,108 @@
         <content>
             <style>
                 .auth-wrapper {
-                    max-width: 480px;
-                    margin: 40px auto;
+                    max-width: 500px;
+                    margin: 30px auto;
                     background: var(--color-surface);
                     border: 1px solid var(--color-border);
                     border-radius: var(--radius-lg);
-                    padding: var(--spacing-xl);
+                    padding: 32px 28px;
+                    box-shadow: var(--shadow-card);
                 }
 
                 .auth-title {
                     font-size: 24px;
-                    font-weight: 700;
+                    font-weight: 800;
                     color: var(--color-brand);
                     text-align: center;
-                    margin-bottom: var(--spacing-lg);
+                    margin-bottom: 8px;
                 }
 
-                .global-error {
-                    background-color: var(--color-danger-surface);
-                    border: 1px solid var(--color-danger-border);
-                    border-radius: var(--radius-sm);
-                    padding: 12px 16px;
-                    margin-bottom: var(--spacing-lg);
-                    font-size: 14px;
-                    color: var(--color-danger);
+                .auth-sub {
+                    font-size: 13px;
+                    color: var(--color-text-muted);
+                    text-align: center;
+                    margin-bottom: 24px;
                 }
 
-                .field {
-                    margin-bottom: var(--spacing-md);
-                }
-
-                .field-row {
+                .form-row {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: var(--spacing-md);
+                    gap: 16px;
                 }
 
-                .field-label {
-                    display: block;
-                    font-size: 13px;
-                    font-weight: 600;
-                    color: var(--color-brand);
-                    margin-bottom: var(--spacing-xs);
-                }
-
-                .field-label .required {
-                    color: var(--color-danger);
-                    margin-left: 2px;
-                }
-
-                .field-input {
-                    width: 100%;
-                    padding: 10px 12px;
-                    font-size: 14px;
-                    font-family: inherit;
-                    color: var(--color-text-main);
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-sm);
-                    transition: all var(--transition-fast);
-                    outline: none;
-                }
-
-                .field-input:focus {
-                    border-color: var(--color-primary);
-                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-                }
-
-                .field-input.has-error {
-                    border-color: var(--color-danger);
-                }
-
-                .field-input.has-error:focus {
-                    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-                }
-
-                .field-error {
-                    display: block;
-                    font-size: 12px;
-                    color: var(--color-danger);
-                    margin-top: 4px;
-                }
-
-                .btn-submit {
-                    width: 100%;
-                    padding: 12px;
-                    margin-top: var(--spacing-md);
-                }
-
-                .auth-footer {
-                    margin-top: var(--spacing-lg);
-                    text-align: center;
-                    font-size: 14px;
-                    color: var(--color-text-muted);
-                }
-
-                .auth-footer a {
-                    color: var(--color-primary);
-                    font-weight: 600;
-                }
-
-                .auth-footer a:hover {
-                    text-decoration: underline;
-                }
-
-                @media (max-width: 480px) {
-                    .field-row {
+                @media (max-width: 560px) {
+                    .form-row {
                         grid-template-columns: 1fr;
-                    }
-
-                    .auth-wrapper {
-                        padding: var(--spacing-lg);
-                        margin: 20px auto;
                     }
                 }
             </style>
 
             <div class="auth-wrapper">
-                <h1 class="auth-title">Tạo tài khoản TicketPass</h1>
+                <h1 class="auth-title">Đăng Ký Tài Khoản</h1>
+                <p class="auth-sub">
+                    Tham gia sàn giao dịch vé an toàn và nhận ngay 100 điểm uy tín khởi tạo
+                </p>
 
                 <form method="post" th:action="@{/register}" th:object="${registerRequest}" novalidate>
-
-                    <div class="global-error" th:if="${#fields.hasGlobalErrors()}"
-                        th:each="err : ${#fields.globalErrors()}" th:text="${err}"></div>
-
-                    <div class="field">
-                        <label class="field-label" for="email">
-                            Email <span class="required">*</span>
-                        </label>
-                        <input type="email" id="email" th:field="*{email}" maxlength="255"
-                            th:classappend="${#fields.hasErrors('email')} ? 'has-error'" class="field-input"
-                            placeholder="nhap.email@cua-ban.com">
-                        <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+                    <!-- Global errors -->
+                    <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}" style="font-size: 13px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi đăng ký</span>
                     </div>
 
-                    <div class="field-row">
-                        <div class="field">
-                            <label class="field-label" for="password">
-                                Mật khẩu <span class="required">*</span>
-                            </label>
-                            <input type="password" id="password" th:field="*{password}"
-                                th:classappend="${#fields.hasErrors('password')} ? 'has-error'" class="field-input"
-                                placeholder="Tối thiểu 6 ký tự">
-                            <span class="field-error" th:if="${#fields.hasErrors('password')}"
-                                th:errors="*{password}"></span>
+                    <div class="form-group">
+                        <label class="form-label" for="fullName">Họ và tên <span class="required">*</span></label>
+                        <input type="text" id="fullName" th:field="*{fullName}" class="form-control"
+                               th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"
+                               placeholder="Nguyễn Văn A" required />
+                        <div th:if="${#fields.hasErrors('fullName')}" class="form-error" th:errors="*{fullName}"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="email">Địa chỉ Email <span class="required">*</span></label>
+                        <input type="email" id="email" th:field="*{email}" class="form-control"
+                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                               placeholder="email@example.com" required />
+                        <div th:if="${#fields.hasErrors('email')}" class="form-error" th:errors="*{email}"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="phoneNumber">Số điện thoại <span class="required">*</span></label>
+                        <input type="tel" id="phoneNumber" th:field="*{phoneNumber}" class="form-control"
+                               th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid' : ''"
+                               placeholder="0912345678" required />
+                        <div th:if="${#fields.hasErrors('phoneNumber')}" class="form-error" th:errors="*{phoneNumber}"></div>
+                        <span class="form-text">Gồm 10 chữ số, bắt đầu bằng số 0</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="password">Mật khẩu <span class="required">*</span></label>
+                            <input type="password" id="password" th:field="*{password}" class="form-control"
+                                   th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
+                                   placeholder="Tối thiểu 8 ký tự" required />
+                            <div th:if="${#fields.hasErrors('password')}" class="form-error" th:errors="*{password}"></div>
                         </div>
 
-                        <div class="field">
-                            <label class="field-label" for="confirmPassword">
-                                Nhập lại mật khẩu <span class="required">*</span>
-                            </label>
-                            <input type="password" id="confirmPassword" th:field="*{confirmPassword}"
-                                th:classappend="${#fields.hasErrors('confirmPassword')} ? 'has-error'"
-                                class="field-input" placeholder="••••••••">
-                            <span class="field-error" th:if="${#fields.hasErrors('confirmPassword')}"
-                                th:errors="*{confirmPassword}"></span>
+                        <div class="form-group">
+                            <label class="form-label" for="confirmPassword">Xác nhận mật khẩu <span class="required">*</span></label>
+                            <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control"
+                                   th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid' : ''"
+                                   placeholder="Nhập lại mật khẩu" required />
+                            <div th:if="${#fields.hasErrors('confirmPassword')}" class="form-error" th:errors="*{confirmPassword}"></div>
                         </div>
                     </div>
 
-                    <div class="field">
-                        <label class="field-label" for="fullName">
-                            Họ và tên <span class="required">*</span>
-                        </label>
-                        <input type="text" id="fullName" th:field="*{fullName}" maxlength="150"
-                            th:classappend="${#fields.hasErrors('fullName')} ? 'has-error'" class="field-input"
-                            placeholder="VD: Nguyen Minh Tuan">
-                        <span class="field-error" th:if="${#fields.hasErrors('fullName')}"
-                            th:errors="*{fullName}"></span>
-                    </div>
-
-                    <div class="field">
-                        <label class="field-label" for="phoneNumber">
-                            Số điện thoại
-                        </label>
-                        <input type="text" id="phoneNumber" th:field="*{phoneNumber}" maxlength="20"
-                            th:classappend="${#fields.hasErrors('phoneNumber')} ? 'has-error'" class="field-input"
-                            placeholder="VD: 0912345678">
-                        <span class="field-error" th:if="${#fields.hasErrors('phoneNumber')}"
-                            th:errors="*{phoneNumber}"></span>
-                    </div>
-
-                    <button type="submit" class="btn btn-brand btn-submit">Hoàn tất đăng ký</button>
-
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+                        <i class="fa-solid fa-user-plus"></i> Hoàn tất đăng ký tài khoản
+                    </button>
                 </form>
 
-                <div class="auth-footer">
-                    Đã có tài khoản? <a th:href="@{/login}">Đăng nhập ngay</a>
+                <div style="margin-top: 20px; text-align: center; font-size: 13px; color: var(--color-text-muted);">
+                    Đã có tài khoản? <a th:href="@{/login}" style="color: var(--color-primary); font-weight: 600;">Đăng nhập tại đây</a>
                 </div>
             </div>
-
         </content>
     </div>
 </body>

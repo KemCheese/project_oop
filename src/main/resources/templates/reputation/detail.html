@@ -1,53 +1,213 @@
 <!DOCTYPE html>
-<!--
-  Ho so uy tin cong khai cua mot nguoi dung.
-  Route: GET /reputation/{userId}
-  Model attributes:
-    - reputation (ReputationResponse): thong tin uy tin
+<html xmlns:th="http://www.thymeleaf.org">
 
-  Chu so huu: Nguoi C (controller), Nguoi A (styling).
--->
-<div th:replace="~{layout/base :: layout('Uy tín người dùng', ~{::content})}">
-    <content>
-        <h2>Hồ sơ uy tín</h2>
+<head>
+    <title>Hồ sơ uy tín - TicketPass</title>
+</head>
 
-        <div th:if="${reputation != null}" th:object="${reputation}">
-            <table border="1" cellpadding="8" cellspacing="0">
-                <tr>
-                    <th>Mã người dùng</th>
-                    <td th:text="'#' + *{userId}">-</td>
-                </tr>
-                <tr>
-                    <th>Điểm uy tín</th>
-                    <td>
-                        <strong th:text="*{score != null ? score.intValue() + ' / 100' : '100 / 100'}">-</strong>
-                    </td>
-                </tr>
-                <tr>
-                    <th>Tổng giao dịch</th>
-                    <td th:text="*{totalTransactions} ?: 0">0</td>
-                </tr>
-                <tr>
-                    <th>Giao dịch thành công</th>
-                    <td th:text="*{successfulTransactions} ?: 0">0</td>
-                </tr>
-                <tr>
-                    <th>Tranh chấp thắng</th>
-                    <td th:text="*{disputesWon} ?: 0">0</td>
-                </tr>
-                <tr>
-                    <th>Tranh chấp thua</th>
-                    <td th:text="*{disputesLost} ?: 0">0</td>
-                </tr>
-                <tr>
-                    <th>Giao dịch gần nhất</th>
-                    <td th:text="*{lastTransactionAt} ?: 'Chưa có'">-</td>
-                </tr>
-            </table>
-        </div>
+<body>
+    <div th:replace="~{layout/base :: layout('Hồ sơ uy tín - TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .reputation-container {
+                    max-width: 780px;
+                    margin: 0 auto;
+                }
 
-        <p>
-            <a th:href="@{/reputation/top}">Xem bảng xếp hạng uy tín</a>
-        </p>
-    </content>
-</div>
+                .score-hero-card {
+                    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                    color: #ffffff;
+                    border-radius: var(--radius-lg);
+                    padding: 36px 30px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 24px;
+                    box-shadow: var(--shadow-card);
+                    margin-bottom: 28px;
+                }
+
+                .score-badge-circle {
+                    width: 110px;
+                    height: 110px;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 3px solid rgba(255, 255, 255, 0.25);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .score-number {
+                    font-size: 38px;
+                    font-weight: 900;
+                    line-height: 1;
+                    color: #ffffff;
+                }
+
+                .score-scale {
+                    font-size: 12px;
+                    opacity: 0.8;
+                    margin-top: 2px;
+                }
+
+                .metrics-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 16px;
+                    margin-bottom: 28px;
+                }
+
+                .metric-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    padding: 18px;
+                    text-align: center;
+                    box-shadow: var(--shadow-card);
+                }
+
+                .metric-value {
+                    font-size: 24px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    margin: 6px 0;
+                }
+
+                .metric-label {
+                    font-size: 12px;
+                    color: var(--color-text-muted);
+                    font-weight: 600;
+                    text-transform: uppercase;
+                }
+
+                .rules-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 24px;
+                    box-shadow: var(--shadow-card);
+                }
+
+                @media (max-width: 768px) {
+                    .metrics-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+
+                    .score-hero-card {
+                        text-align: center;
+                        justify-content: center;
+                    }
+                }
+            </style>
+
+            <div class="reputation-container">
+                <!-- Breadcrumb -->
+                <div style="margin-bottom: 20px;">
+                    <a th:href="@{/reputation/top}" style="font-size: 13px; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-arrow-left"></i> Quay lại bảng xếp hạng
+                    </a>
+                </div>
+
+                <!-- Hero Score Box -->
+                <div class="score-hero-card" th:if="${reputation != null}" th:object="${reputation}">
+                    <div>
+                        <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; margin-bottom: 6px;">
+                            Hồ Sơ Minh Bạch Hệ Thống
+                        </div>
+                        <h1 style="font-size: 26px; font-weight: 800; margin-bottom: 8px;">
+                            Thành Viên #<span th:text="*{userId}">101</span>
+                        </h1>
+
+                        <!-- Reliability Badge -->
+                        <div>
+                            <span th:if="*{score != null and score.doubleValue() >= 90}"
+                                  style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600; background-color: #22c55e; color: #ffffff;">
+                                <i class="fa-solid fa-award"></i> Độ tin cậy: Xuất sắc
+                            </span>
+                            <span th:if="*{score != null and score.doubleValue() >= 70 and score.doubleValue() < 90}"
+                                  style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600; background-color: #3b82f6; color: #ffffff;">
+                                <i class="fa-solid fa-check"></i> Độ tin cậy: Tốt
+                            </span>
+                            <span th:if="*{score != null and score.doubleValue() < 70}"
+                                  style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600; background-color: #ef4444; color: #ffffff;">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Cần lưu ý: Điểm thấp
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Circular Score Box -->
+                    <div class="score-badge-circle">
+                        <span class="score-number" th:text="*{score != null ? score.intValue() : 100}">100</span>
+                        <span class="score-scale">/ 100 điểm</span>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="metrics-grid" th:if="${reputation != null}" th:object="${reputation}">
+                    <div class="metric-card">
+                        <div class="metric-label">Tổng giao dịch</div>
+                        <div class="metric-value" th:text="*{totalTransactions ?: 0}">0</div>
+                        <div style="font-size: 11px; color: var(--color-text-muted);">Đã tham gia sàn</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-label">Hoàn tất thành công</div>
+                        <div class="metric-value" style="color: var(--color-success);" th:text="*{successfulTransactions ?: 0}">0</div>
+                        <div style="font-size: 11px; color: var(--color-success);">Vé dùng tốt</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-label">Tranh chấp thắng</div>
+                        <div class="metric-value" style="color: var(--color-info);" th:text="*{disputesWon ?: 0}">0</div>
+                        <div style="font-size: 11px; color: var(--color-text-muted);">Bằng chứng đúng</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-label">Tranh chấp thua</div>
+                        <div class="metric-value" style="color: var(--color-danger);" th:text="*{disputesLost ?: 0}">0</div>
+                        <div style="font-size: 11px; color: var(--color-danger);">Vi phạm bị phạt</div>
+                    </div>
+                </div>
+
+                <!-- Reputation Mechanism Card (BR-11) -->
+                <div class="rules-card">
+                    <h3 style="font-size: 16px; font-weight: 700; color: var(--color-brand); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-shield-halved" style="color: var(--color-primary);"></i>
+                        Cơ Chế Tính Điểm Uy Tín Tự Động (Quy Tắc BR-11)
+                    </h3>
+                    <div style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.8;">
+                        <p style="margin-bottom: 6px;">
+                            <strong>Khởi tạo:</strong> Mọi thành viên bắt đầu với <strong>100 điểm</strong> ngay khi đăng ký tài khoản.
+                        </p>
+                        <p style="margin-bottom: 6px;">
+                            <strong>Giao dịch thành công:</strong> Cộng <strong>+2 điểm</strong> khi đơn hàng hoàn tất mà không phát sinh khiếu nại.
+                        </p>
+                        <p style="margin-bottom: 6px;">
+                            <strong>Thắng tranh chấp:</strong> Cộng <strong>+1 điểm</strong> khi Admin xác nhận bằng chứng trung thực.
+                        </p>
+                        <p style="margin-bottom: 6px;">
+                            <strong>Thua tranh chấp:</strong> Trừ <strong>-15 điểm</strong> kèm tịch thu tiền cọc bồi thường cho nạn nhân.
+                        </p>
+                        <p>
+                            <strong>Hủy vé vi phạm:</strong> Trừ <strong>-10 điểm</strong> nếu người bán tự ý hủy vé sau khi đã có người mua thanh toán tiền vào ký quỹ.
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <span style="font-size: 13px; color: var(--color-text-muted);">
+                            Giao dịch gần nhất: <strong th:text="${reputation != null and reputation.lastTransactionAt != null ? #temporals.format(reputation.lastTransactionAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : 'Chưa có giao dịch'}">Chưa có</strong>
+                        </span>
+                        <a th:href="@{/reputation/top}" class="btn btn-outline btn-sm">
+                            <i class="fa-solid fa-trophy"></i> Xem bảng xếp hạng Top Người Bán
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </content>
+    </div>
+</body>
+
+</html>

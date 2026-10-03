@@ -232,8 +232,8 @@ public class TransferTicketService {
                             + ". Chi co the huy khi ve dang o trang thai LISTED.");
         }
 
-        // Xoa ve khoi database (hard delete vi chua co giao dich nao ràng buoc)
-        ticketRepository.deleteById(ticket.getId());
+        // Chuyen trang thai sang CANCELLED qua state machine (giu lai lich su tren he thong)
+        stateMachineService.transition(ticketId, TicketStatus.CANCELLED);
     }
 
     // ========================= Helper methods =========================

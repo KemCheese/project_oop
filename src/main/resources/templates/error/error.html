@@ -1,23 +1,79 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<html xmlns:th="http://www.thymeleaf.org">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Thông báo lỗi - TicketPass</title>
-    <style>
-        body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 80vh; margin: 0; background-color: #f1f5f9; }
-        .error-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 500px; text-align: center; }
-        h1 { color: #ef4444; margin-top: 0; font-size: 28px; }
-        p { color: #475569; font-size: 16px; line-height: 1.5; }
-        a { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; }
-        a:hover { background: #1d4ed8; }
-    </style>
 </head>
+
 <body>
-<div class="error-card">
-    <h1 th:text="${statusCode != null ? 'Lỗi ' + statusCode : 'Có lỗi xảy ra'}">Có lỗi xảy ra</h1>
-    <p th:text="${errorMessage != null ? errorMessage : 'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.'}">Hệ thống đang gặp sự cố.</p>
-    <a href="/">Quay về Trang chủ</a>
-</div>
+    <div th:replace="~{layout/base :: layout('Thông báo lỗi - TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .error-wrapper {
+                    max-width: 520px;
+                    margin: 60px auto;
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 40px 30px;
+                    text-align: center;
+                    box-shadow: var(--shadow-card);
+                }
+
+                .error-icon-box {
+                    width: 72px;
+                    height: 72px;
+                    border-radius: 50%;
+                    background-color: var(--color-danger-surface);
+                    color: var(--color-danger);
+                    border: 2px solid var(--color-danger-border);
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 32px;
+                    margin-bottom: 20px;
+                }
+
+                .error-title {
+                    font-size: 24px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    margin-bottom: 10px;
+                }
+
+                .error-message {
+                    font-size: 14px;
+                    color: var(--color-text-secondary);
+                    line-height: 1.6;
+                    margin-bottom: 28px;
+                }
+            </style>
+
+            <div class="error-wrapper">
+                <div class="error-icon-box">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+
+                <h1 class="error-title" th:text="${statusCode != null ? 'Lỗi ' + statusCode : 'Có lỗi xảy ra'}">
+                    Có lỗi xảy ra
+                </h1>
+
+                <p class="error-message"
+                   th:text="${errorMessage != null ? errorMessage : 'Trang bạn tìm kiếm không tồn tại hoặc hệ thống đang gặp sự cố gián đoạn tạm thời. Vui lòng thử lại sau.'}">
+                    Trang bạn tìm kiếm không tồn tại hoặc hệ thống đang gặp sự cố gián đoạn tạm thời. Vui lòng thử lại sau.
+                </p>
+
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <a th:href="@{/}" class="btn btn-primary">
+                        <i class="fa-solid fa-house"></i> Quay về trang chủ
+                    </a>
+                    <a th:href="@{/tickets}" class="btn btn-outline">
+                        <i class="fa-solid fa-tags"></i> Xem sàn vé
+                    </a>
+                </div>
+            </div>
+        </content>
+    </div>
 </body>
+
 </html>
