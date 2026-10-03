@@ -1,6 +1,8 @@
 package com.yourapp.ticketpass.ticket.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,6 +25,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.ui.ConcurrentModel;
 import org.springframework.ui.Model;
 
@@ -70,32 +77,43 @@ class TicketControllerTest {
     class SearchAndListTests {
 
         @Test
-        @DisplayName("Khi không truyền param: gọi searchListed(null, null) và trả về view ticket/list")
+        @DisplayName("Khi không truyền param: gọi searchListed(null, null, pageable) và trả về view ticket/list")
         void testListDefault() {
             Ticket t = buildTicket(1L, "MOVIE", "Vé xem phim Dune", "Dune: Part Three");
-            when(ticketRepository.searchListed(null, null)).thenReturn(List.of(t));
+            Pageable pageable = PageRequest.of(0, 16, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+            Page<Ticket> page = new PageImpl<>(List.of(t), pageable, 1);
+            when(ticketRepository.searchListed(eq(null), eq(null), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list(null, null, model);
+            String view = controller.list(null, null, 0, null, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("selectedType")).isNull();
             assertThat(model.getAttribute("keyword")).isEqualTo("");
+            assertThat(model.getAttribute("currentPage")).isEqualTo(0);
+            assertThat(model.getAttribute("totalPages")).isEqualTo(1);
+            assertThat(model.getAttribute("totalElements")).isEqualTo(1L);
+            assertThat(model.getAttribute("pageSize")).isEqualTo(16);
+            assertThat(model.getAttribute("hasPrevious")).isEqualTo(false);
+            assertThat(model.getAttribute("hasNext")).isEqualTo(false);
+            assertThat(model.getAttribute("pageNumbers")).isEqualTo(Collections.emptyList());
             @SuppressWarnings("unchecked")
             List<TicketSummaryResponse> tickets = (List<TicketSummaryResponse>) model.getAttribute("tickets");
             assertThat(tickets).hasSize(1);
             assertThat(tickets.get(0).getEventName()).isEqualTo("Dune: Part Three");
-            verify(ticketRepository).searchListed(null, null);
+            verify(ticketRepository).searchListed(eq(null), eq(null), any(Pageable.class));
         }
 
         @Test
         @DisplayName("Khi truyền từ khóa keyword: gọi searchListed với keyword và trim khoảng trắng")
         void testListWithKeyword() {
             Ticket t = buildTicket(2L, "CONCERT", "Vé concert Anh Trai", "Anh Trai Vượt Ngàn Chông Gai");
-            when(ticketRepository.searchListed("Chông Gai", null)).thenReturn(List.of(t));
+            Pageable pageable = PageRequest.of(0, 16, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+            Page<Ticket> page = new PageImpl<>(List.of(t), pageable, 1);
+            when(ticketRepository.searchListed(eq("Chông Gai"), eq(null), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list(null, "  Chông Gai  ", model);
+            String view = controller.list(null, "  Chông Gai  ", 0, null, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("keyword")).isEqualTo("Chông Gai");
@@ -103,17 +121,19 @@ class TicketControllerTest {
             List<TicketSummaryResponse> tickets = (List<TicketSummaryResponse>) model.getAttribute("tickets");
             assertThat(tickets).hasSize(1);
             assertThat(tickets.get(0).getEventName()).isEqualTo("Anh Trai Vượt Ngàn Chông Gai");
-            verify(ticketRepository).searchListed("Chông Gai", null);
+            verify(ticketRepository).searchListed(eq("Chông Gai"), eq(null), any(Pageable.class));
         }
 
         @Test
         @DisplayName("Khi truyền cả keyword và ticketType hợp lệ: gọi searchListed với cả 2 điều kiện")
         void testListWithKeywordAndValidType() {
             Ticket t = buildTicket(3L, "BUS", "Vé xe Đà Lạt", "Tuyến Sài Gòn - Đà Lạt");
-            when(ticketRepository.searchListed("Đà Lạt", TicketType.BUS)).thenReturn(List.of(t));
+            Pageable pageable = PageRequest.of(0, 16, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+            Page<Ticket> page = new PageImpl<>(List.of(t), pageable, 1);
+            when(ticketRepository.searchListed(eq("Đà Lạt"), eq(TicketType.BUS), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list("BUS", "Đà Lạt", model);
+            String view = controller.list("BUS", "Đà Lạt", 0, null, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("selectedType")).isEqualTo("BUS");
@@ -122,16 +142,18 @@ class TicketControllerTest {
             List<TicketSummaryResponse> tickets = (List<TicketSummaryResponse>) model.getAttribute("tickets");
             assertThat(tickets).hasSize(1);
             assertThat(tickets.get(0).getEventName()).isEqualTo("Tuyến Sài Gòn - Đà Lạt");
-            verify(ticketRepository).searchListed("Đà Lạt", TicketType.BUS);
+            verify(ticketRepository).searchListed(eq("Đà Lạt"), eq(TicketType.BUS), any(Pageable.class));
         }
 
         @Test
         @DisplayName("Khi truyền ticketType không hợp lệ: bỏ qua lọc loại vé, type = null")
         void testListWithInvalidType() {
-            when(ticketRepository.searchListed("Hà Nội", null)).thenReturn(Collections.emptyList());
+            Pageable pageable = PageRequest.of(0, 16, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+            Page<Ticket> page = new PageImpl<>(Collections.emptyList(), pageable, 0);
+            when(ticketRepository.searchListed(eq("Hà Nội"), eq(null), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list("UNKNOWN_TYPE", "Hà Nội", model);
+            String view = controller.list("UNKNOWN_TYPE", "Hà Nội", 0, null, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("selectedType")).isNull();
@@ -139,22 +161,47 @@ class TicketControllerTest {
             @SuppressWarnings("unchecked")
             List<TicketSummaryResponse> tickets = (List<TicketSummaryResponse>) model.getAttribute("tickets");
             assertThat(tickets).isEmpty();
-            verify(ticketRepository).searchListed("Hà Nội", null);
+            verify(ticketRepository).searchListed(eq("Hà Nội"), eq(null), any(Pageable.class));
         }
 
         @Test
         @DisplayName("Khi không tìm thấy vé: trả về danh sách rỗng để view hiển thị Empty State")
         void testListEmptyResult() {
-            when(ticketRepository.searchListed("Vé không tồn tại", null)).thenReturn(Collections.emptyList());
+            Pageable pageable = PageRequest.of(0, 16, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+            Page<Ticket> page = new PageImpl<>(Collections.emptyList(), pageable, 0);
+            when(ticketRepository.searchListed(eq("Vé không tồn tại"), eq(null), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list(null, "Vé không tồn tại", model);
+            String view = controller.list(null, "Vé không tồn tại", 0, null, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("keyword")).isEqualTo("Vé không tồn tại");
             @SuppressWarnings("unchecked")
             List<TicketSummaryResponse> tickets = (List<TicketSummaryResponse>) model.getAttribute("tickets");
             assertThat(tickets).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Khi truyền tham số phân trang page và cookie: tính toán pageSize và sliding window chính xác")
+        void testListWithPaginationAndCookie() {
+            Ticket t1 = buildTicket(1L, "MOVIE", "Vé 1", "Sự kiện 1");
+            Pageable pageable = PageRequest.of(1, 8, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+            Page<Ticket> page = new PageImpl<>(List.of(t1), pageable, 25);
+            when(ticketRepository.searchListed(eq(null), eq(null), any(Pageable.class))).thenReturn(page);
+
+            Model model = new ConcurrentModel();
+            String view = controller.list(null, null, 1, null, 8, model);
+
+            assertThat(view).isEqualTo("ticket/list");
+            assertThat(model.getAttribute("currentPage")).isEqualTo(1);
+            assertThat(model.getAttribute("pageSize")).isEqualTo(8);
+            assertThat(model.getAttribute("totalPages")).isEqualTo(4);
+            assertThat(model.getAttribute("totalElements")).isEqualTo(25L);
+            assertThat(model.getAttribute("hasPrevious")).isEqualTo(true);
+            assertThat(model.getAttribute("hasNext")).isEqualTo(true);
+            assertThat(model.getAttribute("pageNumbers")).isEqualTo(List.of(0, 1, 2, 3));
+            assertThat(model.getAttribute("startItem")).isEqualTo(9L);
+            assertThat(model.getAttribute("endItem")).isEqualTo(16L);
         }
     }
 

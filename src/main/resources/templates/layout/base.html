@@ -23,6 +23,13 @@
     <!-- Font Awesome 6.4.0 for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Kiểm tra cờ chuyển cảnh tức thì để tránh nháy màn hình (Zero-Flicker) -->
+    <script>
+        if (sessionStorage.getItem('tp_transition_pending') === '1') {
+            document.documentElement.classList.add('tp-holding-transition');
+        }
+    </script>
+
     <style>
         /* ==========================================================================
            DESIGN SYSTEM TOKENS (Quy chuẩn thiết kế tập trung)
@@ -850,10 +857,153 @@
                 text-align: center;
             }
         }
+
+        /* Ẩn header và footer mặc định trên Home page để tập trung vào Logo, Slogan và nút duy nhất */
+        body.home-page .site-header,
+        body.home-page .site-footer {
+            display: none !important;
+        }
+        body.home-page .site-main {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+
+        /* ==========================================================================
+           CINEMATIC PAGE TRANSITION OVERLAY (Học tập từ rophim10.tv)
+           ========================================================================== */
+        .cinematic-transition-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html.tp-holding-transition .cinematic-transition-overlay,
+        .cinematic-transition-overlay.is-active {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+        }
+
+        .cinematic-transition-backdrop {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 45%, #1c1012 0%, #090d16 65%, #04060a 100%);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .cinematic-transition-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 32px;
+            max-width: 680px;
+        }
+
+        .cinematic-logo-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            animation: cinematicPulse 2s ease-in-out infinite;
+        }
+
+        .cinematic-logo-text {
+            font-size: clamp(42px, 6vw, 68px);
+            font-weight: 900;
+            letter-spacing: -2px;
+            color: #ffffff;
+            text-shadow: 0 0 35px rgba(231, 26, 15, 0.45);
+        }
+
+        .cinematic-logo-icon {
+            font-size: clamp(28px, 4vw, 42px);
+            color: #e71a0f;
+            transform: rotate(15deg);
+            filter: drop-shadow(0 0 20px rgba(231, 26, 15, 0.85));
+        }
+
+        .cinematic-slogan {
+            font-size: clamp(16px, 2.2vw, 21px);
+            font-weight: 500;
+            color: #cbd5e1;
+            line-height: 1.5;
+            letter-spacing: 0.2px;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+            animation: cinematicFadeUp 0.8s ease-out forwards;
+        }
+
+        .cinematic-progress-bar-wrapper {
+            width: 240px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 9999px;
+            overflow: hidden;
+            margin-top: 12px;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+        }
+
+        .cinematic-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #e71a0f 0%, #ea580c 50%, #f97316 100%);
+            box-shadow: 0 0 14px #e71a0f;
+            border-radius: 9999px;
+            transition: width linear;
+        }
+
+        @keyframes cinematicPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.035);
+            }
+        }
+
+        @keyframes cinematicFadeUp {
+            0% {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
 <body>
+
+    <!-- =========================================================================
+         CINEMATIC PAGE TRANSITION OVERLAY (Học tập từ rophim10.tv)
+         Hiển thị Logo + Slogan và thanh tiến trình ngâm trong thời gian quy định
+         ========================================================================= -->
+    <div id="cinematicTransitionOverlay" class="cinematic-transition-overlay" aria-hidden="true">
+        <div class="cinematic-transition-backdrop"></div>
+        <div class="cinematic-transition-content">
+            <div class="cinematic-logo-box">
+                <span class="cinematic-logo-text">TicketPass</span>
+                <i class="fa-solid fa-asterisk cinematic-logo-icon"></i>
+            </div>
+            <div class="cinematic-slogan">Sàn Giao Dịch Vé – Mua bán thảnh thơi, trăm nơi đổ về.</div>
+            <div class="cinematic-progress-bar-wrapper">
+                <div class="cinematic-progress-bar" id="cinematicProgressBar"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Header Navigation -->
     <header class="site-header">
@@ -1081,6 +1231,84 @@
                 document.getElementById('pageSearchForm')
             );
         });
+    </script>
+
+    <!-- =========================================================================
+         TRANSITION ENGINE SCRIPT (CẤU HÌNH 1 DÒNG DUY NHẤT)
+         ========================================================================= -->
+    <script>
+        // =========================================================================
+        // CẤU HÌNH THỜI GIAN CHUYỂN CẢNH (ĐƠN VỊ: MILI-GIÂY) - SỬA TẠI DÒNG NÀY:
+        const TRANSITION_HOLD_MS = 2000;
+        // =========================================================================
+
+        (function () {
+            const overlay = document.getElementById('cinematicTransitionOverlay');
+            const progressBar = document.getElementById('cinematicProgressBar');
+
+            if (!overlay || !progressBar) return;
+
+            function runTransitionSequence(onFinish) {
+                overlay.classList.add('is-active');
+                overlay.setAttribute('aria-hidden', 'false');
+
+                progressBar.style.transition = 'none';
+                progressBar.style.width = '0%';
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        progressBar.style.transition = `width ${TRANSITION_HOLD_MS}ms cubic-bezier(0.15, 0.6, 0.2, 1)`;
+                        progressBar.style.width = '100%';
+                    });
+                });
+
+                // Giữ ngâm đúng TRANSITION_HOLD_MS rồi mở màn mượt mà
+                setTimeout(() => {
+                    overlay.classList.remove('is-active');
+                    overlay.setAttribute('aria-hidden', 'true');
+                    document.documentElement.classList.remove('tp-holding-transition');
+                    sessionStorage.removeItem('tp_transition_pending');
+                    if (onFinish) onFinish();
+                }, TRANSITION_HOLD_MS);
+            }
+
+            // Nếu vừa chuyển từ trang trước qua có cờ ngâm chuyển cảnh:
+            if (sessionStorage.getItem('tp_transition_pending') === '1') {
+                runTransitionSequence();
+            }
+
+            // Expose hàm ra window để các nút hay script khác gọi
+            window.triggerCinematicTransition = runTransitionSequence;
+
+            // Kích hoạt khi submit tìm kiếm (cần reload dữ liệu mới)
+            const searchForms = [document.getElementById('navSearchForm'), document.getElementById('pageSearchForm')];
+            searchForms.forEach(form => {
+                if (form) {
+                    form.addEventListener('submit', function (e) {
+                        const input = this.querySelector('input[name="keyword"]');
+                        if (input && input.value.trim().length > 0) {
+                            sessionStorage.setItem('tp_transition_pending', '1');
+                        }
+                    });
+                }
+            });
+
+            // Bắt sự kiện click vào các liên kết có gắn data-transition="true" (như nút Khám phá vé)
+            document.addEventListener('click', function (e) {
+                const targetLink = e.target.closest('a[data-transition="true"]');
+                if (targetLink && targetLink.href) {
+                    const targetUrl = targetLink.href;
+                    if (!e.ctrlKey && !e.metaKey && !e.shiftKey && targetLink.target !== '_blank') {
+                        e.preventDefault();
+                        sessionStorage.setItem('tp_transition_pending', '1');
+                        overlay.classList.add('is-active');
+                        overlay.setAttribute('aria-hidden', 'false');
+                        // Chuyển trang để trang mới tải sẵn dữ liệu và giữ ngâm đúng TRANSITION_HOLD_MS
+                        window.location.href = targetUrl;
+                    }
+                }
+            });
+        })();
     </script>
 
 </body>

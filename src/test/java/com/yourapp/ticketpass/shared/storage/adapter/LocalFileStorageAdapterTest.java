@@ -326,6 +326,16 @@ class LocalFileStorageAdapterTest {
             assertTrue(url.contains("%20") || url.contains("+"));
             assertFalse(url.contains(" "));
         }
+
+        @Test
+        @DisplayName("Public URL — URL web bên ngoài (http/https) → trả về nguyên vẹn")
+        void buildPublicUrl_webUrl_returnsDirectUrl() {
+            String httpsUrl = "https://images.unsplash.com/photo-12345?w=600";
+            assertEquals(httpsUrl, adapter.buildPublicUrl(httpsUrl));
+
+            String httpUrl = "http://example.com/sample.jpg";
+            assertEquals(httpUrl, adapter.buildPublicUrl(httpUrl));
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
 
 <head>
     <title>TicketPass - Sàn Giao Dịch Vé An Toàn</title>
@@ -9,337 +9,331 @@
     <div th:replace="~{layout/base :: layout('TicketPass - Sàn Giao Dịch Vé An Toàn', ~{::content})}">
         <content>
             <style>
-                /* Hero Section */
-                .hero-container {
-                    padding: 40px 0 28px 0;
-                    text-align: center;
-                }
-
-                .hero-badge {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                    background-color: var(--color-primary-surface);
-                    color: var(--color-primary);
-                    border: 1px solid var(--color-primary-border);
-                    padding: 6px 14px;
-                    border-radius: var(--radius-full);
-                    font-size: 13px;
-                    font-weight: 600;
-                    margin-bottom: 16px;
-                }
-
-                .hero-headline {
-                    font-size: 40px;
-                    font-weight: 800;
-                    color: var(--color-brand);
-                    letter-spacing: -1px;
-                    line-height: 1.2;
-                    margin-bottom: 14px;
-                    max-width: 820px;
-                    margin-left: auto;
-                    margin-right: auto;
-                }
-
-                .hero-subtext {
-                    font-size: 17px;
-                    color: var(--color-text-secondary);
-                    max-width: 580px;
-                    margin: 0 auto 24px auto;
-                    line-height: 1.5;
-                }
-
-                .hero-cta-group {
-                    display: flex;
-                    gap: 12px;
-                    justify-content: center;
-                    align-items: center;
-                    flex-wrap: wrap;
-                }
-
-                /* Category Quick Nav */
-                .category-section {
-                    margin-top: 40px;
-                }
-
-                .section-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-end;
-                    margin-bottom: 20px;
-                }
-
-                .section-title {
-                    font-size: 22px;
-                    font-weight: 700;
-                    color: var(--color-brand);
-                }
-
-                .section-desc {
-                    font-size: 14px;
-                    color: var(--color-text-muted);
-                    margin-top: 4px;
-                }
-
-                .category-grid {
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 18px;
-                }
-
-                .category-card {
-                    background-color: var(--color-surface);
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-lg);
-                    padding: 24px;
+                /* Home Page Container */
+                .home-wrapper {
+                    min-height: 90vh;
                     display: flex;
                     flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 60px 24px 70px 24px;
+                    max-width: 1240px;
+                    margin: 0 auto;
+                    position: relative;
+                }
+
+                /* Subtle Ambient Brand Glow */
+                .home-glow {
+                    position: absolute;
+                    top: 10%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: min(700px, 90vw);
+                    height: 380px;
+                    background: radial-gradient(circle, rgba(231, 26, 15, 0.07) 0%, rgba(249, 115, 22, 0.03) 50%, transparent 70%);
+                    pointer-events: none;
+                    z-index: 0;
+                    filter: blur(40px);
+                }
+
+                /* Hero Core */
+                .home-hero {
+                    position: relative;
+                    z-index: 1;
+                    text-align: center;
+                    max-width: 880px;
+                    margin: 0 auto;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                .home-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: #fef2f2;
+                    color: #e71a0f;
+                    border: 1px solid #fecaca;
+                    padding: 8px 18px;
+                    border-radius: 9999px;
+                    font-size: 13.5px;
+                    font-weight: 600;
+                    margin-bottom: 24px;
+                    box-shadow: 0 2px 8px rgba(231, 26, 15, 0.06);
+                    letter-spacing: 0.3px;
+                }
+
+                /* Enlarged, Eye-Catching Brand Logo */
+                .home-brand-title {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    font-size: clamp(52px, 7vw, 84px);
+                    font-weight: 900;
+                    letter-spacing: -2.5px;
+                    line-height: 1.05;
+                    color: #0f172a;
+                    margin-bottom: 18px;
+                }
+
+                .home-brand-icon {
+                    color: #e71a0f;
+                    font-size: clamp(34px, 4.5vw, 54px);
+                    transform: rotate(15deg);
+                    filter: drop-shadow(0 4px 12px rgba(231, 26, 15, 0.35));
+                    transition: transform 0.3s ease;
+                }
+
+                .home-brand-title:hover .home-brand-icon {
+                    transform: rotate(45deg) scale(1.1);
+                }
+
+                /* Slogan */
+                .home-slogan {
+                    font-size: clamp(22px, 3vw, 32px);
+                    font-weight: 700;
+                    color: #1e293b;
+                    line-height: 1.35;
+                    margin-bottom: 16px;
+                    letter-spacing: -0.5px;
+                }
+
+                .home-desc {
+                    font-size: clamp(15px, 1.8vw, 17px);
+                    color: #64748b;
+                    line-height: 1.6;
+                    max-width: 640px;
+                    margin: 0 auto 36px auto;
+                }
+
+                /* The Single Action Button */
+                .home-cta-wrapper {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    margin-bottom: 64px;
+                }
+
+                .btn-explore-ticket {
+                    display: inline-flex;
+                    align-items: center;
                     gap: 12px;
-                    box-shadow: var(--shadow-card);
-                    transition: all var(--transition-base);
+                    background: linear-gradient(135deg, #e71a0f 0%, #dc2626 50%, #ea580c 100%);
+                    color: #ffffff !important;
+                    font-size: 18px;
+                    font-weight: 700;
+                    padding: 16px 44px;
+                    border-radius: 9999px;
+                    text-decoration: none !important;
+                    border: none;
+                    cursor: pointer;
+                    box-shadow: 0 10px 25px -4px rgba(231, 26, 15, 0.45), 0 4px 10px -2px rgba(231, 26, 15, 0.25);
+                    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    letter-spacing: 0.2px;
                 }
 
-                .category-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: var(--shadow-hover);
-                    border-color: var(--color-border-hover);
+                .btn-explore-ticket i {
+                    transition: transform 0.25s ease;
                 }
 
-                .category-icon-box {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: var(--radius-md);
+                .btn-explore-ticket:hover {
+                    transform: translateY(-3px) scale(1.02);
+                    box-shadow: 0 16px 32px -4px rgba(231, 26, 15, 0.55), 0 6px 14px -2px rgba(231, 26, 15, 0.3);
+                }
+
+                .btn-explore-ticket:hover i {
+                    transform: translateX(4px);
+                }
+
+                .btn-explore-ticket:active {
+                    transform: translateY(0) scale(0.98);
+                }
+
+                /* 3 Value Pillars Grid */
+                .pillars-grid {
+                    position: relative;
+                    z-index: 1;
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 24px;
+                    width: 100%;
+                }
+
+                .pillar-card {
+                    background-color: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 22px;
+                    padding: 32px 28px;
+                    display: flex;
+                    flex-direction: column;
+                    text-align: left;
+                    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+                    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .pillar-card::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: transparent;
+                    transition: background 0.25s ease;
+                }
+
+                .pillar-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 16px 32px -4px rgba(15, 23, 42, 0.08);
+                    border-color: #cbd5e1;
+                }
+
+                /* Card Variants */
+                .pillar-card-1:hover::before {
+                    background: linear-gradient(90deg, #e71a0f, #f43f5e);
+                }
+
+                .pillar-card-2:hover::before {
+                    background: linear-gradient(90deg, #ea580c, #f59e0b);
+                }
+
+                .pillar-card-3:hover::before {
+                    background: linear-gradient(90deg, #059669, #10b981);
+                }
+
+                .pillar-icon-box {
+                    width: 54px;
+                    height: 54px;
+                    border-radius: 16px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    font-size: 22px;
+                    margin-bottom: 22px;
+                }
+
+                .pillar-icon-1 {
+                    background-color: #fef2f2;
+                    color: #e71a0f;
+                }
+
+                .pillar-icon-2 {
+                    background-color: #fff7ed;
+                    color: #ea580c;
+                }
+
+                .pillar-icon-3 {
+                    background-color: #ecfdf5;
+                    color: #059669;
+                }
+
+                .pillar-title {
                     font-size: 20px;
-                }
-
-                .category-icon-movie {
-                    background-color: var(--color-primary-surface);
-                    color: var(--color-primary);
-                }
-
-                .category-icon-concert {
-                    background-color: #f5f3ff;
-                    color: #7c3aed;
-                }
-
-                .category-icon-bus {
-                    background-color: #ecfeff;
-                    color: #0891b2;
-                }
-
-                .category-title {
-                    font-size: 17px;
                     font-weight: 700;
-                    color: var(--color-brand);
-                }
-
-                .category-desc {
-                    font-size: 13px;
-                    color: var(--color-text-muted);
-                    line-height: 1.4;
-                }
-
-                /* Bento Grid for Trust Protection */
-                .bento-section {
-                    margin-top: 50px;
-                }
-
-                .bento-grid {
-                    display: grid;
-                    grid-template-columns: repeat(12, 1fr);
-                    gap: 18px;
-                }
-
-                .bento-tile {
-                    background-color: var(--color-surface);
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-lg);
-                    padding: 24px;
-                    box-shadow: var(--shadow-card);
-                }
-
-                .bento-tile-large {
-                    grid-column: span 7;
-                }
-
-                .bento-tile-medium {
-                    grid-column: span 5;
-                }
-
-                .bento-tile-small {
-                    grid-column: span 6;
-                }
-
-                .bento-icon {
-                    font-size: 24px;
+                    color: #0f172a;
                     margin-bottom: 12px;
+                    letter-spacing: -0.3px;
                 }
 
-                .bento-headline {
-                    font-size: 18px;
-                    font-weight: 700;
-                    color: var(--color-brand);
-                    margin-bottom: 8px;
-                }
-
-                .bento-text {
-                    font-size: 14px;
-                    color: var(--color-text-secondary);
-                    line-height: 1.5;
+                .pillar-content {
+                    font-size: 14.5px;
+                    color: #475569;
+                    line-height: 1.65;
+                    margin: 0;
                 }
 
                 /* Responsive */
-                @media (max-width: 900px) {
-                    .category-grid {
+                @media (max-width: 960px) {
+                    .pillars-grid {
                         grid-template-columns: 1fr;
+                        gap: 18px;
                     }
 
-                    .bento-tile-large, .bento-tile-medium, .bento-tile-small {
-                        grid-column: span 12;
-                    }
-
-                    .hero-headline {
-                        font-size: 28px;
+                    .home-wrapper {
+                        padding: 40px 16px 50px 16px;
                     }
                 }
             </style>
 
-            <!-- Compact Hero Section (Above the fold on desktop) -->
-            <section class="hero-container">
-                <div class="hero-badge">
-                    <i class="fa-solid fa-shield-halved"></i> Bảo Vệ Kép: Ký Quỹ Escrow &amp; Khóa Cọc 50%
-                </div>
-                <h1 class="hero-headline">
-                    Sàn Giao Dịch Vé Điện Tử An Toàn Ngang Hàng
-                </h1>
-                <p class="hero-subtext">
-                    Bảo vệ giao dịch bằng ký quỹ Escrow 100% và phạt đứt cọc 50% nếu gian lận.
-                </p>
-                <div class="hero-cta-group">
-                    <a th:href="@{/tickets}" class="btn btn-primary btn-lg">
-                        <i class="fa-solid fa-magnifying-glass"></i> Khám phá vé ngay
-                    </a>
-                    <a th:href="@{/tickets/new}" class="btn btn-outline btn-lg">
-                        <i class="fa-solid fa-plus-circle"></i> Đăng bán vé
-                    </a>
-                </div>
-            </section>
+            <div class="home-wrapper">
+                <div class="home-glow"></div>
 
-            <!-- 3 Ticket Categories Section -->
-            <section class="category-section">
-                <div class="section-header">
-                    <div>
-                        <h2 class="section-title">Ba Loại Vé Khả Dụng</h2>
-                        <p class="section-desc">Hỗ trợ giao dịch vé chính chủ có rà soát cọc và cửa sổ khiếu nại</p>
+                <!-- Hero Section -->
+                <section class="home-hero">
+                    <div class="home-badge">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Sàn Giao Dịch Vé Điện Tử An Toàn</span>
                     </div>
-                    <a th:href="@{/tickets}" style="color: var(--color-primary); font-size: 14px; font-weight: 600;">
-                        Xem toàn bộ vé <i class="fa-solid fa-arrow-right"></i>
-                    </a>
-                </div>
 
-                <div class="category-grid">
-                    <!-- Movie Ticket -->
-                    <a th:href="@{/tickets(ticketType='MOVIE')}" class="category-card">
-                        <div class="category-icon-box category-icon-movie">
-                            <i class="fa-solid fa-film"></i>
-                        </div>
-                        <h3 class="category-title">Vé Xem Phim (CGV, BHD, Lotte)</h3>
-                        <p class="category-desc">
-                            Chuyển nhượng vé rạp chuẩn suất chiếu và vị trí ghế. Cửa sổ khiếu nại đóng sau 2 giờ từ khi nhận vé.
-                        </p>
-                        <span style="font-size: 13px; font-weight: 600; color: var(--color-primary); margin-top: auto;">
-                            Khám phá vé phim &rarr;
-                        </span>
-                    </a>
-
-                    <!-- Concert Ticket -->
-                    <a th:href="@{/tickets(ticketType='CONCERT')}" class="category-card">
-                        <div class="category-icon-box category-icon-concert">
-                            <i class="fa-solid fa-music"></i>
-                        </div>
-                        <h3 class="category-title">Vé Concert &amp; Sự Kiện Âm Nhạc</h3>
-                        <p class="category-desc">
-                            Vé Fanzone đứng hoặc Khán đài ngồi. Kiểm tra thông tin minh bạch, cửa sổ khiếu nại bảo vệ 24 giờ.
-                        </p>
-                        <span style="font-size: 13px; font-weight: 600; color: #7c3aed; margin-top: auto;">
-                            Khám phá vé sự kiện &rarr;
-                        </span>
-                    </a>
-
-                    <!-- Bus Ticket -->
-                    <a th:href="@{/tickets(ticketType='BUS')}" class="category-card">
-                        <div class="category-icon-box category-icon-bus">
-                            <i class="fa-solid fa-bus"></i>
-                        </div>
-                        <h3 class="category-title">Vé Xe Khách Đường Dài</h3>
-                        <p class="category-desc">
-                            Vé xe tuyến cố định, hiển thị rõ điểm xuất phát, điểm đến và số giường. Cửa sổ khiếu nại 3 giờ.
-                        </p>
-                        <span style="font-size: 13px; font-weight: 600; color: #0891b2; margin-top: auto;">
-                            Khám phá vé xe &rarr;
-                        </span>
-                    </a>
-                </div>
-            </section>
-
-            <!-- Dual-Protection Bento Grid -->
-            <section class="bento-section">
-                <div class="section-header">
-                    <div>
-                        <h2 class="section-title">Cơ Chế Bảo Vệ Kinh Tế 2 Lớp</h2>
-                        <p class="section-desc">Không cần đặt niềm tin vào đối phương, hệ thống đảm bảo an toàn tuyệt đối</p>
+                    <!-- Enlarged Brand Logo -->
+                    <div class="home-brand-title">
+                        <span>TicketPass</span>
+                        <i class="fa-solid fa-asterisk home-brand-icon"></i>
                     </div>
-                </div>
 
-                <div class="bento-grid">
-                    <!-- Tile 1: Escrow 100% -->
-                    <div class="bento-tile bento-tile-large">
-                        <div class="bento-icon" style="color: var(--color-success);">
+                    <!-- Slogan -->
+                    <h1 class="home-slogan">
+                        Sàn Giao Dịch Vé – Mua bán thảnh thơi, trăm nơi đổ về.
+                    </h1>
+
+                    <p class="home-desc">
+                        Nền tảng chuyển nhượng vé chính chủ uy tín hàng đầu. Bảo vệ trọn vẹn quyền lợi người mua và người bán bằng cơ chế giữ tiền trung gian và bảo đảm tiền cọc.
+                    </p>
+
+                    <!-- The Single Button (Duy nhất 1 nút trên toàn trang) -->
+                    <div class="home-cta-wrapper">
+                        <a th:href="@{/tickets}" class="btn-explore-ticket" data-transition="true">
+                            <span>Khám phá vé ngay</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </section>
+
+                <!-- 3 Trụ Cột Thông Tin Chính (Ngôn ngữ phổ thông, không mở ngoặc giải thích) -->
+                <section class="pillars-grid">
+                    <!-- Trụ cột 1 -->
+                    <div class="pillar-card pillar-card-1">
+                        <div class="pillar-icon-box pillar-icon-1">
+                            <i class="fa-solid fa-ticket-simple"></i>
+                        </div>
+                        <h2 class="pillar-title">Đa dạng các loại vé</h2>
+                        <p class="pillar-content">
+                            Phim ảnh chiếu rạp, ca nhạc sự kiện đến xe khách đường dài. Mọi tấm vé bạn tìm kiếm đều sẵn sàng tại một nơi duy nhất.
+                        </p>
+                    </div>
+
+                    <!-- Trụ cột 2 -->
+                    <div class="pillar-card pillar-card-2">
+                        <div class="pillar-icon-box pillar-icon-2">
                             <i class="fa-solid fa-vault"></i>
                         </div>
-                        <h3 class="bento-headline">Ký Quỹ Escrow 100% (MoMo Sandbox)</h3>
-                        <p class="bento-text">
-                            Tiền người mua nộp vào sàn được phong tỏa trong tài khoản trung gian. Người bán không nhận được tiền cho đến khi vé được kiểm tra hợp lệ và kết thúc thời hạn khiếu nại an toàn.
+                        <h2 class="pillar-title">Vé trong tay, tiền mới bay</h2>
+                        <p class="pillar-content">
+                            Toàn bộ tiền mua được giữ an toàn tuyệt đối. Chỉ khi bạn nhận vé chuẩn và trải nghiệm trọn vẹn, tiền mới được chuyển cho người bán. Người bán bắt buộc ký cọc bảo đảm, sẵn sàng đền bù nếu có gian lận.
                         </p>
                     </div>
 
-                    <!-- Tile 2: Khóa cọc 50% -->
-                    <div class="bento-tile bento-tile-medium">
-                        <div class="bento-icon" style="color: var(--color-warning);">
-                            <i class="fa-solid fa-lock"></i>
-                        </div>
-                        <h3 class="bento-headline">Khóa Cọc 50% Người Bán</h3>
-                        <p class="bento-text">
-                            Người bán phải ký quỹ 50% giá vé trước khi mã QR được bàn giao. Nếu có hành vi gian lận hoặc thua tranh chấp, tiền cọc bị tịch thu để bồi thường người mua.
-                        </p>
-                    </div>
-
-                    <!-- Tile 3: Quy tắc chống đầu cơ -->
-                    <div class="bento-tile bento-tile-small">
-                        <div class="bento-icon" style="color: var(--color-primary);">
+                    <!-- Trụ cột 3 -->
+                    <div class="pillar-card pillar-card-3">
+                        <div class="pillar-icon-box pillar-icon-3">
                             <i class="fa-solid fa-scale-balanced"></i>
                         </div>
-                        <h3 class="bento-headline">Quy Tắc Chống Phe Vé (Anti-Scalping)</h3>
-                        <p class="bento-text">
-                            Hệ thống kiểm soát chặt chẽ: giá bán lại bắt buộc nhỏ hơn hoặc bằng giá gốc niêm yết. Phục vụ cộng đồng yêu vé chân chính.
+                        <h2 class="pillar-title">Anti phe vé</h2>
+                        <p class="pillar-content">
+                            Nói không với thổi giá hay gom vé chợ đen. Mọi tấm vé đăng bán đều tuân thủ nguyên tắc bằng hoặc thấp hơn giá gốc niêm yết, trả lại sự công bằng cho người hâm mộ.
                         </p>
                     </div>
+                </section>
+            </div>
 
-                    <!-- Tile 4: Điểm uy tín 0-100 -->
-                    <div class="bento-tile bento-tile-small">
-                        <div class="bento-icon" style="color: var(--color-info);">
-                            <i class="fa-solid fa-star"></i>
-                        </div>
-                        <h3 class="bento-headline">Điểm Uy Tín Công Khai (0-100)</h3>
-                        <p class="bento-text">
-                            Cập nhật minh bạch sau mỗi đơn hàng hoàn tất (+2 điểm) hoặc vi phạm (-15 điểm). Người mua thẩm tra uy tín người bán trước khi quyết định giao dịch.
-                        </p>
-                    </div>
-                </div>
-            </section>
+            <!-- Kích hoạt class nhận diện home-page để ẩn header/footer thừa -->
+            <script>
+                document.body.classList.add('home-page');
+            </script>
         </content>
     </div>
 </body>
