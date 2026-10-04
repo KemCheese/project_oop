@@ -87,6 +87,55 @@
                     left: 10px;
                 }
 
+                /* Nút đánh sao tròn trên Card vé (Anti-Slop Modern UI) */
+                .btn-star-ticket {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    z-index: 2;
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.88);
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                    border: 1px solid rgba(255, 255, 255, 0.6);
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    color: #94a3b8;
+                    font-size: 14px;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    outline: none;
+                }
+
+                .btn-star-ticket:hover {
+                    color: #f59e0b;
+                    background: #ffffff;
+                    transform: scale(1.1);
+                    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+                }
+
+                .btn-star-ticket:active {
+                    transform: scale(0.92);
+                }
+
+                .btn-star-ticket.active {
+                    color: #f59e0b;
+                    background: #fffbeb;
+                    border-color: #fde68a;
+                    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+                    animation: starSpringPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+
+                @keyframes starSpringPop {
+                    0% { transform: scale(0.85); }
+                    50% { transform: scale(1.22); }
+                    100% { transform: scale(1); }
+                }
+
                 .ticket-body {
                     padding: 16px;
                     display: flex;
@@ -363,6 +412,19 @@
                                 <i class="fa-solid fa-bus"></i> Xe khách
                             </span>
                         </div>
+
+                        <!-- Nút Đánh sao nhanh trên ảnh vé -->
+                        <th:block sec:authorize="isAuthenticated()">
+                            <button type="button"
+                                    class="btn-star-ticket"
+                                    th:classappend="${starredTicketIds != null and starredTicketIds.contains(ticket.id)} ? 'active' : ''"
+                                    th:data-ticket-id="${ticket.id}"
+                                    th:title="${starredTicketIds != null and starredTicketIds.contains(ticket.id)} ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi'"
+                                    onclick="toggleStarFromList(this, event)"
+                                    aria-label="Lưu vé">
+                                <i class="fa-solid fa-star"></i>
+                            </button>
+                        </th:block>
                     </div>
 
                     <!-- Body -->
@@ -396,6 +458,12 @@
                     </div>
                 </div>
             </div>
+
+            <!-- CSRF Hidden Inputs cho client AJAX -->
+            <th:block sec:authorize="isAuthenticated()">
+                <input type="hidden" id="listCsrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <input type="hidden" id="listCsrfHeader" th:value="${_csrf.headerName}" />
+            </th:block>
 
             <!-- Pagination (Chỉ hiển thị khi có nhiều hơn 1 trang) -->
             <div th:if="${totalPages > 1}" class="pagination-container">
@@ -468,6 +536,46 @@
                         resizeTimer = setTimeout(syncPageSizeCookie, 300);
                     });
                 })();
+
+                // Toggle Đánh sao vé nhanh trên Sàn (Optimistic UI)
+                function toggleStarFromList(btn, event) {
+                    if (event) {
+                        event.stopPropagation();
+                        event.preventDefault();
+                    }
+                    const ticketId = btn.getAttribute('data-ticket-id');
+                    if (!ticketId) return;
+
+                    const isCurrentlyActive = btn.classList.contains('active');
+                    const nextState = !isCurrentlyActive;
+                    btn.classList.toggle('active', nextState);
+                    btn.setAttribute('title', nextState ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+
+                    const csrfToken = document.getElementById('listCsrfToken')?.value;
+                    const csrfHeader = document.getElementById('listCsrfHeader')?.value || 'X-CSRF-TOKEN';
+
+                    fetch('/api/tickets/' + ticketId + '/star', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            [csrfHeader]: csrfToken || '',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) {
+                            btn.classList.toggle('active', isCurrentlyActive);
+                            btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+                            alert(data.message || 'Không thể cập nhật trạng thái lưu vé');
+                        }
+                    })
+                    .catch(err => {
+                        btn.classList.toggle('active', isCurrentlyActive);
+                        btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+                        console.error("Lỗi khi toggle sao vé:", err);
+                    });
+                }
             </script>
         </content>
     </div>

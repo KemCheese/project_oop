@@ -296,6 +296,14 @@
                             </a>
                         </li>
                         <li>
+                            <a onclick="switchTab('tab-starred-tickets', this)" style="display: flex; align-items: center; justify-content: space-between;">
+                                <span><i class="fa-solid fa-star" style="width: 24px; color: #f59e0b;"></i> Vé đã theo dõi</span>
+                                <span class="badge" id="sidebarStarredBadge"
+                                      style="font-size: 11px; padding: 2px 8px; border-radius: 9999px; background: #fffbeb; color: #d97706; border: 1px solid #fde68a;"
+                                      th:text="${starredCount}">0</span>
+                            </a>
+                        </li>
+                        <li>
                             <a onclick="toggleSubmenu(this)">
                                 <i class="fa-solid fa-ticket" style="width: 24px;"></i> Đơn hàng của tôi <i
                                     class="fa-solid fa-chevron-down"
@@ -625,6 +633,100 @@
                         </div>
                     </div>
 
+                    <!-- TAB 5: VÉ ĐÃ THEO DÕI (WATCHLIST / STARRED TICKETS) -->
+                    <div id="tab-starred-tickets" class="tab-pane">
+                        <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px;">
+                            <div>
+                                <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand); margin-bottom: 4px;">
+                                    Vé Đang Theo Dõi &amp; Yêu Thích
+                                </h1>
+                                <p style="font-size: 14px; color: var(--color-text-muted); margin: 0;">
+                                    Danh sách các vé bạn đã đánh dấu sao ⭐ để theo dõi biến động giá và trạng thái mở bán
+                                </p>
+                            </div>
+                            <span class="badge" style="font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 9999px; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-star" style="color: #f59e0b;"></i>
+                                <span id="starredCountBadge" th:text="${starredCount} + ' vé đã lưu'">0 vé đã lưu</span>
+                            </span>
+                        </div>
+
+                        <!-- CSRF Token Inputs for AJAX -->
+                        <input type="hidden" id="profileCsrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <input type="hidden" id="profileCsrfHeader" th:value="${_csrf.headerName}" />
+
+                        <!-- Empty State khi chưa có vé nào -->
+                        <div th:if="${#lists.isEmpty(starredTickets)}" class="empty-state" id="emptyStarredState" style="padding: 48px 20px; border-radius: var(--radius-lg); background: var(--color-surface); border: 1px dashed var(--color-border);">
+                            <div style="width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: #fffbeb; display: flex; align-items: center; justify-content: center; border: 1px solid #fde68a;">
+                                <i class="fa-solid fa-star" style="font-size: 28px; color: #f59e0b;"></i>
+                            </div>
+                            <h3 style="font-size: 18px; font-weight: 700; color: var(--color-brand); margin-bottom: 6px;">Chưa có vé nào được lưu</h3>
+                            <p style="font-size: 14px; color: var(--color-text-muted); max-width: 440px; margin: 0 auto 20px;">
+                                Bấm biểu tượng ngôi sao ⭐ trên bất kỳ vé nào ở Sàn vé để thêm vào danh sách theo dõi cá nhân này.
+                            </p>
+                            <a th:href="@{/tickets}" class="btn btn-primary btn-sm">
+                                <i class="fa-solid fa-tags"></i> Khám phá Sàn vé ngay
+                            </a>
+                        </div>
+
+                        <!-- Danh sách các thẻ vé đã lưu -->
+                        <div th:if="${!#lists.isEmpty(starredTickets)}" class="starred-tickets-container" id="starredTicketsContainer" style="display: flex; flex-direction: column; gap: 14px;">
+                            <div th:each="st : ${starredTickets}" class="starred-ticket-card profile-card" th:id="'starred-card-' + ${st.ticketId}"
+                                 style="display: flex; gap: 16px; align-items: center; padding: 16px; transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);">
+                                <!-- Thumbnail -->
+                                <div style="width: 90px; height: 90px; flex-shrink: 0; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-border); background: var(--color-surface-hover); position: relative;">
+                                    <img th:if="${st.thumbnailUrl != null and !st.thumbnailUrl.isEmpty()}" th:src="${st.thumbnailUrl}" style="width: 100%; height: 100%; object-fit: cover;" th:alt="${st.title}" />
+                                    <div th:unless="${st.thumbnailUrl != null and !st.thumbnailUrl.isEmpty()}" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8fafc;">
+                                        <i class="fa-solid fa-ticket" style="font-size: 28px; color: #cbd5e1;"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Body -->
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 4px;">
+                                        <div style="min-width: 0;">
+                                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
+                                                <!-- Type badge -->
+                                                <span th:if="${st.ticketType != null and st.ticketType.name() == 'MOVIE'}" class="badge badge-movie" style="font-size: 11px; padding: 2px 8px;">Phim</span>
+                                                <span th:if="${st.ticketType != null and st.ticketType.name() == 'CONCERT'}" class="badge badge-concert" style="font-size: 11px; padding: 2px 8px;">Concert</span>
+                                                <span th:if="${st.ticketType != null and st.ticketType.name() == 'BUS'}" class="badge badge-bus" style="font-size: 11px; padding: 2px 8px;">Xe khách</span>
+                                                <!-- Status badge -->
+                                                <span th:if="${st.status != null and st.status.name() == 'LISTED'}" class="badge badge-success" style="font-size: 11px; padding: 2px 8px;">Đang mở bán</span>
+                                                <span th:if="${st.status != null and (st.status.name() == 'PAYMENT_ESCROWED' or st.status.name() == 'DEPOSIT_LOCKED')}" class="badge badge-warning" style="font-size: 11px; padding: 2px 8px;">Đang giao dịch</span>
+                                                <span th:if="${st.status != null and (st.status.name() == 'TRANSFERRED' or st.status.name() == 'AWAITING_USE' or st.status.name() == 'AUTO_COMPLETE' or st.status.name() == 'RESOLVED_BUYER_WINS' or st.status.name() == 'RESOLVED_SELLER_WINS')}" class="badge badge-brand" style="font-size: 11px; padding: 2px 8px;">Đã bán</span>
+                                                <span th:if="${st.status != null and st.status.name() == 'CANCELLED'}" class="badge badge-danger" style="font-size: 11px; padding: 2px 8px;">Đã hủy</span>
+                                            </div>
+                                            <h3 style="font-size: 15px; font-weight: 700; color: var(--color-brand); margin: 0 0 4px 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" th:text="${st.title}">Tên vé</h3>
+                                            <div style="font-size: 12px; color: var(--color-text-muted); display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                                <span th:if="${st.eventName != null}"><i class="fa-solid fa-location-dot" style="color: var(--color-primary);"></i> <span th:text="${st.eventName}">Sự kiện</span></span>
+                                                <span th:if="${st.eventStartAt != null}"><i class="fa-regular fa-clock"></i> <span th:text="${#temporals.format(st.eventStartAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời gian</span></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Price -->
+                                        <div style="text-align: right; flex-shrink: 0;">
+                                            <div style="font-size: 16px; font-weight: 800; color: var(--color-primary);" th:text="${st.salePrice != null ? #numbers.formatDecimal(st.salePrice, 0, 'POINT', 0, 'POINT') + ' ₫' : 'Liên hệ'}">0 ₫</div>
+                                            <div th:if="${st.originalPrice != null and st.originalPrice.compareTo(st.salePrice) > 0}" style="font-size: 11px; color: var(--color-text-muted); text-decoration: line-through;" th:text="${#numbers.formatDecimal(st.originalPrice, 0, 'POINT', 0, 'POINT') + ' ₫'}">0 ₫</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Action bar -->
+                                    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 8px; border-top: 1px dashed #f1f5f9; padding-top: 8px;">
+                                        <button type="button" class="btn btn-outline btn-sm"
+                                                th:data-ticket-id="${st.ticketId}"
+                                                onclick="unstarFromProfile(this)"
+                                                title="Bỏ theo dõi vé này"
+                                                style="color: var(--color-text-muted); border-color: var(--color-border); font-size: 12px; padding: 4px 10px; min-height: 30px;">
+                                            <i class="fa-solid fa-star" style="color: #f59e0b;"></i> Bỏ lưu
+                                        </button>
+                                        <a th:href="@{'/tickets/' + ${st.ticketId}}" class="btn btn-primary btn-sm" style="font-size: 12px; padding: 4px 12px; min-height: 30px;">
+                                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Xem chi tiết
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div> <!-- End profile-main -->
             </div> <!-- End profile-layout-container -->
 
@@ -759,6 +861,67 @@
                             console.error("Lỗi khi tải danh sách vé:", err);
                         });
                 });
+
+                // Xử lý bỏ theo dõi vé từ trang Hồ sơ cá nhân với Optimistic UI & animation mượt mà
+                function unstarFromProfile(btn) {
+                    const ticketId = btn.getAttribute('data-ticket-id');
+                    if (!ticketId) return;
+
+                    const card = document.getElementById('starred-card-' + ticketId);
+                    if (card) {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateX(24px)';
+                        setTimeout(() => {
+                            card.style.maxHeight = '0px';
+                            card.style.padding = '0px';
+                            card.style.margin = '0px';
+                            card.style.border = 'none';
+                            card.style.overflow = 'hidden';
+                            setTimeout(() => {
+                                card.remove();
+                                updateStarredCounters();
+                            }, 300);
+                        }, 150);
+                    }
+
+                    const csrfToken = document.getElementById('profileCsrfToken')?.value;
+                    const csrfHeader = document.getElementById('profileCsrfHeader')?.value || 'X-CSRF-TOKEN';
+
+                    fetch('/api/tickets/' + ticketId + '/star', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            [csrfHeader]: csrfToken || '',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) {
+                            console.warn("Lỗi khi hủy lưu vé:", data.message);
+                            location.reload();
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Lỗi mạng khi hủy lưu vé:", err);
+                        location.reload();
+                    });
+                }
+
+                function updateStarredCounters() {
+                    const container = document.getElementById('starredTicketsContainer');
+                    const remaining = container ? container.querySelectorAll('.starred-ticket-card').length : 0;
+                    
+                    const badge = document.getElementById('starredCountBadge');
+                    if (badge) badge.textContent = remaining + ' vé đã lưu';
+                    
+                    const sidebarBadge = document.getElementById('sidebarStarredBadge');
+                    if (sidebarBadge) sidebarBadge.textContent = remaining;
+
+                    if (remaining === 0) {
+                        location.reload();
+                    }
+                }
             </script>
         </content>
     </div>

@@ -13,6 +13,7 @@ import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.ticket.web.dto.TicketSummaryResponse;
+import com.yourapp.ticketpass.user.application.StarredTicketUseCase;
 import com.yourapp.ticketpass.user.domain.UserRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -53,6 +54,9 @@ class TicketControllerTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private StarredTicketUseCase starredTicketUseCase;
+
     @InjectMocks
     private TicketController controller;
 
@@ -85,7 +89,7 @@ class TicketControllerTest {
             when(ticketRepository.searchListed(eq(null), eq(null), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list(null, null, 0, null, null, model);
+            String view = controller.list(null, null, 0, null, null, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("selectedType")).isNull();
@@ -113,7 +117,7 @@ class TicketControllerTest {
             when(ticketRepository.searchListed(eq("Chông Gai"), eq(null), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list(null, "  Chông Gai  ", 0, null, null, model);
+            String view = controller.list(null, "  Chông Gai  ", 0, null, null, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("keyword")).isEqualTo("Chông Gai");
@@ -133,7 +137,7 @@ class TicketControllerTest {
             when(ticketRepository.searchListed(eq("Đà Lạt"), eq(TicketType.BUS), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list("BUS", "Đà Lạt", 0, null, null, model);
+            String view = controller.list("BUS", "Đà Lạt", 0, null, null, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("selectedType")).isEqualTo("BUS");
@@ -153,7 +157,7 @@ class TicketControllerTest {
             when(ticketRepository.searchListed(eq("Hà Nội"), eq(null), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list("UNKNOWN_TYPE", "Hà Nội", 0, null, null, model);
+            String view = controller.list("UNKNOWN_TYPE", "Hà Nội", 0, null, null, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("selectedType")).isNull();
@@ -172,7 +176,7 @@ class TicketControllerTest {
             when(ticketRepository.searchListed(eq("Vé không tồn tại"), eq(null), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list(null, "Vé không tồn tại", 0, null, null, model);
+            String view = controller.list(null, "Vé không tồn tại", 0, null, null, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("keyword")).isEqualTo("Vé không tồn tại");
@@ -190,7 +194,7 @@ class TicketControllerTest {
             when(ticketRepository.searchListed(eq(null), eq(null), any(Pageable.class))).thenReturn(page);
 
             Model model = new ConcurrentModel();
-            String view = controller.list(null, null, 1, null, 8, model);
+            String view = controller.list(null, null, 1, null, 8, null, model);
 
             assertThat(view).isEqualTo("ticket/list");
             assertThat(model.getAttribute("currentPage")).isEqualTo(1);

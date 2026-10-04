@@ -198,6 +198,53 @@
                         grid-template-columns: 1fr;
                     }
                 }
+
+                /* Nút Đánh sao tròn tinh tế trong Box Giá (Scale linh hoạt, Spring Animation) */
+                .btn-star-round {
+                    width: 38px;
+                    height: 38px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: #ffffff;
+                    border: 1px solid var(--color-border);
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+                    color: #94a3b8;
+                    cursor: pointer;
+                    outline: none;
+                    padding: 0;
+                    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                .btn-star-round:hover {
+                    transform: scale(1.08);
+                    border-color: #cbd5e1;
+                    color: #f59e0b;
+                    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+                }
+
+                .btn-star-round:active {
+                    transform: scale(0.92);
+                }
+
+                .btn-star-round.active {
+                    background: #fffbeb;
+                    border-color: #fde68a;
+                    color: #f59e0b;
+                    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+                }
+
+                .btn-star-round.active i {
+                    animation: starSpringPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+
+                @keyframes starSpringPop {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.35) rotate(12deg); }
+                    100% { transform: scale(1) rotate(0deg); }
+                }
             </style>
 
             <!-- Breadcrumb Navigation -->
@@ -377,26 +424,47 @@
                 <div class="sidebar-column">
                     <!-- Pricing & Action Box -->
                     <div class="sidebar-box">
-                        <div class="price-container">
-                            <div
-                                style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">
-                                Giá Chuyển Nhượng
+                        <!-- CSRF Token Inputs for AJAX -->
+                        <input type="hidden" id="detailCsrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <input type="hidden" id="detailCsrfHeader" th:value="${_csrf.headerName}" />
+
+                        <!-- Price Container với Flexbox 2 cột: Giá bên trái, Nút sao ở góc trên bên phải (co giãn linh hoạt) -->
+                        <div class="price-container" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                            <div style="flex: 1; min-width: 0;">
+                                <div
+                                    style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">
+                                    Giá Chuyển Nhượng
+                                </div>
+                                <div class="price-sale-row">
+                                    <span class="price-sale"
+                                        th:text="${ticket.salePrice != null ? #numbers.formatDecimal(ticket.salePrice, 0, 'POINT', 0, 'POINT') + ' ₫' : 'Liên hệ'}">
+                                        0 ₫
+                                    </span>
+                                    <span class="price-original"
+                                        th:if="${ticket.originalPrice != null and ticket.originalPrice.compareTo(ticket.salePrice) > 0}"
+                                        th:text="${#numbers.formatDecimal(ticket.originalPrice, 0, 'POINT', 0, 'POINT') + ' ₫'}">
+                                        0 ₫
+                                    </span>
+                                </div>
+                                <div th:if="${ticket.originalPrice != null and ticket.originalPrice.compareTo(ticket.salePrice) > 0}"
+                                    class="price-save-badge">
+                                    Tiết kiệm so với giá gốc
+                                </div>
                             </div>
-                            <div class="price-sale-row">
-                                <span class="price-sale"
-                                    th:text="${ticket.salePrice != null ? #numbers.formatDecimal(ticket.salePrice, 0, 'POINT', 0, 'POINT') + ' ₫' : 'Liên hệ'}">
-                                    0 ₫
-                                </span>
-                                <span class="price-original"
-                                    th:if="${ticket.originalPrice != null and ticket.originalPrice.compareTo(ticket.salePrice) > 0}"
-                                    th:text="${#numbers.formatDecimal(ticket.originalPrice, 0, 'POINT', 0, 'POINT') + ' ₫'}">
-                                    0 ₫
-                                </span>
-                            </div>
-                            <div th:if="${ticket.originalPrice != null and ticket.originalPrice.compareTo(ticket.salePrice) > 0}"
-                                class="price-save-badge">
-                                Tiết kiệm so với giá gốc
-                            </div>
+
+                            <!-- Nút sao tròn tinh tế (38x38px) tự căn góc trên bên phải, scale mượt mà -->
+                            <th:block sec:authorize="isAuthenticated()">
+                                <button type="button"
+                                        class="btn-star-round"
+                                        id="btnDetailStar"
+                                        th:classappend="${isStarred} ? 'active' : ''"
+                                        th:data-ticket-id="${ticket.id}"
+                                        th:title="${isStarred} ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi'"
+                                        onclick="toggleStarFromDetail(this)"
+                                        aria-label="Lưu vé">
+                                    <i class="fa-solid fa-star"></i>
+                                </button>
+                            </th:block>
                         </div>
 
                         <!-- Action Buttons based on User Role & Ticket State -->
@@ -501,6 +569,45 @@
                     </div>
                 </div>
             </div>
+
+            <!-- JavaScript Toggle Sao vé mượt mà (Optimistic UI) -->
+            <script>
+                function toggleStarFromDetail(btn) {
+                    const ticketId = btn.getAttribute('data-ticket-id');
+                    if (!ticketId) return;
+
+                    // Optimistic UI: toggle class & title ngay lập tức
+                    const isCurrentlyActive = btn.classList.contains('active');
+                    const nextState = !isCurrentlyActive;
+                    btn.classList.toggle('active', nextState);
+                    btn.setAttribute('title', nextState ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+
+                    const csrfToken = document.getElementById('detailCsrfToken')?.value;
+                    const csrfHeader = document.getElementById('detailCsrfHeader')?.value || 'X-CSRF-TOKEN';
+
+                    fetch('/api/tickets/' + ticketId + '/star', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            [csrfHeader]: csrfToken || '',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) {
+                            btn.classList.toggle('active', isCurrentlyActive);
+                            btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+                            alert(data.message || 'Không thể lưu vé');
+                        }
+                    })
+                    .catch(err => {
+                        btn.classList.toggle('active', isCurrentlyActive);
+                        btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+                        console.error("Lỗi khi toggle sao:", err);
+                    });
+                }
+            </script>
         </content>
     </div>
 </body>

@@ -15,6 +15,7 @@ import com.yourapp.ticketpass.reputation.application.UpdateReputationUseCase;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.user.application.RegisterUserUseCase;
+import com.yourapp.ticketpass.user.application.StarredTicketUseCase;
 import com.yourapp.ticketpass.user.application.UserProfileService;
 import com.yourapp.ticketpass.user.application.UserQueryService;
 import com.yourapp.ticketpass.user.domain.User;
@@ -68,6 +69,9 @@ class UserControllerTest {
 
     @Mock
     private UpdateReputationUseCase updateReputationUseCase;
+
+    @Mock
+    private StarredTicketUseCase starredTicketUseCase;
 
     @InjectMocks
     private UserController userController;
@@ -229,6 +233,9 @@ class UserControllerTest {
             // RR-1 & RR-5: Số tài khoản ngân hàng phải được che dấu dạng ******6789
             String masked = (String) model.getAttribute("maskedBankAccount");
             assertThat(masked).isEqualTo("******6789");
+
+            assertThat(model.getAttribute("starredTickets")).isNotNull();
+            assertThat(model.getAttribute("starredCount")).isEqualTo(0);
 
             UpdateProfileRequest formReq = (UpdateProfileRequest) model.getAttribute("updateProfileRequest");
             assertThat(formReq).isNotNull();

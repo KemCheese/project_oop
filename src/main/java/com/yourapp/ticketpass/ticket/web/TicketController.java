@@ -12,6 +12,7 @@ import com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest;
 import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
 import com.yourapp.ticketpass.ticket.web.dto.TicketSuggestionResponse;
 import com.yourapp.ticketpass.ticket.web.dto.TicketSummaryResponse;
+import com.yourapp.ticketpass.user.application.StarredTicketUseCase;
 import com.yourapp.ticketpass.user.domain.User;
 import com.yourapp.ticketpass.user.domain.UserRepository;
 import com.yourapp.ticketpass.user.web.dto.UserSummaryResponse;
@@ -75,6 +76,8 @@ public class TicketController {
 
     private final UserRepository userRepository;
 
+    private final StarredTicketUseCase starredTicketUseCase;
+
     /**
      * Lấy danh sách loại vé khả dụng (bỏ qua TRAIN bị deprecated).
      */
@@ -96,6 +99,7 @@ public class TicketController {
                        @RequestParam(defaultValue = "0") int page,
                        @RequestParam(required = false) Integer size,
                        @CookieValue(name = "tp_page_size", required = false) Integer cookiePageSize,
+                       Principal principal,
                        Model model) {
         TicketType type = null;
         if (ticketType != null && !ticketType.isBlank()) {
@@ -153,6 +157,12 @@ public class TicketController {
         model.addAttribute("pageNumbers", pageNumbers);
         model.addAttribute("startItem", startItem);
         model.addAttribute("endItem", endItem);
+
+        if (principal != null) {
+            Long currentUserId = resolveUserId(principal);
+            model.addAttribute("starredTicketIds", starredTicketUseCase.getStarredTicketIds(currentUserId));
+        }
+
         return "ticket/list";
     }
 
@@ -228,6 +238,7 @@ public class TicketController {
             model.addAttribute("isSeller", ticket.getSellerId().equals(currentUserId));
             model.addAttribute("isBuyer",
                     ticket.getBuyerId() != null && ticket.getBuyerId().equals(currentUserId));
+            model.addAttribute("isStarred", starredTicketUseCase.isStarred(currentUserId, id));
         }
 
         return "ticket/detail";
