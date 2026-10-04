@@ -23,13 +23,6 @@
     <!-- Font Awesome 6.4.0 for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Kiểm tra cờ chuyển cảnh tức thì để tránh nháy màn hình (Zero-Flicker) -->
-    <script>
-        if (sessionStorage.getItem('tp_transition_pending') === '1') {
-            document.documentElement.classList.add('tp-holding-transition');
-        }
-    </script>
-
     <style>
         /* ==========================================================================
            DESIGN SYSTEM TOKENS (Quy chuẩn thiết kế tập trung)
@@ -76,7 +69,7 @@
             --color-info-border: #bae6fd;
 
             /* Background & Surfaces */
-            --color-bg: #f8fafc;
+            --color-bg: #fcf9f8;
             /* Slate 50 - Nền sáng hiện đại, thanh thoát */
             --color-surface: #ffffff;
             /* Trắng thuần cho Card và Container */
@@ -311,8 +304,15 @@
         }
 
         @keyframes fadeInDropdown {
-            from { opacity: 0; transform: translateY(-4px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .suggestion-item {
@@ -863,6 +863,7 @@
         body.home-page .site-footer {
             display: none !important;
         }
+
         body.home-page .site-main {
             padding: 0 !important;
             max-width: 100% !important;
@@ -884,11 +885,10 @@
             transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        html.tp-holding-transition .cinematic-transition-overlay,
         .cinematic-transition-overlay.is-active {
-            opacity: 1 !important;
-            visibility: visible !important;
-            pointer-events: auto !important;
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
         }
 
         .cinematic-transition-backdrop {
@@ -964,9 +964,12 @@
         }
 
         @keyframes cinematicPulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(1);
             }
+
             50% {
                 transform: scale(1.035);
             }
@@ -977,6 +980,7 @@
                 opacity: 0;
                 transform: translateY(8px);
             }
+
             100% {
                 opacity: 1;
                 transform: translateY(0);
@@ -1044,11 +1048,10 @@
             <!-- Search Form -->
             <form th:action="@{/tickets}" method="get" class="nav-search-form" role="search" id="navSearchForm">
                 <i class="fa-solid fa-magnifying-glass nav-search-icon"></i>
-                <input type="text" name="keyword" th:value="${keyword}"
-                       placeholder="Tìm sự kiện, phim, tuyến xe..."
-                       class="nav-search-input" id="navSearchInput" autocomplete="off"
-                       aria-label="Tìm kiếm vé sự kiện" />
-                <input type="hidden" name="ticketType" th:if="${selectedType != null and !selectedType.isEmpty()}" th:value="${selectedType}" />
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm sự kiện, phim, tuyến xe..."
+                    class="nav-search-input" id="navSearchInput" autocomplete="off" aria-label="Tìm kiếm vé sự kiện" />
+                <input type="hidden" name="ticketType" th:if="${selectedType != null and !selectedType.isEmpty()}"
+                    th:value="${selectedType}" />
                 <button type="submit" class="nav-search-btn" aria-label="Tìm kiếm">
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
@@ -1246,15 +1249,19 @@
             const overlay = document.getElementById('cinematicTransitionOverlay');
             const progressBar = document.getElementById('cinematicProgressBar');
 
-            if (!overlay || !progressBar) return;
+            function triggerCinematicTransition(onComplete) {
+                if (!overlay || !progressBar) {
+                    if (onComplete) onComplete();
+                    return;
+                }
 
-            function runTransitionSequence(onFinish) {
+                // Reset tiến trình
+                progressBar.style.transition = 'none';
+                progressBar.style.width = '0%';
                 overlay.classList.add('is-active');
                 overlay.setAttribute('aria-hidden', 'false');
 
-                progressBar.style.transition = 'none';
-                progressBar.style.width = '0%';
-
+                // Kích hoạt animation thanh tiến trình chạy theo đúng thời gian cấu hình
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         progressBar.style.transition = `width ${TRANSITION_HOLD_MS}ms cubic-bezier(0.15, 0.6, 0.2, 1)`;
@@ -1262,36 +1269,33 @@
                     });
                 });
 
-                // Giữ ngâm đúng TRANSITION_HOLD_MS rồi mở màn mượt mà
+                // Ngâm đúng TRANSITION_HOLD_MS rồi chuyển hướng mượt mà
                 setTimeout(() => {
-                    overlay.classList.remove('is-active');
-                    overlay.setAttribute('aria-hidden', 'true');
-                    document.documentElement.classList.remove('tp-holding-transition');
-                    sessionStorage.removeItem('tp_transition_pending');
-                    if (onFinish) onFinish();
+                    if (onComplete) {
+                        onComplete();
+                    } else {
+                        overlay.classList.remove('is-active');
+                        overlay.setAttribute('aria-hidden', 'true');
+                    }
                 }, TRANSITION_HOLD_MS);
             }
 
-            // Nếu vừa chuyển từ trang trước qua có cờ ngâm chuyển cảnh:
-            if (sessionStorage.getItem('tp_transition_pending') === '1') {
-                runTransitionSequence();
-            }
-
-            // Expose hàm ra window để các nút hay script khác gọi
-            window.triggerCinematicTransition = runTransitionSequence;
+            // Expose hàm ra window để các nút hay template có thể gọi trực tiếp
+            window.triggerCinematicTransition = triggerCinematicTransition;
 
             // Kích hoạt khi submit tìm kiếm (cần reload dữ liệu mới)
-            const searchForms = [document.getElementById('navSearchForm'), document.getElementById('pageSearchForm')];
-            searchForms.forEach(form => {
-                if (form) {
-                    form.addEventListener('submit', function (e) {
-                        const input = this.querySelector('input[name="keyword"]');
-                        if (input && input.value.trim().length > 0) {
-                            sessionStorage.setItem('tp_transition_pending', '1');
-                        }
-                    });
-                }
-            });
+            const searchForm = document.getElementById('navSearchForm');
+            if (searchForm) {
+                searchForm.addEventListener('submit', function (e) {
+                    const input = this.querySelector('input[name="keyword"]');
+                    if (input && input.value.trim().length > 0) {
+                        e.preventDefault();
+                        triggerCinematicTransition(() => {
+                            searchForm.submit();
+                        });
+                    }
+                });
+            }
 
             // Bắt sự kiện click vào các liên kết có gắn data-transition="true" (như nút Khám phá vé)
             document.addEventListener('click', function (e) {
@@ -1300,11 +1304,9 @@
                     const targetUrl = targetLink.href;
                     if (!e.ctrlKey && !e.metaKey && !e.shiftKey && targetLink.target !== '_blank') {
                         e.preventDefault();
-                        sessionStorage.setItem('tp_transition_pending', '1');
-                        overlay.classList.add('is-active');
-                        overlay.setAttribute('aria-hidden', 'false');
-                        // Chuyển trang để trang mới tải sẵn dữ liệu và giữ ngâm đúng TRANSITION_HOLD_MS
-                        window.location.href = targetUrl;
+                        triggerCinematicTransition(() => {
+                            window.location.href = targetUrl;
+                        });
                     }
                 }
             });
