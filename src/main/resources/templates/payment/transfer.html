@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Chuyển khoản thanh toán - TicketPass</title>
+</head>
+
+<body>
+    <div th:replace="~{layout/base :: layout('Chuyển khoản thanh toán - TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .transfer-wrapper {
+                    max-width: 820px;
+                    margin: 20px auto 40px auto;
+                }
+
+                .transfer-header {
+                    text-align: center;
+                    margin-bottom: 28px;
+                }
+
+                .transfer-title {
+                    font-size: 24px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    margin-bottom: 8px;
+                }
+
+                .transfer-subtitle {
+                    font-size: 14px;
+                    color: var(--color-text-secondary);
+                }
+
+                .transfer-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    box-shadow: var(--shadow-card);
+                    overflow: hidden;
+                    display: grid;
+                    grid-template-columns: 320px 1fr;
+                }
+
+                @media (max-width: 768px) {
+                    .transfer-card {
+                        grid-template-columns: 1fr;
+                    }
+                }
+
+                .qr-column {
+                    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+                    border-right: 1px solid var(--color-border);
+                    padding: 30px 24px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }
+
+                @media (max-width: 768px) {
+                    .qr-column {
+                        border-right: none;
+                        border-bottom: 1px solid var(--color-border);
+                    }
+                }
+
+                .qr-box {
+                    background-color: #ffffff;
+                    padding: 12px;
+                    border-radius: var(--radius-md);
+                    border: 2px solid #e2e8f0;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+                    margin-bottom: 16px;
+                    width: 220px;
+                    height: 220px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                }
+
+                .qr-box img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                }
+
+                .qr-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: var(--color-primary);
+                    background-color: var(--color-primary-surface);
+                    padding: 6px 12px;
+                    border-radius: var(--radius-full);
+                    border: 1px solid var(--color-primary-border);
+                }
+
+                .info-column {
+                    padding: 30px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                }
+
+                .info-title {
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--color-brand);
+                    margin-bottom: 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .bank-detail-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    margin-bottom: 24px;
+                }
+
+                .bank-detail-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px 14px;
+                    background-color: #f8fafc;
+                    border: 1px solid #f1f5f9;
+                    border-radius: var(--radius-md);
+                }
+
+                .bank-detail-label {
+                    font-size: 13px;
+                    color: var(--color-text-secondary);
+                }
+
+                .bank-detail-value-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .bank-detail-value {
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: var(--color-brand);
+                }
+
+                .bank-detail-value.highlight {
+                    font-size: 17px;
+                    color: var(--color-accent);
+                }
+
+                .copy-btn {
+                    background: none;
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-sm);
+                    padding: 3px 8px;
+                    font-size: 11px;
+                    color: var(--color-text-secondary);
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    transition: all var(--transition-base);
+                }
+
+                .copy-btn:hover {
+                    background-color: var(--color-brand-surface);
+                    color: var(--color-brand);
+                    border-color: var(--color-border-hover);
+                }
+
+                .transfer-note-box {
+                    background-color: var(--color-warning-surface);
+                    border: 1px solid var(--color-warning-border);
+                    border-radius: var(--radius-md);
+                    padding: 12px 14px;
+                    font-size: 12px;
+                    color: #92400e;
+                    margin-bottom: 24px;
+                    line-height: 1.5;
+                }
+
+                .actions-group {
+                    display: flex;
+                    gap: 12px;
+                    margin-top: 10px;
+                }
+
+                .actions-group form {
+                    flex: 1;
+                }
+
+                .actions-group .btn {
+                    width: 100%;
+                }
+
+                .toast-copied {
+                    position: fixed;
+                    bottom: 24px;
+                    right: 24px;
+                    background: #0f172a;
+                    color: #fff;
+                    padding: 10px 18px;
+                    border-radius: var(--radius-md);
+                    font-size: 13px;
+                    font-weight: 500;
+                    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
+                    opacity: 0;
+                    transform: translateY(10px);
+                    transition: all 200ms ease;
+                    pointer-events: none;
+                    z-index: 9999;
+                }
+
+                .toast-copied.show {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            </style>
+
+            <div class="transfer-wrapper">
+                <div class="transfer-header">
+                    <span class="badge badge-warning" style="margin-bottom: 8px;">
+                        <i class="fa-solid fa-clock"></i> Đang chờ chuyển khoản
+                    </span>
+                    <h1 class="transfer-title" th:text="${type == 'escrow' ? 'Thanh toán Ký quỹ Vé #' + ticketId : 'Nộp tiền Bảo lãnh Cọc Vé #' + ticketId}">
+                        Thanh toán Chuyển khoản
+                    </h1>
+                    <p class="transfer-subtitle">
+                        Vui lòng quét mã QR hoặc chuyển khoản tới tài khoản trung gian của sàn dưới đây.
+                    </p>
+                </div>
+
+                <div class="transfer-card">
+                    <!-- Column 1: QR Code -->
+                    <div class="qr-column">
+                        <div class="qr-box">
+                            <!-- Hiển thị QR từ cấu hình -->
+                            <img id="qrImage"
+                                 th:src="${qrImageUrl ?: '/images/qr-payment.png'}"
+                                 alt="Mã QR Chuyển khoản" />
+                        </div>
+                        <span class="qr-badge">
+                            <i class="fa-solid fa-qrcode"></i> VietQR / Napas 247
+                        </span>
+                        <p style="font-size: 11px; color: var(--color-text-muted); margin-top: 10px;">
+                            Mở ứng dụng Ngân hàng bất kỳ để quét mã
+                        </p>
+                    </div>
+
+                    <!-- Column 2: Bank Transfer Details -->
+                    <div class="info-column">
+                        <div>
+                            <div class="info-title">
+                                <i class="fa-solid fa-building-columns" style="color: var(--color-primary);"></i>
+                                Thông tin tài khoản trung gian
+                            </div>
+
+                            <div class="bank-detail-list">
+                                <div class="bank-detail-item">
+                                    <span class="bank-detail-label">Ngân hàng</span>
+                                    <div class="bank-detail-value-group">
+                                        <span class="bank-detail-value" th:text="${bankName}">Vietcombank</span>
+                                    </div>
+                                </div>
+
+                                <div class="bank-detail-item">
+                                    <span class="bank-detail-label">Chủ tài khoản</span>
+                                    <div class="bank-detail-value-group">
+                                        <span class="bank-detail-value" th:text="${accountHolder}">TICKETPASS TRUNG GIAN</span>
+                                    </div>
+                                </div>
+
+                                <div class="bank-detail-item">
+                                    <span class="bank-detail-label">Số tài khoản</span>
+                                    <div class="bank-detail-value-group">
+                                        <span class="bank-detail-value" id="accountNumberVal" th:text="${accountNumber}">0123456789</span>
+                                        <button type="button" class="copy-btn" onclick="copyText('accountNumberVal')">
+                                            <i class="fa-regular fa-copy"></i> Chép
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="bank-detail-item">
+                                    <span class="bank-detail-label">Số tiền cần chuyển</span>
+                                    <div class="bank-detail-value-group">
+                                        <span class="bank-detail-value highlight"
+                                              id="amountVal"
+                                              th:text="${#numbers.formatDecimal(amount, 0, 'POINT', 0, 'POINT')} + ' ₫'">
+                                            250.000 ₫
+                                        </span>
+                                        <button type="button" class="copy-btn" onclick="copyText('amountVal')">
+                                            <i class="fa-regular fa-copy"></i> Chép
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="bank-detail-item" style="border-left: 3px solid var(--color-primary);">
+                                    <span class="bank-detail-label">Nội dung chuyển khoản</span>
+                                    <div class="bank-detail-value-group">
+                                        <span class="bank-detail-value" style="color: var(--color-primary); font-family: monospace; font-size: 15px;"
+                                              id="transferNoteVal"
+                                              th:text="${transferNote}">
+                                            TICKETPASS 1
+                                        </span>
+                                        <button type="button" class="copy-btn" onclick="copyText('transferNoteVal')">
+                                            <i class="fa-regular fa-copy"></i> Chép
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="transfer-note-box">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                <strong>Lưu ý quan trọng:</strong> Vui lòng giữ nguyên <strong>nội dung chuyển khoản</strong> để hệ thống và trung gian có thể đối soát và kích hoạt giao dịch của bạn một cách nhanh nhất.
+                            </div>
+                        </div>
+
+                        <!-- 2 nút hành động: Thanh toán thành công & Thanh toán thất bại -->
+                        <div style="background-color: var(--color-brand-surface); padding: 18px; border-radius: var(--radius-md); border: 1px dashed #cbd5e1; margin-top: 14px;">
+                            <div style="font-size: 13px; font-weight: 700; color: var(--color-brand); margin-bottom: 6px;">
+                                <i class="fa-solid fa-vial" style="color: var(--color-primary);"></i> Chọn kết quả thử nghiệm giao dịch:
+                            </div>
+                            <div style="font-size: 12px; color: var(--color-text-secondary); margin-bottom: 14px; line-height: 1.4;">
+                                Chưa cần quét QR thật: Bạn hãy bấm <strong>"Thanh toán thành công"</strong> để chuyển sang các bước tiếp theo của vé, hoặc <strong>"Thanh toán thất bại"</strong> để thử luồng báo lỗi.
+                            </div>
+                            <div class="actions-group" style="display: flex; gap: 12px;">
+                                <!-- Nút 1: Thanh toán thành công -->
+                                <form th:action="@{/payment/transfer/confirm}" method="post" style="flex: 1;">
+                                    <input type="hidden" name="ref" th:value="${ref}" />
+                                    <input type="hidden" name="type" th:value="${type}" />
+                                    <button type="submit" class="btn btn-success btn-lg" id="btnConfirmPayment" style="width: 100%; font-weight: 700;">
+                                        <i class="fa-solid fa-circle-check"></i> Thanh toán thành công
+                                    </button>
+                                </form>
+
+                                <!-- Nút 2: Thanh toán thất bại -->
+                                <form th:action="@{/payment/transfer/fail}" method="post" style="flex: 1;">
+                                    <input type="hidden" name="ref" th:value="${ref}" />
+                                    <input type="hidden" name="type" th:value="${type}" />
+                                    <button type="submit" class="btn btn-danger-outline btn-lg" id="btnCancelPayment" style="width: 100%; font-weight: 600;">
+                                        <i class="fa-solid fa-circle-xmark"></i> Thanh toán thất bại
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step Guide -->
+                <div style="margin-top: 24px; text-align: center; font-size: 13px; color: var(--color-text-muted);">
+                    <i class="fa-solid fa-shield-halved" style="color: var(--color-success); margin-right: 4px;"></i>
+                    Sau khi bạn nhấn <strong>"Đã chuyển khoản thành công"</strong>, trung gian sàn sẽ kiểm tra giao dịch và chuyển trạng thái vé sang các bước tiếp theo.
+                </div>
+            </div>
+
+            <!-- Toast notification for copy -->
+            <div id="toastCopied" class="toast-copied">Đã sao chép vào bộ nhớ tạm!</div>
+
+            <script>
+                function copyText(elementId) {
+                    const el = document.getElementById(elementId);
+                    if (el) {
+                        const text = el.innerText.trim();
+                        copyRawText(text);
+                    }
+                }
+
+                function copyRawText(text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showToast();
+                    }).catch(() => {
+                        // Fallback
+                        const input = document.createElement('input');
+                        input.value = text;
+                        document.body.appendChild(input);
+                        input.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(input);
+                        showToast();
+                    });
+                }
+
+                function showToast() {
+                    const toast = document.getElementById('toastCopied');
+                    if (toast) {
+                        toast.classList.add('show');
+                        setTimeout(() => {
+                            toast.classList.remove('show');
+                        }, 2000);
+                    }
+                }
+            </script>
+        </content>
+    </div>
+</body>
+
+</html>

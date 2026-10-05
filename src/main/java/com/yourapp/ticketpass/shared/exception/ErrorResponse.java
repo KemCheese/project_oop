@@ -12,7 +12,7 @@ import lombok.Setter;
 /**
  * Cấu trúc dữ liệu phản hồi lỗi JSON chuẩn hóa cho toàn sàn TicketPass.
  *
- * <p>Được trả về khi các yêu cầu API, AJAX hoặc các webhook (ví dụ MoMo IPN) gặp lỗi,
+ * <p>Được trả về khi các yêu cầu API, AJAX hoặc các webhook callback gặp lỗi,
  * giúp các bên gọi dễ dàng phân tích nguyên nhân mà không bị nhận về mã HTML của trang web.</p>
  *
  * <p>Module sở hữu: shared.</p>

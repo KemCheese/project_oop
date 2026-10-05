@@ -7,7 +7,7 @@ import lombok.Setter;
 /**
  * Kết quả trả về cho giao diện sau khi khởi tạo một giao dịch thanh toán (ký quỹ hoặc cọc).
  *
- * <p>Giao diện dùng {@code payUrl} để chuyển hướng người dùng sang trang của cổng thanh toán,
+ * <p>Giao diện dùng {@code payUrl} để chuyển hướng người dùng sang trang QR chuyển khoản nội bộ,
  * và giữ {@code referenceId} để tra lại trạng thái giao dịch khi người dùng quay về.</p>
  *
  * <p>Module: payment</p>
@@ -22,7 +22,7 @@ public class PaymentInitResponse {
     /** {@code true} nếu khởi tạo giao dịch thành công. */
     private boolean success;
 
-    /** Đường dẫn trang thanh toán của cổng để chuyển hướng người dùng. */
+    /** Đường dẫn trang chuyển khoản QR nội bộ để chuyển hướng người dùng. */
     private String payUrl;
 
     /** Mã tham chiếu nội bộ của giao dịch vừa tạo. */

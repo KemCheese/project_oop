@@ -63,8 +63,6 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/files/**").permitAll()
                         // Console H2 chỉ dùng khi phát triển
                         .requestMatchers("/h2-console/**").permitAll()
-                        // Callback MoMo server-to-server và redirect kết quả thanh toán trên trình duyệt của người dùng
-                        .requestMatchers("/payment/momo/ipn", "/payment/momo/return").permitAll()
                         // Khu vực quản trị
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         // Còn lại bắt buộc đăng nhập
@@ -85,9 +83,9 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin())
                 )
-                // Miễn CSRF cho H2 Console (dev tool) và MoMo IPN (server-to-server callback)
+                // Miễn CSRF cho H2 Console (dev tool)
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/h2-console/**", "/payment/momo/ipn")
+                        .ignoringRequestMatchers("/h2-console/**")
                 )
                 // Ép nạp sớm CSRF Token và khởi tạo Session trước khi Thymeleaf render HTML lớn vượt buffer Tomcat
                 .addFilterAfter(new CsrfDeferredTokenInitFilter(), CsrfFilter.class);

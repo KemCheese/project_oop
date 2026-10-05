@@ -5,45 +5,39 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Cấu hình kết nối tới cổng thanh toán MoMo, đọc từ tiền tố {@code app.payment.momo}
+ * Cấu hình thông tin chuyển khoản trung gian, đọc từ tiền tố {@code app.payment.manual-transfer}
  * trong {@code application.properties}.
  *
- * <p>Toàn bộ thông số môi trường thử nghiệm (endpoint, khoá đối tác, URL trả về, URL nhận
- * thông báo IPN) được tách ra file cấu hình để không hardcode khoá bí mật trong mã nguồn
- * và để đổi sang môi trường thật chỉ bằng cách thay giá trị.</p>
+ * <p>Hệ thống sử dụng cơ chế chuyển khoản thủ công qua QR: người dùng quét mã QR của tài khoản
+ * trung gian (sàn), chuyển khoản qua ngân hàng, sau đó nhấn nút xác nhận trên giao diện.
+ * Admin sẽ kiểm tra thủ công khoản chuyển khoản thật sự đã vào tài khoản hay chưa.</p>
  *
  * <p>Lớp này được đăng ký qua {@code @ConfigurationPropertiesScan} khai báo ở
  * {@code TicketPassApplication}.</p>
  *
  * <p>Module sở hữu: shared.</p>
- * <p>Chủ sở hữu theo phân công: Người C.</p>
+ * <p>Chủ sở hữu theo phân công: Người B.</p>
  */
 @Getter
 @Setter
-@ConfigurationProperties(prefix = "app.payment.momo")
+@ConfigurationProperties(prefix = "app.payment.manual-transfer")
 public class PaymentGatewayConfig {
 
-    /** Tên định danh cổng thanh toán, ví dụ {@code MOMO_TEST}. */
+    /** Tên định danh cổng thanh toán, ví dụ {@code MANUAL_TRANSFER}. */
     private String gatewayName;
 
-    /** Địa chỉ API tạo yêu cầu thanh toán. */
-    private String endpoint;
+    /** Tên chủ tài khoản trung gian nhận tiền (hiển thị trên trang QR). */
+    private String accountHolder;
 
-    /** Mã đối tác do MoMo cấp. */
-    private String partnerCode;
+    /** Số tài khoản trung gian nhận tiền. */
+    private String accountNumber;
 
-    /** Khoá truy cập do MoMo cấp. */
-    private String accessKey;
+    /** Tên ngân hàng của tài khoản trung gian. */
+    private String bankName;
 
-    /** Khoá bí mật dùng để ký chữ ký HMAC của yêu cầu. Không được commit giá trị thật. */
-    private String secretKey;
+    /** Đường dẫn tới ảnh QR code chuyển khoản (tương đối hoặc tuyệt đối). */
+    private String qrImageUrl;
 
-    /** URL trình duyệt người dùng được chuyển về sau khi thanh toán xong. */
-    private String returnUrl;
-
-    /** URL để MoMo gọi ngược lại máy chủ báo kết quả (IPN). */
-    private String ipnUrl;
-
-    /** Thời gian chờ tối đa khi gọi API cổng thanh toán, tính bằng giây. */
-    private int requestTimeoutSeconds;
+    /** Tiền tố nội dung chuyển khoản, hệ thống sẽ ghép thêm mã giao dịch vào sau. */
+    private String transferNotePrefix;
 }

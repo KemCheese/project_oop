@@ -499,14 +499,55 @@
 
                                 <!-- When viewing as potential Buyer -->
                                 <div th:unless="${isSeller}">
-                                    <a th:href="@{/payment/momo/return(orderId='DEMO-ESCROW-' + ${ticket.id}, amount=${ticket.salePrice}, resultCode='0')}"
-                                        class="btn btn-primary" style="width: 100%;">
-                                        <i class="fa-solid fa-wallet"></i> Thanh toán Ký quỹ Escrow (MoMo)
-                                    </a>
+                                    <form th:action="@{/payment/escrow/buy}" method="post">
+                                        <input type="hidden" name="ticketId" th:value="${ticket.id}" />
+                                        <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                            <i class="fa-solid fa-qrcode"></i> Thanh toán Chuyển khoản QR (Ký quỹ Escrow)
+                                        </button>
+                                    </form>
                                     <p
                                         style="font-size: 12px; color: var(--color-text-muted); text-align: center; margin-top: 8px;">
-                                        Tiền được sàn giữ an toàn, chỉ giải ngân sau khi bạn dùng vé thành công.
+                                        Tiền được sàn giữ an toàn qua tài khoản trung gian, chỉ giải ngân sau khi bạn nhận vé thành công.
                                     </p>
+                                </div>
+                            </div>
+
+                            <!-- Ticket is PAYMENT_ESCROWED and current user is Seller (Needs to lock deposit) -->
+                            <div th:if="${ticket.status != null and ticket.status.name() == 'PAYMENT_ESCROWED' and isSeller}">
+                                <div class="alert alert-warning" style="margin-bottom: 12px; font-size: 13px;">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> Người mua đã nạp tiền ký quỹ thành công. Vui lòng đóng cọc 50% bằng QR để tiếp tục bàn giao vé.
+                                </div>
+                                <form th:action="@{/payment/deposit/lock}" method="post">
+                                    <input type="hidden" name="ticketId" th:value="${ticket.id}" />
+                                    <button type="submit" class="btn btn-warning" style="width: 100%;">
+                                        <i class="fa-solid fa-lock"></i> Đóng cọc 50% bằng Chuyển khoản QR
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Ticket is PAYMENT_ESCROWED and current user is Buyer -->
+                            <div th:if="${ticket.status != null and ticket.status.name() == 'PAYMENT_ESCROWED' and isBuyer}">
+                                <div class="alert alert-info" style="margin-bottom: 12px; font-size: 13px;">
+                                    <i class="fa-solid fa-circle-check"></i> Bạn đã nạp tiền ký quỹ thành công. Đang chờ người bán đóng cọc bảo lãnh và chuyển giao vé cho bạn.
+                                </div>
+                            </div>
+
+                            <!-- Ticket is DEPOSIT_LOCKED and current user is Seller (Needs to transfer ticket) -->
+                            <div th:if="${ticket.status != null and ticket.status.name() == 'DEPOSIT_LOCKED' and isSeller}">
+                                <div class="alert alert-success" style="margin-bottom: 12px; font-size: 13px;">
+                                    <i class="fa-solid fa-circle-check"></i> Đã hoàn tất khóa cọc 50%. Hãy gửi vé cho người mua theo hướng dẫn, sau đó xác nhận bàn giao.
+                                </div>
+                                <form th:action="@{/tickets/{id}/transfer(id=${ticket.id})}" method="post">
+                                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                        <i class="fa-solid fa-paper-plane"></i> Xác nhận đã bàn giao vé cho người mua
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Ticket is DEPOSIT_LOCKED and current user is Buyer -->
+                            <div th:if="${ticket.status != null and ticket.status.name() == 'DEPOSIT_LOCKED' and isBuyer}">
+                                <div class="alert alert-info" style="margin-bottom: 12px; font-size: 13px;">
+                                    <i class="fa-solid fa-hourglass-half"></i> Người bán đã khóa cọc thành công và đang chuẩn bị bàn giao vé cho bạn.
                                 </div>
                             </div>
 

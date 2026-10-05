@@ -24,7 +24,7 @@ import java.util.Map;
 public interface PaymentGateway {
 
     /**
-     * Tên định danh của cổng thanh toán, ví dụ {@code "MOMO_TEST"}.
+     * Tên định danh của cổng thanh toán, ví dụ {@code "MANUAL_TRANSFER"}.
      *
      * <p>Giá trị này được lưu vào {@code EscrowTransaction.gatewayName} và
      * {@code Deposit.gatewayName} để biết giao dịch đã đi qua cổng nào.</p>

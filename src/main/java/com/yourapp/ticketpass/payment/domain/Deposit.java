@@ -84,7 +84,7 @@ public class Deposit {
     @Column(name = "buyer_compensation", precision = 15, scale = 2)
     private BigDecimal buyerCompensation;
 
-    /** Tên cổng thanh toán đã xử lý việc khoá cọc, ví dụ {@code "MOMO_TEST"}. */
+    /** Tên cổng thanh toán đã xử lý việc khoá cọc, ví dụ {@code "MANUAL_TRANSFER"}. */
     @Column(name = "gateway_name", length = 60)
     private String gatewayName;
 

@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
  *
  * <p><b>Hành động khi quá hạn:</b></p>
  * <ol>
- *   <li>Kích hoạt hoàn trả 100% tiền vé + 100% phí sàn về tài khoản MoMo của Người mua
+ *   <li>Kích hoạt hoàn trả 100% tiền vé + 100% phí sàn về tài khoản của Người mua
  *       qua {@link RefundBuyerUseCase#refundFull}. Buyer không chịu bất kỳ chi phí nào.</li>
  *   <li>Chuyển trạng thái vé sang {@link TicketStatus#CANCELLED} qua {@link TicketStateMachineService}.
  *       Tuyệt đối không để vé tự động quay lại {@code LISTED} (AC-01.3).</li>

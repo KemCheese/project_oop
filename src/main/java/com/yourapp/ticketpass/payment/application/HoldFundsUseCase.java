@@ -213,7 +213,7 @@ public class HoldFundsUseCase {
         }
 
         if (tx == null && callbackParams != null) {
-            // MoMo trả orderId = referenceId = escrow.id
+            // Callback nhận orderId = referenceId = escrow.id
             String orderId = callbackParams.getOrDefault("orderId",
                     callbackParams.getOrDefault("referenceId", null));
             if (orderId != null && !orderId.isBlank()) {
