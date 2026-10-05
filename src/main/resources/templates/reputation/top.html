@@ -96,13 +96,15 @@
                         Top <span th:text="${limit ?: 10}">10</span> Người Bán Uy Tín Nhất Sàn
                     </h1>
                     <p style="font-size: 14px; color: var(--color-text-muted); max-width: 540px; margin: 0 auto;">
-                        Cộng đồng người bán trung thực được hệ thống ghi nhận và xếp hạng dựa trên điểm uy tín và số giao dịch thành công.
+                        Cộng đồng người bán trung thực được hệ thống ghi nhận và xếp hạng dựa trên điểm uy tín và số
+                        giao dịch thành công.
                     </p>
                 </div>
 
                 <!-- Leaderboard Card -->
                 <div class="leaderboard-card">
-                    <div th:if="${#lists.isEmpty(sellers)}" class="empty-state" style="margin: 0; border: none; border-radius: 0;">
+                    <div th:if="${#lists.isEmpty(sellers)}" class="empty-state"
+                        style="margin: 0; border: none; border-radius: 0;">
                         <div class="empty-icon">
                             <i class="fa-solid fa-award"></i>
                         </div>
@@ -136,7 +138,8 @@
                                         <span th:if="${iterStat.count == 3}" class="rank-badge rank-3">
                                             3
                                         </span>
-                                        <span th:if="${iterStat.count > 3}" class="rank-other" th:text="${iterStat.count}">
+                                        <span th:if="${iterStat.count > 3}" class="rank-other"
+                                            th:text="${iterStat.count}">
                                             4
                                         </span>
                                     </td>
@@ -144,14 +147,15 @@
                                     <!-- Seller ID -->
                                     <td>
                                         <div style="display: flex; align-items: center; gap: 10px;">
-                                            <div style="width: 36px; height: 36px; border-radius: 50%; background-color: var(--color-brand-surface); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--color-brand); font-size: 13px;">
+                                            <div
+                                                style="width: 36px; height: 36px; border-radius: 50%; background-color: var(--color-brand-surface); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--color-brand); font-size: 13px;">
                                                 <i class="fa-solid fa-user"></i>
                                             </div>
                                             <div>
                                                 <a th:href="@{/reputation/{id}(id=${seller.userId})}"
-                                                   style="font-weight: 700; color: var(--color-brand);"
-                                                   th:text="'Thành viên #' + ${seller.userId}">
-                                                    Thành viên #1
+                                                    style="font-weight: 700; color: var(--color-brand);">
+                                                    <span th:text="${seller.fullName}">Thành viên #1</span>
+                                                    <span style="font-size: 13px; color: var(--color-text-muted); font-weight: normal; margin-left: 4px;" th:text="'(#' + ${seller.userId} + ')'">(#1)</span>
                                                 </a>
                                                 <div style="font-size: 12px; color: var(--color-text-muted);">
                                                     Người bán tích cực
@@ -163,20 +167,22 @@
                                     <!-- Score -->
                                     <td style="text-align: center;">
                                         <span style="font-size: 16px; font-weight: 800; color: var(--color-success);"
-                                              th:text="${seller.score != null ? seller.score.intValue() : 100}">
+                                            th:text="${seller.score != null ? seller.score.intValue() : 100}">
                                             100
                                         </span>
                                         <span style="font-size: 11px; color: var(--color-text-muted);">/100</span>
                                     </td>
 
                                     <!-- Successful Transactions -->
-                                    <td style="text-align: center; font-weight: 600;" th:text="${seller.successfulTransactions ?: 0}">
+                                    <td style="text-align: center; font-weight: 600;"
+                                        th:text="${seller.successfulTransactions ?: 0}">
                                         0
                                     </td>
 
                                     <!-- Link to Detail -->
                                     <td style="text-align: right;">
-                                        <a th:href="@{/reputation/{id}(id=${seller.userId})}" class="btn btn-outline btn-sm">
+                                        <a th:href="@{/reputation/{id}(id=${seller.userId})}"
+                                            class="btn btn-outline btn-sm">
                                             Xem chi tiết
                                         </a>
                                     </td>
