@@ -1,5 +1,6 @@
 package com.yourapp.ticketpass.dispute.web.admin;
 
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.List;
@@ -16,15 +17,18 @@ import com.yourapp.ticketpass.dispute.domain.Dispute;
 import com.yourapp.ticketpass.dispute.domain.DisputeEvidence;
 import com.yourapp.ticketpass.dispute.domain.DisputeEvidenceRepository;
 import com.yourapp.ticketpass.dispute.domain.DisputeRepository;
+import com.yourapp.ticketpass.dispute.web.dto.DisputeDepositDto;
+import com.yourapp.ticketpass.dispute.web.dto.DisputeEscrowDto;
 import com.yourapp.ticketpass.dispute.web.dto.DisputeEvidenceResponse;
 import com.yourapp.ticketpass.dispute.web.dto.DisputeResponse;
 import com.yourapp.ticketpass.dispute.web.dto.ReviewDisputeRequest;
+import com.yourapp.ticketpass.payment.domain.Deposit;
 import com.yourapp.ticketpass.payment.domain.DepositRepository;
+import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
 import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
-import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.user.application.UserQueryService;
 import com.yourapp.ticketpass.user.domain.User;
 
@@ -72,9 +76,6 @@ public class DisputeReviewController {
 
     /** Cổng lưu trữ tệp để dựng publicUrl cho bằng chứng. */
     private final FileStorageService fileStorageService;
-
-    /** Cổng truy cập vé để hiển thị thông tin vé cho admin. */
-    private final TicketRepository ticketRepository;
 
     /** Cổng truy cập giao dịch ký quỹ để admin thấy số tiền đang giữ. */
     private final EscrowTransactionRepository escrowTransactionRepository;
@@ -124,24 +125,39 @@ public class DisputeReviewController {
         List<DisputeEvidence> evidences = disputeEvidenceRepository.findByDisputeId(id);
         DisputeResponse disputeResponse = mapToResponse(dispute, evidences);
 
-        ticketRepository.findById(dispute.getTicketId())
-                .ifPresent(ticket -> model.addAttribute("ticket", ticket));
+        // Nạp tóm tắt thông tin Escrow vào DTO an toàn cho View (tránh rò rỉ JPA Entity)
+        var escrowOpt = (dispute.getEscrowTransactionId() != null)
+                ? escrowTransactionRepository.findById(dispute.getEscrowTransactionId())
+                : escrowTransactionRepository.findByTicketId(dispute.getTicketId());
 
-        if (dispute.getEscrowTransactionId() != null) {
-            escrowTransactionRepository.findById(dispute.getEscrowTransactionId())
-                    .ifPresent(escrow -> model.addAttribute("escrow", escrow));
-        } else {
-            escrowTransactionRepository.findByTicketId(dispute.getTicketId())
-                    .ifPresent(escrow -> model.addAttribute("escrow", escrow));
-        }
+        escrowOpt.ifPresent(escrow -> {
+            BigDecimal displayAmount = (escrow.getAmountHeld() != null && escrow.getAmountHeld().compareTo(BigDecimal.ZERO) > 0)
+                    ? escrow.getAmountHeld()
+                    : escrow.getSalePrice();
+            DisputeEscrowDto escrowDto = DisputeEscrowDto.builder()
+                    .id(escrow.getId())
+                    .amount(displayAmount)
+                    .salePrice(escrow.getSalePrice())
+                    .status(escrow.getStatus())
+                    .gatewayName(escrow.getGatewayName())
+                    .build();
+            model.addAttribute("escrow", escrowDto);
+        });
 
-        if (dispute.getDepositId() != null) {
-            depositRepository.findById(dispute.getDepositId())
-                    .ifPresent(deposit -> model.addAttribute("deposit", deposit));
-        } else {
-            depositRepository.findByTicketId(dispute.getTicketId())
-                    .ifPresent(deposit -> model.addAttribute("deposit", deposit));
-        }
+        // Nạp tóm tắt thông tin Khoản cọc vào DTO an toàn cho View (tránh rò rỉ JPA Entity)
+        var depositOpt = (dispute.getDepositId() != null)
+                ? depositRepository.findById(dispute.getDepositId())
+                : depositRepository.findByTicketId(dispute.getTicketId());
+
+        depositOpt.ifPresent(deposit -> {
+            DisputeDepositDto depositDto = DisputeDepositDto.builder()
+                    .id(deposit.getId())
+                    .depositAmount(deposit.getAmount())
+                    .status(deposit.getStatus())
+                    .depositPercent(deposit.getDepositPercent())
+                    .build();
+            model.addAttribute("deposit", depositDto);
+        });
 
         model.addAttribute("dispute", disputeResponse);
         model.addAttribute("reviewRequest", new ReviewDisputeRequest());

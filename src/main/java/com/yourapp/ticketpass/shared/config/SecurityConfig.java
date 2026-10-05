@@ -63,8 +63,8 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/files/**").permitAll()
                         // Console H2 chỉ dùng khi phát triển
                         .requestMatchers("/h2-console/**").permitAll()
-                        // Callback MoMo server-to-server: không có session đăng nhập
-                        .requestMatchers("/payment/momo/ipn").permitAll()
+                        // Callback MoMo server-to-server và redirect kết quả thanh toán trên trình duyệt của người dùng
+                        .requestMatchers("/payment/momo/ipn", "/payment/momo/return").permitAll()
                         // Khu vực quản trị
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         // Còn lại bắt buộc đăng nhập

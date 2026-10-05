@@ -57,6 +57,20 @@ public interface TicketJpaRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByStatusAndDisputeWindowClosesAtBefore(TicketStatus status, Instant before);
 
     /**
+     * @param status trang thai can quet (PAYMENT_ESCROWED)
+     * @param before moc thoi gian so sanh voi escrowedAt (now - 30m)
+     * @return danh sach ve qua han nap coc
+     */
+    List<Ticket> findByStatusAndEscrowedAtBefore(TicketStatus status, Instant before);
+
+    /**
+     * @param status trang thai can quet (TRANSFERRED)
+     * @param before moc thoi gian so sanh voi transferredAt (now - 30m)
+     * @return danh sach ve qua han xac nhan nhan ve
+     */
+    List<Ticket> findByStatusAndTransferredAtBefore(TicketStatus status, Instant before);
+
+    /**
      * Tim kiem ve dang rao ban theo trang thai, loai ve va tu khoa (ten su kien hoac tieu de).
      *
      * @param status trang thai can loc (thuong la LISTED)

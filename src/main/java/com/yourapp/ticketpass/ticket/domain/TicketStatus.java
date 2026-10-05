@@ -47,6 +47,9 @@ public enum TicketStatus {
     /** Tranh chap ket thuc: nguoi ban thang, tien escrow duoc giai ngan cho nguoi ban. */
     RESOLVED_SELLER_WINS,
 
-    /** Ve da bi huy do nguoi ban tu huy khi con o trang thai LISTED. */
-    CANCELLED
+    /** Ve da bi huy do nguoi ban tu huy khi con o trang thai LISTED hoac do timeout nap coc. */
+    CANCELLED,
+
+    /** Nguoi mua bao loi anh QR hong hoac khong xem duoc; tam dung timeout nhan ve de ky thuat/admin can thiep. */
+    TECHNICAL_ISSUE
 }

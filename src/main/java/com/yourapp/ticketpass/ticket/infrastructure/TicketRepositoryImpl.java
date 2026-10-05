@@ -91,6 +91,16 @@ public class TicketRepositoryImpl implements TicketRepository {
     }
 
     @Override
+    public List<Ticket> findOverdueDepositTickets(Instant before) {
+        return ticketJpaRepository.findByStatusAndEscrowedAtBefore(TicketStatus.PAYMENT_ESCROWED, before);
+    }
+
+    @Override
+    public List<Ticket> findOverdueDeliveryTickets(Instant before) {
+        return ticketJpaRepository.findByStatusAndTransferredAtBefore(TicketStatus.TRANSFERRED, before);
+    }
+
+    @Override
     public void deleteById(Long id) {
         ticketJpaRepository.deleteById(id);
     }

@@ -199,6 +199,22 @@ Tiền của người mua được sàn giữ trong escrow và chỉ giải ngâ
 
 Bổ sung cho hai lớp bảo vệ kinh tế, sàn còn có cơ chế **ảnh hai lớp**: ảnh công khai (thông tin vé, cho buyer xem trước khi quyết định mua) và ảnh QR ẩn (mã vé thật, chỉ mở khoá sau khi sàn đã giữ tiền trong escrow và seller đã khoá cọc). Nhờ vậy, người bán không thể lấy lại mã vé sau khi đã bán, và người mua không thấy mã vé trước khi trả tiền.
 
+### Ba cơ chế bảo vệ giao dịch then chốt (Must-Have Features)
+
+Nhằm đảm bảo giao dịch không bị tắc nghẽn và chống lừa đảo triệt để, sàn trang bị 3 cơ chế tự động hoá then chốt:
+
+1. **UC-04b — Seller Deposit Timeout (Xử lý quá hạn nạp cọc):**
+   - Khi vé ở `PAYMENT_ESCROWED`, Người bán có 30 phút để nạp cọc 50%.
+   - Nếu quá hạn 30 phút: Hệ thống tự động hoàn 100% tiền vé + 100% phí sàn cho Buyer, huỷ vé sang `CANCELLED` (gỡ khỏi sàn, cấm quay lại `LISTED`), và phạt trừ −15 điểm uy tín của Người bán (chế tài nghiêm khắc nhất để triệt tiêu hành vi bỏ rơi giao dịch).
+2. **UC-06b — Auto-Confirm Delivery & QR Technical Issue (Tự động xác nhận nhận vé):**
+   - Khi vé ở `TRANSFERRED`, Người mua có 30 phút kiểm tra vé.
+   - Nếu sau 30 phút Người mua không thao tác: Hệ thống tự động chuyển vé sang `AWAITING_USE`, ghi nhận `receivedAt = now` và bắt đầu đếm ngược cửa sổ khiếu nại (BR-09).
+   - Ngoại lệ: Nếu Người mua bấm báo lỗi ảnh QR trong 30 phút này, hệ thống lập tức đóng băng timeout và chuyển sang `TECHNICAL_ISSUE` để Admin/Kỹ thuật can thiệp, bảo vệ cọc của Người bán không bị giải ngân oan.
+3. **BR-09 Revised — Gate Dispute (Khiếu nại tại cổng soát vé):**
+   - Cửa sổ khiếu nại đóng tại mốc: `windowCloseAt = min(receivedAt + disputeWindow, eventStartAt + 30 phút)`. Mở rộng vùng đệm 30 phút sau khi sự kiện bắt đầu để xử lý trường hợp bị từ chối tại cổng soát vé.
+   - Bắt buộc nộp Video quay liên tục tại quầy/máy soát vé hoặc Biên bản từ chối vào cổng (PDF) có xác nhận của nhân viên tại địa điểm; từ chối ảnh chụp đơn thuần.
+   - Đóng băng Escrow + Cọc và cấp cho Người bán 24 giờ phản hồi bằng chứng nguồn gốc vé.
+
 ## 8. Tech stack
 
 | Thành phần | Công nghệ | Vai trò trong dự án |

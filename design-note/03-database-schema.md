@@ -62,6 +62,10 @@ Mỗi bảng thuộc về một module nhất định. Chỉ module sở hữu m
 - **Vai trò:** Lưu thông tin vé đăng bán. Đây là entity trung tâm, mọi trạng thái của giao dịch đều xoay quanh vé.
 - **Tham chiếu (ID thuần):** `seller_id`, `buyer_id`, `escrow_transaction_id`, `deposit_id`.
 - **Index quan trọng:** `qr_payload_hash` (Để check vé trùng), `status`, `dispute_window_closes_at`.
+- **Cột bổ sung mới (Flyway V4 - Must-Have Features):**
+  - `escrowed_at`: Mốc thời gian ghi nhận `PAYMENT_ESCROWED` (bắt đầu đếm hạn 30 phút nạp cọc cho Seller - UC-04b). Có index `idx_tickets_status_escrowed_at (status, escrowed_at)`.
+  - `received_at`: Mốc thời gian Buyer xác nhận nhận vé hoặc hệ thống tự động xác nhận sau 30 phút (UC-06b). Dùng làm mốc tính đóng cửa sổ khiếu nại `dispute_window_closes_at` theo BR-09 Revised. Có index `idx_tickets_status_transferred_at (status, transferred_at)`.
+- **Trạng thái mới:** `TECHNICAL_ISSUE` (đóng băng bộ đếm timeout khi Buyer báo hỏng ảnh QR).
 - **Version kiểm soát đồng thời:** Có trường `@Version` để khóa lạc quan (Optimistic Locking) tránh trường hợp 2 người cùng bấm mua 1 vé.
 
 ### 3.4. Bảng `ticket_verifications`

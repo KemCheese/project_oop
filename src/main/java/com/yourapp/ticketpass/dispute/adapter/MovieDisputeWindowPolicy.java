@@ -46,12 +46,12 @@ public class MovieDisputeWindowPolicy implements DisputeWindowPolicy {
         return window;
     }
 
+    /** Vùng đệm khiếu nại tại cổng (Gate Dispute - BR-09 Revised): 30 phút sau giờ bắt đầu sự kiện. */
+    public static final Duration GATE_DISPUTE_BUFFER = Duration.ofMinutes(30);
+
     /**
-     * Trả về thời điểm sớm hơn giữa {@code transferredAt + window} và {@code eventStartAt}.
-     *
-     * <p>Trường hợp biên: nếu {@code eventStartAt} bằng hoặc trước {@code windowEnd}
-     * (kể cả khi {@code eventStartAt <= transferredAt}) thì trả về {@code eventStartAt},
-     * tức là cửa sổ đóng ngay lập tức.</p>
+     * Trả về thời điểm sớm hơn giữa {@code transferredAt + window} và {@code eventStartAt + 30 phút}
+     * (theo quy chuẩn BR-09 Revised: mở rộng vùng đệm 30 phút tại cổng sự kiện).
      */
     @Override
     public Instant computeWindowClose(Instant transferredAt, Instant eventStartAt) {
@@ -59,7 +59,8 @@ public class MovieDisputeWindowPolicy implements DisputeWindowPolicy {
         if (eventStartAt == null) {
             return windowEnd;
         }
-        return windowEnd.isBefore(eventStartAt) ? windowEnd : eventStartAt;
+        Instant gateDeadline = eventStartAt.plus(GATE_DISPUTE_BUFFER);
+        return windowEnd.isBefore(gateDeadline) ? windowEnd : gateDeadline;
     }
 
     /**

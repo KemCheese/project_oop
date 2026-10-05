@@ -349,6 +349,23 @@ public class TicketController {
     }
 
     /**
+     * Nguoi mua bao loi ky thuat: anh QR khong xem duoc / anh hong trong 30 phut (UC-06b).
+     *
+     * @param id id cua ve
+     * @param reason ly do loi
+     * @param principal nguoi dang dang nhap (buyer)
+     * @return chuyen huong sang trang chi tiet ve
+     */
+    @PostMapping("/{id}/technical-issue")
+    public String reportTechnicalIssue(@PathVariable Long id,
+                                       @RequestParam(defaultValue = "Ảnh QR không xem được hoặc bị hỏng") String reason,
+                                       Principal principal) {
+        Long buyerId = resolveUserId(principal);
+        transferTicketService.reportTechnicalIssue(id, buyerId, reason);
+        return "redirect:/tickets/" + id;
+    }
+
+    /**
      * Nguoi ban huy listing.
      *
      * @param id id cua ve

@@ -513,13 +513,26 @@
                             <!-- Ticket is TRANSFERRED and current user is Buyer (Lifecycle receipt confirm) -->
                             <div th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED' and isBuyer}">
                                 <div class="alert alert-warning" style="margin-bottom: 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-bell"></i> Người bán đã hoàn tất bàn giao vé cho bạn.
+                                    <i class="fa-solid fa-bell"></i> Người bán đã hoàn tất bàn giao vé. Vui lòng kiểm tra mã QR trong vòng 30 phút.
                                 </div>
-                                <form th:action="@{/tickets/{id}/received(id=${ticket.id})}" method="post">
+                                <form th:action="@{/tickets/{id}/received(id=${ticket.id})}" method="post" style="margin-bottom: 8px;">
                                     <button type="submit" class="btn btn-success" style="width: 100%;">
                                         <i class="fa-solid fa-check"></i> Xác nhận đã nhận vé &amp; Mở mã QR
                                     </button>
                                 </form>
+                                <form th:action="@{/tickets/{id}/technical-issue(id=${ticket.id})}" method="post">
+                                    <button type="submit" class="btn btn-danger-outline" style="width: 100%; font-size: 12px;"
+                                            onclick="return confirm('Bạn xác nhận ảnh QR bị hỏng hoặc không xem được? Hệ thống sẽ đóng băng timeout để Admin hỗ trợ kỹ thuật.');">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Báo lỗi ảnh QR không xem được
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Ticket is in TECHNICAL_ISSUE state -->
+                            <div th:if="${ticket.status != null and ticket.status.name() == 'TECHNICAL_ISSUE'}">
+                                <div class="alert alert-warning" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-warning);">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> <strong>Sự cố kỹ thuật:</strong> Người mua đã báo lỗi ảnh QR. Bộ đếm timeout đã được đóng băng để bộ phận kỹ thuật / Admin hỗ trợ can thiệp.
+                                </div>
                             </div>
                         </div>
                     </div>

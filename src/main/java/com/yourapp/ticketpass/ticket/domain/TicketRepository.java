@@ -109,6 +109,22 @@ public interface TicketRepository {
     List<Ticket> findDueForAutoComplete(TicketStatus status, Instant before);
 
     /**
+     * Lay cac ve qua han nap coc (trang thai PAYMENT_ESCROWED va escrowedAt truoc moc chi dinh).
+     *
+     * @param before moc thoi gian so sanh voi escrowedAt (now - 30 phut)
+     * @return danh sach ve qua han nap coc
+     */
+    List<Ticket> findOverdueDepositTickets(Instant before);
+
+    /**
+     * Lay cac ve qua han xac nhan nhan ve (trang thai TRANSFERRED va transferredAt truoc moc chi dinh).
+     *
+     * @param before moc thoi gian so sanh voi transferredAt (now - 30 phut)
+     * @return danh sach ve qua han nhan ve can auto-confirm
+     */
+    List<Ticket> findOverdueDeliveryTickets(Instant before);
+
+    /**
      * Xoa mot ve theo id.
      *
      * @param id id cua ve can xoa
