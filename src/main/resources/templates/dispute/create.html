@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Mở khiếu nại vé - TicketPass</title>
+</head>
+
+<body>
+    <div th:replace="~{layout/base :: layout('Mở khiếu nại vé - TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .dispute-create-wrapper {
+                    max-width: 680px;
+                    margin: 0 auto;
+                }
+
+                .ticket-summary-box {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 20px;
+                    margin-bottom: 24px;
+                    box-shadow: var(--shadow-card);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 16px;
+                }
+
+                .dispute-form-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 28px;
+                    box-shadow: var(--shadow-card);
+                }
+
+                .evidence-dropzone {
+                    border: 2px dashed var(--color-border);
+                    border-radius: var(--radius-md);
+                    padding: 24px;
+                    text-align: center;
+                    background-color: #fafbfc;
+                    cursor: pointer;
+                    transition: all var(--transition-base);
+                }
+
+                .evidence-dropzone:hover {
+                    border-color: var(--color-danger);
+                    background-color: #fffbfa;
+                }
+            </style>
+
+            <div class="dispute-create-wrapper">
+                <div style="margin-bottom: 20px;">
+                    <a th:href="@{/tickets/{id}(id=${param.ticketId ?: (ticket != null ? ticket.id : 1)})}"
+                       style="font-size: 13px; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-arrow-left"></i> Quay lại chi tiết vé
+                    </a>
+                    <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand); margin-top: 8px;">
+                        Mở Khiếu Nại Giao Dịch Vé
+                    </h1>
+                    <p style="font-size: 14px; color: var(--color-text-muted);">
+                        Sàn TicketPass phong tỏa dòng tiền và đối soát công bằng để bảo vệ quyền lợi của bạn
+                    </p>
+                </div>
+
+                <!-- Ticket Quick Summary -->
+                <div class="ticket-summary-box">
+                    <div>
+                        <span class="badge badge-warning" style="margin-bottom: 6px;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Đang yêu cầu khiếu nại
+                        </span>
+                        <h2 style="font-size: 16px; font-weight: 700; color: var(--color-brand); margin: 0;"
+                            th:text="${ticket != null ? ticket.title : 'Vé Concert / Phim đang khiếu nại'}">
+                            Vé Concert / Phim đang khiếu nại
+                        </h2>
+                        <div style="font-size: 13px; color: var(--color-text-muted); margin-top: 4px;">
+                            Mã vé: #<span th:text="${param.ticketId ?: (ticket != null ? ticket.id : '101')}">101</span>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; font-weight: 600;">
+                            Tiền Ký Quỹ Đang Giữ
+                        </div>
+                        <div style="font-size: 18px; font-weight: 800; color: var(--color-accent);"
+                             th:text="${ticket != null and ticket.salePrice != null ? #numbers.formatDecimal(ticket.salePrice, 0, 'POINT', 0, 'POINT') + ' ₫' : '250.000 ₫'}">
+                            250.000 ₫
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dispute Creation Form -->
+                <div class="dispute-form-card">
+                        <form th:action="@{/disputes}" method="post" enctype="multipart/form-data">
+                        <!-- Gate Dispute Urgent Notice (BR-09 Revised) -->
+                        <div th:if="${isGateDispute}" class="alert alert-danger" style="margin-bottom: 20px; font-size: 13px; border-left: 4px solid var(--color-danger); line-height: 1.6;">
+                            <i class="fa-solid fa-video" style="font-size: 20px; color: var(--color-danger); margin-right: 8px;"></i>
+                            <div>
+                                <strong style="font-size: 14px;">KHIẾU NẠI KHẨN CẤP TẠI CỔNG SOÁT VÉ (BR-09):</strong><br/>
+                                Sự kiện đã bắt đầu. Để đảm bảo tính minh bạch và ngăn chặn gian lận, bạn <strong>bắt buộc phải tải lên Video quay liên tục tại quầy/máy soát vé</strong> hiển thị rõ màn hình máy quét báo lỗi/từ chối hoặc <strong>Biên bản từ chối vào cổng (PDF)</strong> có xác nhận của nhân viên tại địa điểm.<br/>
+                                <span style="color: #991b1b; font-weight: 600;">* Hệ thống từ chối các khiếu nại tại cổng chỉ có ảnh chụp màn hình đơn thuần.</span>
+                            </div>
+                        </div>
+
+                        <!-- Hidden Ticket ID -->
+                        <input type="hidden" name="ticketId" th:value="${param.ticketId ?: (ticket != null ? ticket.id : 1)}" />
+
+                        <!-- Dispute Reason Selector -->
+                        <div class="form-group">
+                            <label class="form-label" for="reason">
+                                Lý do khiếu nại <span class="required">*</span>
+                            </label>
+                            <select id="reason" name="reason" class="form-control" required>
+                                <option value="" disabled selected>-- Chọn lý do gặp phải --</option>
+                                <option value="TICKET_INVALID">Vé không hợp lệ (Không quét được mã / Đã bị check-in trước)</option>
+                                <option value="DUPLICATE_SOLD">Vé bị bán trùng cho người khác</option>
+                                <option value="WRONG_SEAT_OR_SHOWTIME">Sai vị trí ghế hoặc sai suất chiếu / giờ xe</option>
+                                <option value="NOT_TRANSFERRED">Người bán chưa thực sự chuyển vé</option>
+                                <option value="SELLER_UNRESPONSIVE">Không liên lạc được với người bán</option>
+                                <option value="OTHER">Lý do khác (Mô tả chi tiết bên dưới)</option>
+                            </select>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label class="form-label" for="description">
+                                Mô tả chi tiết vấn đề <span class="required">*</span>
+                            </label>
+                            <textarea id="description" name="description" rows="5" class="form-control" required
+                                      placeholder="Vui lòng cung cấp chi tiết: Bạn gặp lỗi lúc nào, nhân viên soát vé thông báo gì, sự khác biệt so với cam kết ban đầu..."></textarea>
+                            <span class="form-text">Tối đa 2000 ký tự. Thông tin càng rõ ràng giúp Admin xử lý càng nhanh.</span>
+                        </div>
+
+                        <!-- Multi-file Evidence Upload -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                Tệp bằng chứng xác thực (Ảnh chụp / Video)
+                            </label>
+                            <div class="evidence-dropzone">
+                                <i class="fa-solid fa-cloud-arrow-up fa-2x" style="color: var(--color-danger); margin-bottom: 8px;"></i>
+                                <div style="font-size: 14px; font-weight: 600; color: var(--color-brand); margin-bottom: 4px;">
+                                    Tải lên ảnh chụp tại quầy vé hoặc video check-in bị từ chối
+                                </div>
+                                <div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px;">
+                                    Định dạng hỗ trợ: JPG, PNG, MP4. Có thể chọn nhiều tệp cùng lúc.
+                                </div>
+                                <input type="file" name="evidences" multiple accept="image/*,video/*" style="cursor: pointer;" />
+                            </div>
+                        </div>
+
+                        <!-- Notice of Process -->
+                        <div class="alert alert-warning" style="font-size: 13px; margin-bottom: 24px;">
+                            <i class="fa-solid fa-scale-balanced" style="font-size: 18px;"></i>
+                            <div>
+                                <strong>Quy trình xử lý tranh chấp:</strong> Sau khi mở khiếu nại, người bán có 24 giờ để gửi giải trình. Nếu quá hạn không giải trình hoặc bằng chứng vi phạm rõ ràng, Admin sẽ phán quyết hoàn 100% tiền Escrow và bồi thường cho bạn từ tiền cọc của người bán.
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <a th:href="@{/tickets}" class="btn btn-outline">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fa-solid fa-paper-plane"></i> Gửi khiếu nại chính thức
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </content>
+    </div>
+</body>
+
+</html>

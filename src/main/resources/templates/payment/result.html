@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Kết quả thanh toán - TicketPass</title>
+</head>
+
+<body>
+    <div th:replace="~{layout/base :: layout('Kết quả thanh toán - TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .result-container {
+                    max-width: 580px;
+                    margin: 40px auto;
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 36px 30px;
+                    box-shadow: var(--shadow-card);
+                    text-align: center;
+                }
+
+                .result-icon {
+                    width: 72px;
+                    height: 72px;
+                    border-radius: 50%;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 32px;
+                    margin-bottom: 20px;
+                }
+
+                .result-icon-success {
+                    background-color: var(--color-success-surface);
+                    color: var(--color-success);
+                    border: 2px solid var(--color-success-border);
+                }
+
+                .result-icon-failed {
+                    background-color: var(--color-danger-surface);
+                    color: var(--color-danger);
+                    border: 2px solid var(--color-danger-border);
+                }
+
+                .result-title {
+                    font-size: 24px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    margin-bottom: 8px;
+                }
+
+                .result-desc {
+                    font-size: 14px;
+                    color: var(--color-text-secondary);
+                    margin-bottom: 24px;
+                    line-height: 1.5;
+                }
+
+                .receipt-card {
+                    background-color: #fafbfc;
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    padding: 18px;
+                    margin-bottom: 24px;
+                    text-align: left;
+                }
+
+                .receipt-row {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 13px;
+                    padding: 8px 0;
+                    border-bottom: 1px dashed #e2e8f0;
+                }
+
+                .receipt-row:last-child {
+                    border-bottom: none;
+                    padding-bottom: 0;
+                }
+
+                .receipt-label {
+                    color: var(--color-text-muted);
+                }
+
+                .receipt-value {
+                    font-weight: 600;
+                    color: var(--color-brand);
+                }
+            </style>
+
+            <div class="result-container">
+                <!-- Check if Success: resultCode is 0 or null fallback default success for demo -->
+                <th:block th:if="${(param.resultCode != null and param.resultCode[0] == '0') or (resultCode != null and (resultCode == 0 or resultCode == '0')) or (param.resultCode == null and resultCode == null)}">
+                    <div class="result-icon result-icon-success">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <h1 class="result-title">Giao Dịch Thành Công</h1>
+                    <p class="result-desc">
+                        Hệ thống đã ghi nhận số tiền giao dịch vào quỹ an toàn của TicketPass. Dòng tiền được bảo vệ theo cơ chế ký quỹ Escrow 100%.
+                    </p>
+
+                    <!-- Receipt Details Box -->
+                    <div class="receipt-card">
+                        <div class="receipt-row">
+                            <span class="receipt-label">Cổng thanh toán</span>
+                            <span class="receipt-value">MoMo Test Sandbox</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Mã đơn hàng / Tham chiếu</span>
+                            <span class="receipt-value" th:text="${orderId ?: (param.orderId != null ? param.orderId[0] : 'ESCROW-MOMO-882910')}">
+                                ESCROW-MOMO-882910
+                            </span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Số tiền thanh toán</span>
+                            <span class="receipt-value" style="color: var(--color-accent); font-size: 16px; font-weight: 800;"
+                                  th:text="${amount != null ? #numbers.formatDecimal(amount, 0, 'POINT', 0, 'POINT') + ' ₫' : (param.amount != null ? param.amount[0] + ' ₫' : '250.000 ₫')}">
+                                250.000 ₫
+                            </span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Trạng thái quỹ</span>
+                            <span class="receipt-value" style="color: var(--color-success);">
+                                <i class="fa-solid fa-lock"></i> Đang phong tỏa Escrow bảo đảm
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" style="font-size: 13px; text-align: left; margin-bottom: 24px;">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <strong>Bước tiếp theo:</strong> Người bán sẽ nhận được thông báo để tiến hành bàn giao vé. Sau khi nhận vé, mã QR check-in sẽ được mở khóa cho bạn.
+                    </div>
+                </th:block>
+
+                <!-- Failure State -->
+                <th:block th:if="${(param.resultCode != null and param.resultCode[0] != '0') or (resultCode != null and (resultCode != 0 and resultCode != '0'))}">
+                    <div class="result-icon result-icon-failed">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
+                    <h1 class="result-title">Giao Dịch Thất Bại</h1>
+                    <p class="result-desc">
+                        Giao dịch qua cổng MoMo đã bị gián đoạn hoặc hủy bởi người dùng. Chưa có khoản tiền nào bị trừ khỏi tài khoản của bạn.
+                    </p>
+
+                    <div class="receipt-card">
+                        <div class="receipt-row">
+                            <span class="receipt-label">Mã phản hồi</span>
+                            <span class="receipt-value" style="color: var(--color-danger);"
+                                  th:text="${resultCode ?: (param.resultCode != null ? param.resultCode[0] : '49')}">
+                                49
+                            </span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Thông báo</span>
+                            <span class="receipt-value"
+                                  th:text="${message ?: (param.message != null ? param.message[0] : 'Giao dịch bị từ chối bởi người dùng')}">
+                                Giao dịch bị từ chối bởi người dùng
+                            </span>
+                        </div>
+                    </div>
+                </th:block>
+
+                <!-- Navigation Action Group -->
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <a th:href="@{/tickets}" class="btn btn-outline">
+                        <i class="fa-solid fa-arrow-left"></i> Quay lại sàn vé
+                    </a>
+                    <a th:href="@{/profile}" class="btn btn-primary">
+                        <i class="fa-solid fa-ticket"></i> Quản lý vé của tôi
+                    </a>
+                </div>
+            </div>
+        </content>
+    </div>
+</body>
+
+</html>

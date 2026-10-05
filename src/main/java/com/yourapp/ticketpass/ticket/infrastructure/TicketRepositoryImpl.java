@@ -8,6 +8,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -64,8 +67,37 @@ public class TicketRepositoryImpl implements TicketRepository {
     }
 
     @Override
+    public List<Ticket> searchListed(String keyword, TicketType ticketType) {
+        String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        return ticketJpaRepository.searchListedTickets(TicketStatus.LISTED, ticketType, cleanKeyword);
+    }
+
+    @Override
+    public Page<Ticket> searchListed(String keyword, TicketType ticketType, Pageable pageable) {
+        String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        return ticketJpaRepository.searchListedTickets(TicketStatus.LISTED, ticketType, cleanKeyword, pageable);
+    }
+
+    @Override
+    public List<Ticket> findTopSuggestions(String keyword, int limit) {
+        String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        int safeLimit = Math.max(1, Math.min(limit, 20));
+        return ticketJpaRepository.findTopSuggestions(TicketStatus.LISTED, cleanKeyword, PageRequest.of(0, safeLimit));
+    }
+
+    @Override
     public List<Ticket> findDueForAutoComplete(TicketStatus status, Instant before) {
         return ticketJpaRepository.findByStatusAndDisputeWindowClosesAtBefore(status, before);
+    }
+
+    @Override
+    public List<Ticket> findOverdueDepositTickets(Instant before) {
+        return ticketJpaRepository.findByStatusAndEscrowedAtBefore(TicketStatus.PAYMENT_ESCROWED, before);
+    }
+
+    @Override
+    public List<Ticket> findOverdueDeliveryTickets(Instant before) {
+        return ticketJpaRepository.findByStatusAndTransferredAtBefore(TicketStatus.TRANSFERRED, before);
     }
 
     @Override

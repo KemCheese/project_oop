@@ -339,5 +339,44 @@ Các quy chuẩn và cơ chế bảo vệ sau đây đã được Dev C hoàn th
    - File: [`ReputationResponse.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/reputation/web/dto/ReputationResponse.java), [`ReputationController.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/reputation/web/ReputationController.java), [`detail.html`](file:///d:/lam%20viec/FORK/project_oop/src/main/resources/templates/reputation/detail.html), [`top.html`](file:///d:/lam%20viec/FORK/project_oop/src/main/resources/templates/reputation/top.html).
    - Chi tiết: Đã loại bỏ hoàn toàn trường `totalGmv` khỏi API và giao diện uy tín công khai, bảo vệ bí mật kinh doanh và doanh số giao dịch của người dùng theo quy định bảo mật quyền riêng tư.
 
+---
 
+### 6.15. 🛡️ QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Dữ liệu thử nghiệm mẫu dùng chung toàn sàn (`DataInitializer`)
 
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (2026-10-02):** Nạp sẵn tài khoản và vé mẫu cho Dev A và Dev B chạy thử nghiệm.
+
+1. **Vị trí hiện thực:** [`src/main/java/com/yourapp/ticketpass/shared/infrastructure/data/DataInitializer.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/shared/infrastructure/data/DataInitializer.java).
+2. **Cơ chế kích hoạt:** Tự động kích hoạt khi chạy với profile không phải production (`!prod`), bảo đảm Idempotent (chỉ nạp khi `admin@test.com` chưa có trong CSDL).
+3. **Danh sách tài khoản dùng chung (Mật khẩu chuẩn: `Password123@`):**
+   - `admin@test.com`: Role `ADMIN`, dùng để test màn hình duyệt khiếu nại `/admin/disputes` của Dev B.
+   - `seller@test.com`: Role `USER`, nạp sẵn STK Vietcombank, sở hữu 2 vé mẫu (`CONCERT` và `MOVIE`).
+   - `buyer@test.com`: Role `USER`, dùng để test luồng mua vé, ký quỹ Escrow và mở khiếu nại.
+   - `vip_seller@test.com`: Role `USER`, có 25 giao dịch thành công, điểm uy tín 100, sở hữu vé mẫu `BUS`.
+4. **Vé mẫu sẵn có trên sàn:** 3 vé ở trạng thái `LISTED` (`CONCERT` 2.000.000đ, `MOVIE` 200.000đ, `BUS` 300.000đ). Dev A và Dev B có thể tương tác trực tiếp qua giao diện web ngay khi ứng dụng khởi động.
+
+---
+
+### 6.16. 🛡️ QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): 3 Cơ chế Must-Have Trọng Yếu (UC-04b, UC-06b, BR-09 Revised)
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (2026-10-04):** Hệ thống sàn vé TicketPass đã triển khai và kiểm thử 100% tự động ba cơ chế bảo vệ giao dịch then chốt.
+
+1. **UC-04b — Seller Deposit Timeout (Xử lý Timeout nạp cọc):**
+   - **Vị trí:** [`DepositTimeoutScheduler.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/payment/application/DepositTimeoutScheduler.java).
+   - **Cơ chế:** Khi vé ở `PAYMENT_ESCROWED`, sau 30 phút tính từ `escrowedAt`, nếu Seller chưa hoàn tất nạp cọc:
+     - Kích hoạt `RefundBuyerUseCase.refundFull()` hoàn trả 100% tiền vé + phí sàn cho Buyer.
+     - Chuyển trạng thái vé sang `CANCELLED` (gỡ khỏi sàn, tuyệt đối không tự động quay lại `LISTED`).
+     - Phạt trừ −15 điểm uy tín của Seller qua `UpdateReputationUseCase.recordDepositTimeout()` (mức phạt nghiêm khắc nhất, ngang với việc thua tranh chấp để triệt tiêu hành vi bỏ rơi giao dịch).
+
+2. **UC-06b — Auto-Confirm Delivery & QR Technical Issue (Xử lý Timeout nhận vé):**
+   - **Vị trí:** [`DeliveryTimeoutScheduler.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/ticket/application/DeliveryTimeoutScheduler.java) & [`TransferTicketService.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/ticket/application/TransferTicketService.java).
+   - **Cơ chế:** Khi vé ở `TRANSFERRED`, sau 30 phút tính từ `transferredAt`:
+     - Nếu Buyer không bấm "Đã nhận vé" và không báo sự cố: Hệ thống tự động chuyển sang `AWAITING_USE`, ghi `receivedAt = now` và kích hoạt đếm ngược cửa sổ khiếu nại (BR-09).
+     - Nếu Buyer bấm "Báo lỗi ảnh QR không xem được / hỏng" trong 30 phút: Hệ thống lập tức đóng băng bộ đếm timeout, chuyển vé sang trạng thái `TECHNICAL_ISSUE` để Admin/Kỹ thuật can thiệp, bảo vệ cọc của Seller không bị giải ngân oan.
+
+3. **BR-09 Revised — Gate Dispute (Khiếu nại tại cổng soát vé):**
+   - **Vị trí:** [`DisputeWindowPolicy.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/dispute/domain/DisputeWindowPolicy.java), [`FileDisputeUseCase.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/dispute/application/FileDisputeUseCase.java), [`TicketStateMachineService.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/ticket/application/TicketStateMachineService.java).
+   - **Cơ chế:**
+     - Cửa sổ khiếu nại đóng tại mốc: `windowCloseAt = min(receivedAt + disputeWindow, eventStartAt + 30 phút)`.
+     - Cho phép mở khiếu nại khẩn cấp tại cổng trong vòng 30 phút sau giờ bắt đầu sự kiện.
+     - **Điều kiện bằng chứng bắt buộc:** Nếu mở khiếu nại sau giờ sự kiện (`now > eventStartAt`), Buyer bắt buộc phải nộp **Video quay liên tục tại quầy soát vé** hoặc **Biên bản từ chối vào cổng (PDF)** có xác nhận của nhân viên tại địa điểm. Hệ thống từ chối các bằng chứng chỉ là ảnh chụp màn hình đơn thuần.
+     - **Quy trình đối chất:** Đóng băng lập tức Escrow + Cọc (`DISPUTE_UNDER_REVIEW`); cấp cho Seller **24 giờ** để gửi giải trình và cung cấp bằng chứng nguồn gốc vé chính chủ.

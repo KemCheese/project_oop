@@ -132,11 +132,19 @@ Mở **PowerShell** tại thư mục gốc của project:
 ```
 Truy cập ứng dụng tại trình duyệt: **http://localhost:8080**
 
-### Lưu ý quan trọng về lần chạy đầu tiên:
-- **Flyway tự động khởi tạo dữ liệu**: Script `src/main/resources/db/migration/V1__init_schema.sql` sẽ tự động tạo đầy đủ các bảng (`users`, `tickets`, `escrow_transactions`, `deposits`, `disputes`, `user_reputation_scores`...). **Không cần chạy script tạo bảng thủ công**.
-- **Chế độ `ddl-auto=validate`**: Hibernate chỉ kiểm tra khớp giữa Entity và Schema cơ sở dữ liệu. Không tự ý chỉnh sửa file migration đã merge để tránh lỗi sai lệch checksum của Flyway.
+### 5.2 Tài khoản thử nghiệm sẵn có (Seed Data)
+Ứng dụng tích hợp sẵn component `DataInitializer` tự động nạp dữ liệu mẫu ban đầu khi chạy với các profile không phải production (`local`, `dev`, `test`). Bạn có thể sử dụng ngay các tài khoản sau để đăng nhập thử nghiệm (dùng chung mật khẩu chuẩn: **`Password123@`**):
 
-### 5.2 Chạy bộ kiểm thử (Tests)
+| Email đăng nhập | Mật khẩu | Vai trò (`role`) | Mô tả & Chức năng thử nghiệm |
+|---|---|---|---|
+| **`admin@test.com`** | `Password123@` | `ADMIN` | Quản trị viên hệ thống — Truy cập màn hình xử lý tranh chấp và phán quyết tại `/admin/disputes`. |
+| **`seller@test.com`** | `Password123@` | `USER` | Người bán thường — Đã xác minh, nạp sẵn STK Vietcombank, là chủ sở hữu của 2 vé mẫu (`CONCERT` và `MOVIE`). |
+| **`buyer@test.com`** | `Password123@` | `USER` | Người mua thường — Đã xác minh, sẵn sàng thao tác mua vé, thanh toán Escrow và mở khiếu nại. |
+| **`vip_seller@test.com`** | `Password123@` | `USER` | Người bán VIP — Có 25 giao dịch thành công, điểm uy tín 100, hiển thị ở vị trí dẫn đầu bảng xếp hạng `/reputation/top`. |
+
+*Ngoài ra, hệ thống tự động sinh sẵn **3 vé mẫu ở trạng thái `LISTED`** trên sàn `/tickets` (Concert VIP Mỹ Đình 2tr, Phim IMAX CGV 200k, Xe Limousine Đà Lạt 300k) để người dùng có thể duyệt và trải nghiệm mua ngay lập tức.*
+
+### 5.3 Chạy bộ kiểm thử (Tests)
 ```powershell
 .\mvnw test
 ```

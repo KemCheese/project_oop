@@ -1,158 +1,341 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
 <head>
-    <title>Trang chủ - TicketPass</title>
+    <title>TicketPass - Sàn Giao Dịch Vé An Toàn</title>
 </head>
+
 <body>
-    <div th:replace="~{layout/base :: layout('TicketPass - Sàn giao dịch vé an toàn', ~{::content})}">
+    <div th:replace="~{layout/base :: layout('TicketPass - Sàn Giao Dịch Vé An Toàn', ~{::content})}">
         <content>
             <style>
-                /* Scoped styles cho trang chu */
-                .hero-section {
-                    text-align: center;
-                    padding: 80px 20px;
-                    max-width: 800px;
-                    margin: 0 auto;
-                }
-                .hero-title {
-                    font-size: 40px;
-                    font-weight: 700;
-                    color: var(--color-brand);
-                    letter-spacing: -1px;
-                    line-height: 1.2;
-                    margin-bottom: 24px;
-                }
-                .hero-desc {
-                    font-size: 18px;
-                    color: var(--color-text-muted);
-                    margin-bottom: 40px;
-                    line-height: 1.6;
-                }
-                .hero-actions {
+                /* Home Page Container */
+                .home-wrapper {
+                    min-height: 90vh;
                     display: flex;
-                    gap: 16px;
+                    flex-direction: column;
                     justify-content: center;
+                    align-items: center;
+                    padding: 60px 24px 70px 24px;
+                    max-width: 1240px;
+                    margin: 0 auto;
+                    position: relative;
                 }
-                .hero-actions .btn {
-                    padding: 12px 24px;
-                    font-size: 16px;
+
+                /* Subtle Ambient Brand Glow */
+                .home-glow {
+                    position: absolute;
+                    top: 10%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: min(700px, 90vw);
+                    height: 380px;
+                    background: radial-gradient(circle, rgba(231, 26, 15, 0.07) 0%, rgba(249, 115, 22, 0.03) 50%, transparent 70%);
+                    pointer-events: none;
+                    z-index: 0;
+                    filter: blur(40px);
                 }
-                
-                .features-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                    gap: 24px;
-                    margin-top: 60px;
+
+                /* Hero Core */
+                .home-hero {
+                    position: relative;
+                    z-index: 1;
+                    text-align: center;
+                    max-width: 880px;
+                    margin: 0 auto;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
                 }
-                .feature-card {
-                    background: var(--color-surface);
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-lg);
-                    padding: 32px 24px;
-                    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+
+                .home-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: #fef2f2;
+                    color: #e71a0f;
+                    border: 1px solid #fecaca;
+                    padding: 8px 18px;
+                    border-radius: 9999px;
+                    font-size: 13.5px;
+                    font-weight: 600;
+                    margin-bottom: 24px;
+                    box-shadow: 0 2px 8px rgba(231, 26, 15, 0.06);
+                    letter-spacing: 0.3px;
                 }
-                .feature-card:hover {
-                    transform: translateY(-4px);
-                    box-shadow: var(--shadow-md);
-                }
-                .feature-icon-wrapper {
+
+                /* Enlarged, Eye-Catching Brand Logo */
+                .home-brand-title {
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    width: 48px;
-                    height: 48px;
-                    border-radius: var(--radius-md);
-                    margin-bottom: 20px;
-                    background-color: var(--color-brand-surface);
-                    color: var(--color-brand);
-                }
-                .feature-title {
-                    font-size: 18px;
-                    font-weight: 600;
-                    margin-bottom: 12px;
-                    color: var(--color-brand);
-                }
-                .feature-desc {
-                    font-size: 14px;
-                    color: var(--color-text-muted);
-                    line-height: 1.5;
-                }
-                
-                /* SVG Icons */
-                .icon {
-                    width: 24px;
-                    height: 24px;
-                    stroke-width: 2;
-                    stroke: currentColor;
-                    fill: none;
-                    stroke-linecap: round;
-                    stroke-linejoin: round;
+                    gap: 8px;
+                    font-size: clamp(52px, 7vw, 84px);
+                    font-weight: 900;
+                    letter-spacing: -2.5px;
+                    line-height: 1.05;
+                    color: #0f172a;
+                    margin-bottom: 18px;
                 }
 
-                @media (max-width: 640px) {
-                    .hero-title { font-size: 32px; }
-                    .hero-actions { flex-direction: column; }
-                    .hero-section { padding: 40px 16px; }
+                .home-brand-icon {
+                    color: #e71a0f;
+                    font-size: clamp(34px, 4.5vw, 54px);
+                    transform: rotate(15deg);
+                    filter: drop-shadow(0 4px 12px rgba(231, 26, 15, 0.35));
+                    transition: transform 0.3s ease;
+                }
+
+                .home-brand-title:hover .home-brand-icon {
+                    transform: rotate(45deg) scale(1.1);
+                }
+
+                /* Slogan */
+                .home-slogan {
+                    font-size: clamp(22px, 3vw, 32px);
+                    font-weight: 700;
+                    color: #1e293b;
+                    line-height: 1.35;
+                    margin-bottom: 16px;
+                    letter-spacing: -0.5px;
+                }
+
+                .home-desc {
+                    font-size: clamp(15px, 1.8vw, 17px);
+                    color: #64748b;
+                    line-height: 1.6;
+                    max-width: 640px;
+                    margin: 0 auto 36px auto;
+                }
+
+                /* The Single Action Button */
+                .home-cta-wrapper {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    margin-bottom: 64px;
+                }
+
+                .btn-explore-ticket {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 12px;
+                    background: linear-gradient(135deg, #e71a0f 0%, #dc2626 50%, #ea580c 100%);
+                    color: #ffffff !important;
+                    font-size: 18px;
+                    font-weight: 700;
+                    padding: 16px 44px;
+                    border-radius: 9999px;
+                    text-decoration: none !important;
+                    border: none;
+                    cursor: pointer;
+                    box-shadow: 0 10px 25px -4px rgba(231, 26, 15, 0.45), 0 4px 10px -2px rgba(231, 26, 15, 0.25);
+                    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    letter-spacing: 0.2px;
+                }
+
+                .btn-explore-ticket i {
+                    transition: transform 0.25s ease;
+                }
+
+                .btn-explore-ticket:hover {
+                    transform: translateY(-3px) scale(1.02);
+                    box-shadow: 0 16px 32px -4px rgba(231, 26, 15, 0.55), 0 6px 14px -2px rgba(231, 26, 15, 0.3);
+                }
+
+                .btn-explore-ticket:hover i {
+                    transform: translateX(4px);
+                }
+
+                .btn-explore-ticket:active {
+                    transform: translateY(0) scale(0.98);
+                }
+
+                /* 3 Value Pillars Grid */
+                .pillars-grid {
+                    position: relative;
+                    z-index: 1;
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 24px;
+                    width: 100%;
+                }
+
+                .pillar-card {
+                    background-color: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 22px;
+                    padding: 32px 28px;
+                    display: flex;
+                    flex-direction: column;
+                    text-align: left;
+                    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+                    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .pillar-card::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: transparent;
+                    transition: background 0.25s ease;
+                }
+
+                .pillar-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 16px 32px -4px rgba(15, 23, 42, 0.08);
+                    border-color: #cbd5e1;
+                }
+
+                /* Card Variants */
+                .pillar-card-1:hover::before {
+                    background: linear-gradient(90deg, #e71a0f, #f43f5e);
+                }
+
+                .pillar-card-2:hover::before {
+                    background: linear-gradient(90deg, #ea580c, #f59e0b);
+                }
+
+                .pillar-card-3:hover::before {
+                    background: linear-gradient(90deg, #059669, #10b981);
+                }
+
+                .pillar-icon-box {
+                    width: 54px;
+                    height: 54px;
+                    border-radius: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 22px;
+                    margin-bottom: 22px;
+                }
+
+                .pillar-icon-1 {
+                    background-color: #fef2f2;
+                    color: #e71a0f;
+                }
+
+                .pillar-icon-2 {
+                    background-color: #fff7ed;
+                    color: #ea580c;
+                }
+
+                .pillar-icon-3 {
+                    background-color: #ecfdf5;
+                    color: #059669;
+                }
+
+                .pillar-title {
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: #0f172a;
+                    margin-bottom: 12px;
+                    letter-spacing: -0.3px;
+                }
+
+                .pillar-content {
+                    font-size: 14.5px;
+                    color: #475569;
+                    line-height: 1.65;
+                    margin: 0;
+                }
+
+                /* Responsive */
+                @media (max-width: 960px) {
+                    .pillars-grid {
+                        grid-template-columns: 1fr;
+                        gap: 18px;
+                    }
+
+                    .home-wrapper {
+                        padding: 40px 16px 50px 16px;
+                    }
                 }
             </style>
 
-            <div class="hero-section">
-                <h1 class="hero-title">Nền tảng giao dịch vé an toàn và minh bạch</h1>
-                <p class="hero-desc">Bảo vệ 2 lớp: Giữ tiền người mua (Escrow 100%) và Khóa cọc người bán (50%). Xóa bỏ nỗi lo lừa đảo khi mua bán vé trực tuyến.</p>
-                <div class="hero-actions">
-                    <a th:href="@{/tickets}" class="btn btn-brand btn-mobile-full">Khám phá vé ngay</a>
-                    <a th:href="@{/tickets/new}" class="btn btn-outline btn-mobile-full">Đăng bán vé</a>
-                </div>
+            <div class="home-wrapper">
+                <div class="home-glow"></div>
+
+                <!-- Hero Section -->
+                <section class="home-hero">
+                    <div class="home-badge">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Sàn Giao Dịch Vé Điện Tử An Toàn</span>
+                    </div>
+
+                    <!-- Enlarged Brand Logo -->
+                    <div class="home-brand-title">
+                        <span>TicketPass</span>
+                        <i class="fa-solid fa-asterisk home-brand-icon"></i>
+                    </div>
+
+                    <!-- Slogan -->
+                    <h1 class="home-slogan">
+                        Sàn Giao Dịch Vé – Mua bán thảnh thơi, trăm nơi đổ về.
+                    </h1>
+
+                    <p class="home-desc">
+                        Nền tảng chuyển nhượng vé chính chủ uy tín hàng đầu. Bảo vệ trọn vẹn quyền lợi người mua và người bán bằng cơ chế giữ tiền trung gian và bảo đảm tiền cọc.
+                    </p>
+
+                    <!-- The Single Button (Duy nhất 1 nút trên toàn trang) -->
+                    <div class="home-cta-wrapper">
+                        <a th:href="@{/tickets}" class="btn-explore-ticket" data-transition="true">
+                            <span>Khám phá vé ngay</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </section>
+
+                <!-- 3 Trụ Cột Thông Tin Chính (Ngôn ngữ phổ thông, không mở ngoặc giải thích) -->
+                <section class="pillars-grid">
+                    <!-- Trụ cột 1 -->
+                    <div class="pillar-card pillar-card-1">
+                        <div class="pillar-icon-box pillar-icon-1">
+                            <i class="fa-solid fa-ticket-simple"></i>
+                        </div>
+                        <h2 class="pillar-title">Đa dạng các loại vé</h2>
+                        <p class="pillar-content">
+                            Phim ảnh chiếu rạp, ca nhạc sự kiện đến xe khách đường dài. Mọi tấm vé bạn tìm kiếm đều sẵn sàng tại một nơi duy nhất.
+                        </p>
+                    </div>
+
+                    <!-- Trụ cột 2 -->
+                    <div class="pillar-card pillar-card-2">
+                        <div class="pillar-icon-box pillar-icon-2">
+                            <i class="fa-solid fa-vault"></i>
+                        </div>
+                        <h2 class="pillar-title">Vé trong tay, tiền mới bay</h2>
+                        <p class="pillar-content">
+                            Toàn bộ tiền mua được giữ an toàn tuyệt đối. Chỉ khi bạn nhận vé chuẩn và trải nghiệm trọn vẹn, tiền mới được chuyển cho người bán. Người bán bắt buộc ký cọc bảo đảm, sẵn sàng đền bù nếu có gian lận.
+                        </p>
+                    </div>
+
+                    <!-- Trụ cột 3 -->
+                    <div class="pillar-card pillar-card-3">
+                        <div class="pillar-icon-box pillar-icon-3">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                        </div>
+                        <h2 class="pillar-title">Anti phe vé</h2>
+                        <p class="pillar-content">
+                            Nói không với thổi giá hay gom vé chợ đen. Mọi tấm vé đăng bán đều tuân thủ nguyên tắc bằng hoặc thấp hơn giá gốc niêm yết, trả lại sự công bằng cho người hâm mộ.
+                        </p>
+                    </div>
+                </section>
             </div>
 
-            <div class="features-grid">
-                <!-- Ve xem phim -->
-                <div class="feature-card">
-                    <div class="feature-icon-wrapper">
-                        <svg class="icon" viewBox="0 0 24 24">
-                            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
-                            <line x1="7" y1="2" x2="7" y2="22"></line>
-                            <line x1="17" y1="2" x2="17" y2="22"></line>
-                            <line x1="2" y1="12" x2="22" y2="12"></line>
-                            <line x1="2" y1="7" x2="7" y2="7"></line>
-                            <line x1="2" y1="17" x2="7" y2="17"></line>
-                            <line x1="17" y1="17" x2="22" y2="17"></line>
-                            <line x1="17" y1="7" x2="22" y2="7"></line>
-                        </svg>
-                    </div>
-                    <h3 class="feature-title">Vé xem phim (MOVIE)</h3>
-                    <p class="feature-desc">Trao đổi vé xem phim các rạp CGV, Lotte, BHD. Chuyển nhượng nhanh chóng, có cửa sổ khiếu nại bảo vệ người mua.</p>
-                </div>
-                
-                <!-- Ve Concert -->
-                <div class="feature-card">
-                    <div class="feature-icon-wrapper">
-                        <svg class="icon" viewBox="0 0 24 24">
-                            <path d="M9 18V5l12-2v13"></path>
-                            <circle cx="6" cy="18" r="3"></circle>
-                            <circle cx="18" cy="16" r="3"></circle>
-                        </svg>
-                    </div>
-                    <h3 class="feature-title">Vé sự kiện (CONCERT)</h3>
-                    <p class="feature-desc">Giao dịch an toàn vé ca nhạc, lễ hội âm nhạc. Hệ thống lưu giữ tiền đến khi sự kiện diễn ra nhằm ngăn chặn rủi ro.</p>
-                </div>
-
-                <!-- Ve xe khach -->
-                <div class="feature-card">
-                    <div class="feature-icon-wrapper">
-                        <svg class="icon" viewBox="0 0 24 24">
-                            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path>
-                            <circle cx="7" cy="17" r="2"></circle>
-                            <path d="M9 17h6"></path>
-                            <circle cx="17" cy="17" r="2"></circle>
-                        </svg>
-                    </div>
-                    <h3 class="feature-title">Vé xe khách (BUS)</h3>
-                    <p class="feature-desc">Nhượng lại vé xe giường nằm, xe khách liên tỉnh. Kiểm tra tính hợp lệ bằng công nghệ OCR và xác thực chéo.</p>
-                </div>
-            </div>
-            
+            <!-- Kích hoạt class nhận diện home-page để ẩn header/footer thừa -->
+            <script>
+                document.body.classList.add('home-page');
+            </script>
         </content>
     </div>
 </body>
+
 </html>

@@ -42,20 +42,21 @@ public class TicketStateMachineService {
     // EnumMap + EnumSet: luu tru bang mang bit ordinal, nhanh hon HashMap/HashSet.
     // 3 trang thai terminal khai bao tuong minh voi EnumSet.noneOf() thay vi bo trong
     // de nguoi doc thay ro "co y khong co loi ra", khong phai "quen".
-    private static final Map<TicketStatus, Set<TicketStatus>> ALLOWED =
-            new EnumMap<>(Map.of(
-                    TicketStatus.LISTED,               EnumSet.of(TicketStatus.PAYMENT_ESCROWED),
-                    TicketStatus.PAYMENT_ESCROWED,      EnumSet.of(TicketStatus.DEPOSIT_LOCKED),
-                    TicketStatus.DEPOSIT_LOCKED,         EnumSet.of(TicketStatus.TRANSFERRED),
-                    TicketStatus.TRANSFERRED,            EnumSet.of(TicketStatus.AWAITING_USE),
-                    TicketStatus.AWAITING_USE,            EnumSet.of(TicketStatus.AUTO_COMPLETE,
-                                                                     TicketStatus.DISPUTE_UNDER_REVIEW),
-                    TicketStatus.DISPUTE_UNDER_REVIEW,   EnumSet.of(TicketStatus.RESOLVED_BUYER_WINS,
-                                                                     TicketStatus.RESOLVED_SELLER_WINS),
-                    TicketStatus.AUTO_COMPLETE,           EnumSet.noneOf(TicketStatus.class),
-                    TicketStatus.RESOLVED_BUYER_WINS,     EnumSet.noneOf(TicketStatus.class),
-                    TicketStatus.RESOLVED_SELLER_WINS,    EnumSet.noneOf(TicketStatus.class)
-            ));
+    private static final Map<TicketStatus, Set<TicketStatus>> ALLOWED = new EnumMap<>(TicketStatus.class);
+
+    static {
+        ALLOWED.put(TicketStatus.LISTED, EnumSet.of(TicketStatus.PAYMENT_ESCROWED, TicketStatus.CANCELLED));
+        ALLOWED.put(TicketStatus.PAYMENT_ESCROWED, EnumSet.of(TicketStatus.DEPOSIT_LOCKED, TicketStatus.CANCELLED));
+        ALLOWED.put(TicketStatus.DEPOSIT_LOCKED, EnumSet.of(TicketStatus.TRANSFERRED));
+        ALLOWED.put(TicketStatus.TRANSFERRED, EnumSet.of(TicketStatus.AWAITING_USE, TicketStatus.TECHNICAL_ISSUE));
+        ALLOWED.put(TicketStatus.TECHNICAL_ISSUE, EnumSet.of(TicketStatus.TRANSFERRED, TicketStatus.AWAITING_USE, TicketStatus.CANCELLED));
+        ALLOWED.put(TicketStatus.AWAITING_USE, EnumSet.of(TicketStatus.AUTO_COMPLETE, TicketStatus.DISPUTE_UNDER_REVIEW));
+        ALLOWED.put(TicketStatus.DISPUTE_UNDER_REVIEW, EnumSet.of(TicketStatus.RESOLVED_BUYER_WINS, TicketStatus.RESOLVED_SELLER_WINS));
+        ALLOWED.put(TicketStatus.AUTO_COMPLETE, EnumSet.noneOf(TicketStatus.class));
+        ALLOWED.put(TicketStatus.RESOLVED_BUYER_WINS, EnumSet.noneOf(TicketStatus.class));
+        ALLOWED.put(TicketStatus.RESOLVED_SELLER_WINS, EnumSet.noneOf(TicketStatus.class));
+        ALLOWED.put(TicketStatus.CANCELLED, EnumSet.noneOf(TicketStatus.class));
+    }
 
     private final TicketRepository ticketRepository;
 
@@ -128,22 +129,29 @@ public class TicketStateMachineService {
             case LISTED:
                 ticket.setListedAt(now);
                 break;
+            case PAYMENT_ESCROWED:
+                // Ghi thoi diem bat dau escrow de dem timeout nap coc 30 phut (UC-04b)
+                ticket.setEscrowedAt(now);
+                break;
             case TRANSFERRED:
-                // Ghi thoi diem nguoi ban bao da chuyen ve
+                // Ghi thoi diem nguoi ban bao da chuyen ve de dem timeout nhan ve 30 phut (UC-06b)
                 ticket.setTransferredAt(now);
                 break;
             case AWAITING_USE:
-                // Tinh cua so khieu nai theo BR-09: min(transferredAt + disputeWindow, eventStartAt)
+                // Ghi nhan thoi diem xac nhan nhan ve
+                ticket.setReceivedAt(now);
+                // Tinh cua so khieu nai theo BR-09 Revised: min(receivedAt + disputeWindow, eventStartAt + 30 phut)
                 ticket.setDisputeWindowClosesAt(computeDisputeWindowClose(ticket));
                 break;
             case AUTO_COMPLETE:
             case RESOLVED_BUYER_WINS:
             case RESOLVED_SELLER_WINS:
+            case CANCELLED:
                 // Giao dich ket thuc (terminal state)
                 ticket.setCompletedAt(now);
                 break;
             default:
-                // PAYMENT_ESCROWED, DEPOSIT_LOCKED, DISPUTE_UNDER_REVIEW:
+                // DEPOSIT_LOCKED, TECHNICAL_ISSUE, DISPUTE_UNDER_REVIEW:
                 // khong co timestamp rieng can gan
                 break;
         }
@@ -168,23 +176,31 @@ public class TicketStateMachineService {
     }
 
     /**
-     * Tinh thoi diem dong cua so khieu nai cho mot ve.
+     * Tinh thoi diem dong cua so khieu nai cho mot ve theo BR-09 Revised (Gate Dispute).
      *
-     * <p>Theo BR-09: cua so khieu nai = transferredAt + disputeWindowAfterTransfer() cua adapter,
-     * nhung luon phai dong truoc eventStartAt. Lay moc som hon trong hai gia tri.</p>
+     * <p>Theo BR-09 Revised: cua so khieu nai = receivedAt (hoac transferredAt) + disputeWindowAfterTransfer(),
+     * nhung duoc noi them dung 30 phut vung dem sau gio bat dau su kien (eventStartAt + 30 phut)
+     * de phuc vu co che khieu nai tai cong soat ve. Lay moc som hon trong hai gia tri.</p>
      *
-     * @param ticket ve can tinh (phai da co transferredAt)
+     * @param ticket ve can tinh
      * @return moc thoi gian nguoi mua het quyen mo tranh chap
      */
     public Instant computeDisputeWindowClose(Ticket ticket) {
         TicketAdapter adapter = resolveAdapter(ticket.getTicketType());
         Duration disputeWindow = adapter.disputeWindowAfterTransfer();
 
-        Instant windowByTransfer = ticket.getTransferredAt().plus(disputeWindow);
+        Instant baseTime = ticket.getReceivedAt() != null
+                ? ticket.getReceivedAt()
+                : (ticket.getTransferredAt() != null ? ticket.getTransferredAt() : Instant.now());
 
-        // BR-09: cua so khieu nai luon phai dong truoc khi su kien bat dau
-        if (ticket.getEventStartAt() != null && ticket.getEventStartAt().isBefore(windowByTransfer)) {
-            return ticket.getEventStartAt();
+        Instant windowByTransfer = baseTime.plus(disputeWindow);
+
+        // BR-09 Revised: cua so khieu nai dong tai min(receivedAt + disputeWindow, eventStartAt + 30 phut)
+        if (ticket.getEventStartAt() != null) {
+            Instant gateDisputeDeadline = ticket.getEventStartAt().plus(Duration.ofMinutes(30));
+            if (gateDisputeDeadline.isBefore(windowByTransfer)) {
+                return gateDisputeDeadline;
+            }
         }
 
         return windowByTransfer;

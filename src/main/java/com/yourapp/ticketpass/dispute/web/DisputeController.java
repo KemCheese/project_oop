@@ -53,6 +53,12 @@ public class DisputeController {
     /** Use case người bán giải trình và người mua rút khiếu nại. */
     private final RespondToDisputeUseCase respondToDisputeUseCase;
 
+    /** Cổng truy cập dữ liệu vé. */
+    private final com.yourapp.ticketpass.ticket.domain.TicketRepository ticketRepository;
+
+    /** Cổng truy cập người dùng. */
+    private final com.yourapp.ticketpass.user.domain.UserRepository userRepository;
+
     /**
      * Hiển thị biểu mẫu mở khiếu nại cho một vé.
      *
@@ -63,11 +69,34 @@ public class DisputeController {
      */
     @GetMapping("/new")
     public String showCreateForm(@RequestParam Long ticketId, Model model, Principal principal) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: tra vé theo ticketId, "
-                + "xác minh người đăng nhập đúng là người mua của vé, "
-                + "dùng fileDisputeUseCase.resolvePolicy(ticket.getTicketType()) để tính và hiển thị "
-                + "thời điểm cửa sổ khiếu nại đóng, đổ FileDisputeRequest rỗng cùng danh sách "
-                + "DisputeReason.values() vào model; trả về tên view \"dispute/create\".");
+        var ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new com.yourapp.ticketpass.shared.exception.ResourceNotFoundException("Ticket", ticketId));
+
+        if (principal != null) {
+            Long currentUserId = resolveUserId(principal);
+            if (ticket.getBuyerId() == null || !ticket.getBuyerId().equals(currentUserId)) {
+                throw new com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException(
+                        "Chỉ người mua vé mới có quyền mở khiếu nại.");
+            }
+        }
+
+        java.time.Instant referenceTime = ticket.getReceivedAt() != null ? ticket.getReceivedAt() : ticket.getTransferredAt();
+        if (referenceTime == null) {
+            referenceTime = ticket.getUpdatedAt() != null ? ticket.getUpdatedAt() : java.time.Instant.now();
+        }
+        var policy = fileDisputeUseCase.resolvePolicy(ticket.getTicketType());
+        java.time.Instant windowClosesAt = policy.computeWindowClose(referenceTime, ticket.getEventStartAt());
+        boolean isGateDispute = ticket.getEventStartAt() != null && java.time.Instant.now().isAfter(ticket.getEventStartAt());
+
+        FileDisputeRequest form = new FileDisputeRequest();
+        form.setTicketId(ticketId);
+
+        model.addAttribute("ticket", ticket);
+        model.addAttribute("form", form);
+        model.addAttribute("windowClosesAt", windowClosesAt);
+        model.addAttribute("isGateDispute", isGateDispute);
+        model.addAttribute("reasons", com.yourapp.ticketpass.dispute.domain.DisputeReason.values());
+        return "dispute/create";
     }
 
     /**
@@ -76,18 +105,46 @@ public class DisputeController {
      * @param request   dữ liệu khiếu nại đã được kiểm tra ràng buộc
      * @param evidences các tệp bằng chứng người mua tải lên, có thể rỗng
      * @param principal người dùng đang đăng nhập, dùng để suy ra ID người mua
-     * @return chuyển hướng tới trang chi tiết khiếu nại vừa tạo
+     * @return chuyển hướng tới trang chi tiết khiếu nại hoặc chi tiết vé
      */
     @PostMapping
-    public String fileDispute(@Valid FileDisputeRequest request, @RequestParam(required = false) MultipartFile[] evidences,
+    public String fileDispute(@Valid FileDisputeRequest request,
+                              @RequestParam(required = false) MultipartFile[] evidences,
                               Principal principal) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: lấy buyerId từ principal, "
-                + "gọi fileDisputeUseCase.fileDispute(request.getTicketId(), buyerId, request.getReason(), "
-                + "request.getDescription()); sau đó với từng tệp trong evidences (bỏ qua tệp rỗng) gọi "
-                + "fileDisputeUseCase.attachEvidence(dispute.getId(), buyerId, suy luận DisputeEvidenceType "
-                + "từ contentType, file.getOriginalFilename(), file.getContentType(), file.getSize(), "
-                + "file.getInputStream()) trong try-with-resources; "
-                + "trả về \"redirect:/disputes/\" + dispute.getId().");
+        Long buyerId = resolveUserId(principal);
+        java.util.List<FileDisputeUseCase.DisputeEvidenceAttachment> attachments = new java.util.ArrayList<>();
+        if (evidences != null) {
+            for (MultipartFile file : evidences) {
+                if (file != null && !file.isEmpty()) {
+                    try {
+                        attachments.add(new FileDisputeUseCase.DisputeEvidenceAttachment(
+                                fileDisputeUseCase.inferEvidenceType(file.getContentType()),
+                                file.getOriginalFilename(),
+                                file.getContentType(),
+                                file.getSize(),
+                                file.getInputStream()
+                        ));
+                    } catch (java.io.IOException e) {
+                        throw new com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException(
+                                "Không thể đọc tệp bằng chứng: " + file.getOriginalFilename());
+                    }
+                }
+            }
+        }
+
+        var dispute = fileDisputeUseCase.fileDispute(request.getTicketId(), buyerId,
+                request.getReason(), request.getDescription(), attachments);
+        return "redirect:/tickets/" + request.getTicketId();
+    }
+
+    private Long resolveUserId(Principal principal) {
+        if (principal == null) {
+            throw new com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException("Yêu cầu đăng nhập.");
+        }
+        String email = principal.getName();
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new com.yourapp.ticketpass.shared.exception.ResourceNotFoundException("User", email));
+        return user.getId();
     }
 
     /**

@@ -204,6 +204,56 @@ public class TransferTicketService {
     }
 
     /**
+     * He thong tu dong xac nhan da nhan ve khi qua han 30 phut khong co thao tac (UC-06b).
+     *
+     * @param ticketId id cua ve
+     */
+    @Transactional
+    public void autoConfirmReceipt(Long ticketId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
+
+        if (ticket.getStatus() != TicketStatus.TRANSFERRED) {
+            return;
+        }
+
+        stateMachineService.transition(ticketId, TicketStatus.AWAITING_USE);
+    }
+
+    /**
+     * Nguoi mua bao loi ky thuat: anh QR khong xem duoc / bi hong trong vong 30 phut (UC-06b).
+     * He thong dong bang bo dem timeout, chuyen sang TECHNICAL_ISSUE.
+     *
+     * @param ticketId id cua ve
+     * @param buyerId id nguoi mua
+     * @param reason mo ta loi ky thuat
+     */
+    @Transactional
+    public void reportTechnicalIssue(Long ticketId, Long buyerId, String reason) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
+
+        if (ticket.getBuyerId() == null || !ticket.getBuyerId().equals(buyerId)) {
+            throw new BusinessRuleViolationException("Ban khong phai la nguoi mua cua ve nay.");
+        }
+
+        if (ticket.getStatus() != TicketStatus.TRANSFERRED) {
+            throw new BusinessRuleViolationException(
+                    "Chi co the bao loi ky thuat khi ve dang o trang thai TRANSFERRED.");
+        }
+
+        // Kiem tra con trong cua so 30 phut tu luc transferredAt
+        Instant transferredAt = ticket.getTransferredAt();
+        if (transferredAt != null && transferredAt.plus(java.time.Duration.ofMinutes(30)).isBefore(Instant.now())) {
+            throw new BusinessRuleViolationException(
+                    "Da qua thoi han 30 phut de bao loi ky thuat anh QR.");
+        }
+
+        // Chuyen sang TECHNICAL_ISSUE qua state machine de dong bang timeout
+        stateMachineService.transition(ticketId, TicketStatus.TECHNICAL_ISSUE);
+    }
+
+    /**
      * Nguoi ban huy listing khi ve chua co nguoi mua.
      *
      * <p>Chi ap dung khi ve van o trang thai LISTED (chua co tien escrow).
@@ -232,8 +282,8 @@ public class TransferTicketService {
                             + ". Chi co the huy khi ve dang o trang thai LISTED.");
         }
 
-        // Xoa ve khoi database (hard delete vi chua co giao dich nao ràng buoc)
-        ticketRepository.deleteById(ticket.getId());
+        // Chuyen trang thai sang CANCELLED qua state machine (giu lai lich su tren he thong)
+        stateMachineService.transition(ticketId, TicketStatus.CANCELLED);
     }
 
     // ========================= Helper methods =========================

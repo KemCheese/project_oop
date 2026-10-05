@@ -58,6 +58,7 @@ public class UpdateReputationUseCase {
     private static final BigDecimal POINTS_DISPUTE_WON = BigDecimal.ONE;
     private static final BigDecimal POINTS_DISPUTE_LOST = new BigDecimal("15");
     private static final BigDecimal POINTS_LISTING_CANCELLED = new BigDecimal("10");
+    private static final BigDecimal POINTS_DEPOSIT_TIMEOUT = new BigDecimal("15");
     private static final int MAX_RETRY = 3;
 
     private final ReputationRepository reputationRepository;
@@ -201,6 +202,24 @@ public class UpdateReputationUseCase {
         updateWithRetry(sellerId, rep -> {
             rep.setScore(clampScore(getScoreOrDefault(rep).subtract(POINTS_LISTING_CANCELLED)));
             rep.setCancelledListings(getOrDefault(rep.getCancelledListings()) + 1);
+        });
+    }
+
+    /**
+     * Ghi nhận việc người bán để quá hạn nạp cọc 30 phút sau khi người mua đã nạp tiền vào Escrow (UC-04b).
+     * Áp dụng chế tài nghiêm khắc nhất: phạt trừ 15 điểm uy tín (ngang với việc thua tranh chấp).
+     *
+     * @param sellerId id thuần của người bán
+     */
+    @Transactional
+    public void recordDepositTimeout(Long sellerId) {
+        if (sellerId == null) {
+            throw new IllegalArgumentException("sellerId must not be null");
+        }
+        log.warn("[Reputation] Áp chế tài trừ 15 điểm uy tín đối với sellerId={} do quá hạn nạp cọc 30 phút (UC-04b)", sellerId);
+        updateWithRetry(sellerId, rep -> {
+            rep.setScore(clampScore(getScoreOrDefault(rep).subtract(POINTS_DEPOSIT_TIMEOUT)));
+            rep.setDisputesLost(getOrDefault(rep.getDisputesLost()) + 1);
         });
     }
 

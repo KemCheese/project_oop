@@ -5,10 +5,12 @@ import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.user.application.RegisterUserUseCase;
+import com.yourapp.ticketpass.user.application.StarredTicketUseCase;
 import com.yourapp.ticketpass.user.application.UserProfileService;
 import com.yourapp.ticketpass.user.application.UserQueryService;
 import com.yourapp.ticketpass.user.domain.User;
 import com.yourapp.ticketpass.user.web.dto.RegisterRequest;
+import com.yourapp.ticketpass.user.web.dto.StarredTicketItemResponse;
 import com.yourapp.ticketpass.user.web.dto.UpdateBankAccountRequest;
 import com.yourapp.ticketpass.user.web.dto.UpdateProfileRequest;
 import com.yourapp.ticketpass.user.web.dto.UserProfileResponse;
@@ -16,6 +18,7 @@ import jakarta.validation.Valid;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.Principal;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -84,6 +87,8 @@ public class UserController {
     private final UserQueryService userQueryService;
 
     private final UpdateReputationUseCase updateReputationUseCase;
+
+    private final StarredTicketUseCase starredTicketUseCase;
 
     /**
      * Hiển thị form đăng nhập.
@@ -319,6 +324,11 @@ public class UserController {
 
         model.addAttribute("profile", profile);
         model.addAttribute("maskedBankAccount", maskedBankAccount);
+
+        // Danh sách vé theo dõi (Watchlist / Starred tickets) của người dùng
+        List<StarredTicketItemResponse> starredTickets = starredTicketUseCase.getStarredTicketsForUser(userId);
+        model.addAttribute("starredTickets", starredTickets);
+        model.addAttribute("starredCount", starredTickets.size());
 
         // Pre-fill form thông tin cá nhân nếu model chưa có (ví dụ khi GET /profile).
         // Nếu đã có (khi POST /profile bị lỗi validation), giữ nguyên request của user để hiển thị lỗi.

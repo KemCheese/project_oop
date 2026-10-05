@@ -1,7 +1,9 @@
 package com.yourapp.ticketpass.dispute.application;
 
 import java.io.InputStream;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -125,8 +127,66 @@ public class FileDisputeUseCase {
      * @param description mô tả chi tiết vấn đề
      * @return hồ sơ khiếu nại vừa được tạo
      */
+    /**
+     * DTO mang dữ liệu tệp bằng chứng đính kèm khi nộp khiếu nại.
+     */
+    public record DisputeEvidenceAttachment(
+            DisputeEvidenceType type,
+            String originalFilename,
+            String contentType,
+            long sizeBytes,
+            InputStream content
+    ) {}
+
+    /**
+     * Suy luận loại bằng chứng dựa trên MIME type.
+     */
+    public DisputeEvidenceType inferEvidenceType(String contentType) {
+        if (contentType == null) {
+            return DisputeEvidenceType.IMAGE;
+        }
+        String lower = contentType.toLowerCase().trim();
+        if (lower.startsWith("video/")) {
+            return DisputeEvidenceType.VIDEO;
+        }
+        if ("application/pdf".equals(lower)) {
+            return DisputeEvidenceType.PDF;
+        }
+        if (lower.startsWith("image/")) {
+            return DisputeEvidenceType.IMAGE;
+        }
+        if (lower.startsWith("text/")) {
+            return DisputeEvidenceType.CHAT_LOG;
+        }
+        return DisputeEvidenceType.IMAGE;
+    }
+
+    /**
+     * Người mua mở khiếu nại cho một vé (không kèm tệp đính kèm ngay).
+     */
     @Transactional
     public Dispute fileDispute(Long ticketId, Long buyerId, DisputeReason reason, String description) {
+        return fileDispute(ticketId, buyerId, reason, description, Collections.emptyList());
+    }
+
+    /**
+     * Người mua mở khiếu nại cho một vé kèm danh sách tệp bằng chứng.
+     *
+     * <p>Xử lý cơ chế Khiếu nại tại cổng soát vé (Gate Dispute — BR-09 Revised):
+     * Nếu thời điểm mở khiếu nại sau giờ sự kiện bắt đầu (now > eventStartAt), bắt buộc phải có
+     * Video quay tại quầy soát vé hoặc Biên bản từ chối vào cổng (PDF). Từ chối nếu chỉ có ảnh chụp
+     * đơn thuần hoặc không có bằng chứng. Người bán được cấp 24 giờ để giải trình.</p>
+     *
+     * @param ticketId    ID vé bị khiếu nại
+     * @param buyerId     ID người mua đứng ra khiếu nại
+     * @param reason      lý do khiếu nại
+     * @param description mô tả chi tiết vấn đề
+     * @param evidences   danh sách tệp bằng chứng đính kèm (có thể rỗng)
+     * @return hồ sơ khiếu nại vừa được tạo
+     */
+    @Transactional
+    public Dispute fileDispute(Long ticketId, Long buyerId, DisputeReason reason, String description,
+                               List<DisputeEvidenceAttachment> evidences) {
         if (ticketId == null || buyerId == null || reason == null) {
             throw new BusinessRuleViolationException("ticketId, buyerId và reason không được để trống.");
         }
@@ -169,22 +229,41 @@ public class FileDisputeUseCase {
         // (4) Lấy policy = resolvePolicy(ticket.getTicketType()) và kiểm tra cửa sổ khiếu nại
         DisputeWindowPolicy policy = resolvePolicy(ticket.getTicketType());
         Instant now = Instant.now();
-        Instant transferredAt = ticket.getTransferredAt();
+        Instant referenceTime = ticket.getReceivedAt() != null ? ticket.getReceivedAt() : ticket.getTransferredAt();
+        if (referenceTime == null) {
+            referenceTime = ticket.getUpdatedAt() != null ? ticket.getUpdatedAt() : now;
+        }
         Instant eventStartAt = ticket.getEventStartAt();
 
-        if (transferredAt == null) {
-            transferredAt = ticket.getUpdatedAt() != null ? ticket.getUpdatedAt() : now;
-        }
-
-        if (!policy.isWithinWindow(transferredAt, eventStartAt, now)) {
+        if (!policy.isWithinWindow(referenceTime, eventStartAt, now)) {
             throw new BusinessRuleViolationException(
                     "Đã hết cửa sổ khiếu nại cho vé #" + ticketId + " (loại vé: " + ticket.getTicketType()
-                    + "). Không thể mở khiếu nại sau thời hạn quy định hoặc sau giờ sự kiện.");
+                    + "). Không thể mở khiếu nại sau thời hạn quy định hoặc sau giờ sự kiện + 30 phút.");
+        }
+
+        // Ràng buộc Gate Dispute (BR-09 Revised): Khiếu nại sau giờ sự kiện (now > eventStartAt)
+        boolean isGateDispute = eventStartAt != null && now.isAfter(eventStartAt);
+        if (isGateDispute) {
+            if (evidences == null || evidences.isEmpty()) {
+                throw new BusinessRuleViolationException(
+                        "Khiếu nại tại cổng soát vé (sau giờ bắt đầu sự kiện) bắt buộc phải nộp Video quay liên tục tại quầy/máy soát vé hoặc Biên bản từ chối vào cổng (PDF).");
+            }
+            boolean hasValidGateEvidence = evidences.stream().anyMatch(e ->
+                    e.type() == DisputeEvidenceType.VIDEO || e.type() == DisputeEvidenceType.PDF
+                    || (e.contentType() != null && (e.contentType().toLowerCase().startsWith("video/") || "application/pdf".equalsIgnoreCase(e.contentType())))
+            );
+            if (!hasValidGateEvidence) {
+                throw new BusinessRuleViolationException(
+                        "Khiếu nại tại cổng soát vé từ chối bằng chứng chỉ là ảnh chụp màn hình đơn thuần. Bắt buộc phải nộp Video soát vé lỗi hoặc Biên bản tại quầy (PDF).");
+            }
         }
 
         // (5) Tạo Dispute
-        Instant windowClosesAt = policy.computeWindowClose(transferredAt, eventStartAt);
-        Instant sellerResponseDeadline = now.plus(policy.sellerResponseWindow());
+        Instant windowClosesAt = policy.computeWindowClose(referenceTime, eventStartAt);
+        // AC-03.3: Seller có 24 giờ phản hồi bằng chứng đối với Gate Dispute
+        Instant sellerResponseDeadline = isGateDispute
+                ? now.plus(Duration.ofHours(24))
+                : now.plus(policy.sellerResponseWindow());
 
         Dispute dispute = new Dispute();
         dispute.setTicketId(ticketId);
@@ -203,8 +282,17 @@ public class FileDisputeUseCase {
         ticketStateMachineService.transition(ticketId, TicketStatus.DISPUTE_UNDER_REVIEW);
 
         dispute = disputeRepository.save(dispute);
-        log.info("[FileDispute] Mở khiếu nại id={} thành công cho vé #{}, buyerId={}, sellerId={}, deadline={}",
-                dispute.getId(), ticketId, buyerId, dispute.getSellerId(), sellerResponseDeadline);
+        log.info("[FileDispute] Mở khiếu nại id={} thành công cho vé #{}, buyerId={}, sellerId={}, isGateDispute={}, deadline={}",
+                dispute.getId(), ticketId, buyerId, dispute.getSellerId(), isGateDispute, sellerResponseDeadline);
+
+        // (7) Đính kèm các tệp bằng chứng nếu có
+        if (evidences != null && !evidences.isEmpty()) {
+            for (DisputeEvidenceAttachment att : evidences) {
+                attachEvidence(dispute.getId(), buyerId, att.type(), att.originalFilename(),
+                        att.contentType(), att.sizeBytes(), att.content());
+            }
+        }
+
         return dispute;
     }
 

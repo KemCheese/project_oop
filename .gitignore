@@ -32,3 +32,10 @@ GEMINI.md
 
 # --- Dev C plan & reports cá nhân ---
 design-note/ngoc_plan/
+
+skills-lock.json
+.agents/
+cloudflared.exe
+.gitignore
+./cloudflared.exe
+.claude/
