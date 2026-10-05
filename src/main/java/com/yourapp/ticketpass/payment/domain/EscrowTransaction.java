@@ -106,7 +106,7 @@ public class EscrowTransaction {
     @Column(name = "tier_code", length = 40)
     private String tierCode;
 
-    /** Tên cổng thanh toán đã xử lý giao dịch, ví dụ {@code "MOMO_TEST"}. */
+    /** Tên cổng thanh toán đã xử lý giao dịch, ví dụ {@code "MANUAL_TRANSFER"}. */
     @Column(name = "gateway_name", length = 60)
     private String gatewayName;
 

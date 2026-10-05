@@ -303,7 +303,7 @@
                     </div>
 
                     <!-- Buyer Action: Withdraw Dispute -->
-                    <div th:if="${isBuyer != null and isBuyer}" class="card-section">
+                    <div th:if="${isBuyer != null and isBuyer and dispute != null and dispute.status != null and dispute.status.name() != 'RESOLVED_BUYER_WINS' and dispute.status.name() != 'RESOLVED_SELLER_WINS' and dispute.status.name() != 'WITHDRAWN'}" class="card-section">
                         <div style="font-size: 13px; font-weight: 700; color: var(--color-brand); margin-bottom: 8px;">
                             Thỏa Thuận Xong?
                         </div>
@@ -311,15 +311,22 @@
                             Nếu người bán đã hỗ trợ đổi vé hoặc hai bên đã giải quyết ổn thỏa ngoài sàn, bạn có thể tự nguyện rút khiếu nại. Tiền sẽ được giải ngân cho người bán.
                         </p>
                         <form th:action="@{/disputes/{id}/withdraw(id=${dispute != null ? dispute.id : 101})}" method="post">
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <input type="text" name="reason" class="form-control" style="font-size: 13px;"
+                                       placeholder="Lý do rút khiếu nại (ví dụ: đã nhận lại vé mới)" />
+                            </div>
                             <button type="submit" class="btn btn-outline btn-sm" style="width: 100%;"
-                                    onclick="return confirm('Bạn có chắc chắn muốn rút khiếu nại này không? Sau khi rút, giao dịch sẽ được hoàn tất.');">
+                                    onclick="return confirm('Bạn có chắc chắn muốn rút khiếu nại này không? Sau khi rút, giao dịch sẽ được hoàn tất và giải ngân cho người bán.');">
                                 <i class="fa-solid fa-handshake"></i> Rút khiếu nại
                             </button>
                         </form>
                     </div>
 
                     <!-- Navigation Link -->
-                    <div style="text-align: center;">
+                    <div style="display: flex; flex-direction: column; gap: 8px; text-align: center;">
+                        <a th:if="${dispute != null and dispute.ticketId != null}" th:href="@{/tickets/{id}(id=${dispute.ticketId})}" class="btn btn-outline btn-sm">
+                            <i class="fa-solid fa-ticket"></i> Xem chi tiết vé gốc
+                        </a>
                         <a th:href="@{/tickets}" class="btn btn-outline btn-sm">
                             <i class="fa-solid fa-arrow-left"></i> Quay lại sàn vé
                         </a>

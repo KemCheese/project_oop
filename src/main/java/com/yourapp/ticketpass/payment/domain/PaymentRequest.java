@@ -13,8 +13,8 @@ import lombok.Setter;
  *
  * <p>Đây là DTO thuần, không phải entity. Nhờ có lớp trung lập này, các use case trong
  * {@code payment.application} không cần biết cổng thanh toán cụ thể yêu cầu tham số gì:
- * việc chuyển đổi sang định dạng riêng của MoMo, VNPay hay ZaloPay thuộc trách nhiệm của
- * adapter tương ứng.</p>
+ * việc chuyển đổi sang định dạng riêng của cổng thanh toán hoặc cơ chế chuyển khoản QR
+ * thuộc trách nhiệm của adapter tương ứng.</p>
  *
  * <p>Module: payment</p>
  *

@@ -36,36 +36,13 @@ class SecurityConfigTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("GET /payment/momo/return - permitAll: không bị Spring Security chuyển hướng sang trang /login")
-    void momoReturn_isPermittedAll_notRedirectedToLogin() throws Exception {
-        // Thực hiện request giả lập MoMo redirect người dùng về
-        mockMvc.perform(get("/payment/momo/return")
-                        .param("partnerCode", "MOMO")
-                        .param("orderId", "DEMO-123")
-                        .param("resultCode", "0"))
-                // Khẳng định: Không bị 302 chuyển hướng về /login
-                .andExpect(result -> {
-                    int status = result.getResponse().getStatus();
-                    String redirectUrl = result.getResponse().getRedirectedUrl();
-                    if (status == 302 && redirectUrl != null && redirectUrl.contains("/login")) {
-                        throw new AssertionError("Yêu cầu bị chặn bởi Spring Security và redirect về /login: " + redirectUrl);
-                    }
-                });
-    }
-
-    @Test
-    @DisplayName("POST /payment/momo/ipn - permitAll và miễn CSRF: không bị từ chối 401 Unauthorized hoặc 403 Forbidden")
-    void momoIpn_isPermittedAll_andCsrfIgnored() throws Exception {
-        mockMvc.perform(post("/payment/momo/ipn")
-                        .contentType("application/json")
-                        .content("{\"orderId\":\"DEMO-123\",\"resultCode\":0}"))
-                // Không bị 401 hoặc 403 từ Spring Security
-                .andExpect(result -> {
-                    int status = result.getResponse().getStatus();
-                    if (status == 401 || status == 403) {
-                        throw new AssertionError("MoMo IPN bị chặn bởi Spring Security với HTTP " + status);
-                    }
-                });
+    @DisplayName("GET /payment/transfer - khách chưa đăng nhập phải bị chặn và chuyển hướng về /login")
+    void paymentTransfer_requiresAuthentication() throws Exception {
+        mockMvc.perform(get("/payment/transfer")
+                        .param("ref", "1")
+                        .param("type", "escrow"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(header().string("Location", containsString("/login")));
     }
 
     @Test
