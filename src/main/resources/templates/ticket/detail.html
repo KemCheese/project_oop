@@ -280,7 +280,7 @@
                                 class="badge badge-success">
                                 <i class="fa-solid fa-circle-check"></i> Đang rao bán
                             </span>
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'ESCROW_HELD'}"
+                            <span th:if="${ticket.status != null and (ticket.status.name() == 'ESCROW_HELD' or ticket.status.name() == 'PAYMENT_ESCROWED')}"
                                 class="badge badge-warning">
                                 <i class="fa-solid fa-hourglass-half"></i> Đã nạp ký quỹ
                             </span>
@@ -296,13 +296,21 @@
                                 class="badge badge-success">
                                 <i class="fa-solid fa-qrcode"></i> Sẵn sàng sử dụng
                             </span>
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'COMPLETED'}"
+                            <span th:if="${ticket.status != null and (ticket.status.name() == 'COMPLETED' or ticket.status.name() == 'AUTO_COMPLETE')}"
                                 class="badge badge-success">
                                 <i class="fa-solid fa-check-double"></i> Giao dịch hoàn tất
                             </span>
-                            <span th:if="${ticket.status != null and ticket.status.name() == 'DISPUTED'}"
+                            <span th:if="${ticket.status != null and (ticket.status.name() == 'DISPUTED' or ticket.status.name() == 'DISPUTE_UNDER_REVIEW')}"
                                 class="badge badge-danger">
                                 <i class="fa-solid fa-triangle-exclamation"></i> Đang khiếu nại
+                            </span>
+                            <span th:if="${ticket.status != null and ticket.status.name() == 'RESOLVED_BUYER_WINS'}"
+                                class="badge badge-success" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                                <i class="fa-solid fa-shield-heart"></i> Đã xử: Người mua thắng
+                            </span>
+                            <span th:if="${ticket.status != null and ticket.status.name() == 'RESOLVED_SELLER_WINS'}"
+                                class="badge badge-success" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                                <i class="fa-solid fa-award"></i> Đã xử: Người bán thắng
                             </span>
                             <span th:if="${ticket.status != null and ticket.status.name() == 'CANCELLED'}"
                                 class="badge badge-neutral">
@@ -349,9 +357,9 @@
                         </div>
 
                         <!-- Dispute Window Countdown Notice (BR-09) -->
-                        <div th:if="${ticket.disputeWindowClosesAt != null and ticket.status.name() == 'AWAITING_USE' and isBuyer}"
+                        <div th:if="${(ticket.status.name() == 'AWAITING_USE' or ticket.status.name() == 'TRANSFERRED') and isBuyer}"
                             style="margin-top: 14px; padding: 12px; background-color: #fff; border-radius: var(--radius-md); border: 1px solid #bbf7d0;">
-                            <div style="font-size: 13px; color: var(--color-brand); margin-bottom: 8px;">
+                            <div th:if="${ticket.disputeWindowClosesAt != null}" style="font-size: 13px; color: var(--color-brand); margin-bottom: 8px;">
                                 <i class="fa-regular fa-clock" style="color: var(--color-warning);"></i>
                                 Cửa sổ khiếu nại đóng lúc:
                                 <strong
@@ -574,6 +582,40 @@
                                 <div class="alert alert-warning" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-warning);">
                                     <i class="fa-solid fa-triangle-exclamation"></i> <strong>Sự cố kỹ thuật:</strong> Người mua đã báo lỗi ảnh QR. Bộ đếm timeout đã được đóng băng để bộ phận kỹ thuật / Admin hỗ trợ can thiệp.
                                 </div>
+                            </div>
+
+                            <!-- Ticket is in DISPUTE_UNDER_REVIEW state -->
+                            <div th:if="${ticket.status != null and (ticket.status.name() == 'DISPUTE_UNDER_REVIEW' or ticket.status.name() == 'DISPUTED')}">
+                                <div class="alert alert-danger" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-danger); line-height: 1.5;">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> <strong>Đang có khiếu nại tranh chấp:</strong><br/>
+                                    Hồ sơ đang được đối soát. Toàn bộ tiền ký quỹ và tiền cọc đã được đóng băng để Admin thụ lý.
+                                </div>
+                                <a th:href="@{/disputes/ticket/{id}(id=${ticket.id})}" class="btn btn-danger" style="width: 100%; font-size: 13px; margin-bottom: 8px;">
+                                    <i class="fa-solid fa-file-shield"></i> Xem tiến trình tranh chấp
+                                </a>
+                                <a th:if="${#authorization.expression('hasRole(''ADMIN'')')}" th:href="@{/admin/disputes}" class="btn btn-warning" style="width: 100%; font-size: 13px;">
+                                    <i class="fa-solid fa-gavel"></i> Trung tâm phán quyết Admin
+                                </a>
+                            </div>
+
+                            <!-- Ticket is RESOLVED_BUYER_WINS -->
+                            <div th:if="${ticket.status != null and ticket.status.name() == 'RESOLVED_BUYER_WINS'}">
+                                <div class="alert alert-success" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success); line-height: 1.5;">
+                                    <i class="fa-solid fa-circle-check"></i> <strong>Tranh chấp đã giải quyết:</strong> Người mua thắng kiện. Tiền ký quỹ đã được hoàn trả và người bán bị phạt cọc.
+                                </div>
+                                <a th:href="@{/disputes/ticket/{id}(id=${ticket.id})}" class="btn btn-outline btn-sm" style="width: 100%;">
+                                    <i class="fa-solid fa-file-lines"></i> Xem hồ sơ khiếu nại
+                                </a>
+                            </div>
+
+                            <!-- Ticket is RESOLVED_SELLER_WINS -->
+                            <div th:if="${ticket.status != null and ticket.status.name() == 'RESOLVED_SELLER_WINS'}">
+                                <div class="alert alert-success" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success); line-height: 1.5;">
+                                    <i class="fa-solid fa-circle-check"></i> <strong>Tranh chấp đã giải quyết:</strong> Người bán thắng kiện. Tiền bán vé đã được giải ngân và cọc đã được hoàn đủ.
+                                </div>
+                                <a th:href="@{/disputes/ticket/{id}(id=${ticket.id})}" class="btn btn-outline btn-sm" style="width: 100%;">
+                                    <i class="fa-solid fa-file-lines"></i> Xem hồ sơ khiếu nại
+                                </a>
                             </div>
                         </div>
                     </div>

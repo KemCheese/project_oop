@@ -42,4 +42,11 @@ public class DisputeEvidenceResponse {
 
     /** Thời điểm tệp được tải lên. */
     private Instant uploadedAt;
+
+    /**
+     * Alias để tương thích với template gọi ev.fileUrl hoặc ev.publicUrl.
+     */
+    public String getFileUrl() {
+        return publicUrl;
+    }
 }

@@ -2,6 +2,9 @@ package com.yourapp.ticketpass.dispute.web;
 
 import java.security.Principal;
 
+import java.util.List;
+import java.util.Objects;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,8 +16,19 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.yourapp.ticketpass.dispute.application.FileDisputeUseCase;
 import com.yourapp.ticketpass.dispute.application.RespondToDisputeUseCase;
+import com.yourapp.ticketpass.dispute.domain.Dispute;
+import com.yourapp.ticketpass.dispute.domain.DisputeEvidence;
+import com.yourapp.ticketpass.dispute.domain.DisputeEvidenceRepository;
+import com.yourapp.ticketpass.dispute.domain.DisputeRepository;
+import com.yourapp.ticketpass.dispute.web.dto.DisputeEvidenceResponse;
+import com.yourapp.ticketpass.dispute.web.dto.DisputeResponse;
 import com.yourapp.ticketpass.dispute.web.dto.FileDisputeRequest;
 import com.yourapp.ticketpass.dispute.web.dto.RespondToDisputeRequest;
+import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
+import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
+import com.yourapp.ticketpass.shared.storage.FileStorageService;
+import com.yourapp.ticketpass.user.domain.User;
+import com.yourapp.ticketpass.user.domain.UserRole;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -53,11 +67,35 @@ public class DisputeController {
     /** Use case người bán giải trình và người mua rút khiếu nại. */
     private final RespondToDisputeUseCase respondToDisputeUseCase;
 
+    /** Cổng truy cập dữ liệu khiếu nại. */
+    private final DisputeRepository disputeRepository;
+
+    /** Cổng truy cập dữ liệu bằng chứng. */
+    private final DisputeEvidenceRepository disputeEvidenceRepository;
+
+    /** Cổng lưu trữ tệp để dựng publicUrl. */
+    private final FileStorageService fileStorageService;
+
     /** Cổng truy cập dữ liệu vé. */
     private final com.yourapp.ticketpass.ticket.domain.TicketRepository ticketRepository;
 
     /** Cổng truy cập người dùng. */
     private final com.yourapp.ticketpass.user.domain.UserRepository userRepository;
+
+    /**
+     * Tiện ích chuyển hướng tới khiếu nại của một vé.
+     * Nếu vé đã có khiếu nại, chuyển hướng tới trang chi tiết khiếu nại.
+     * Nếu chưa có khiếu nại, chuyển hướng tới trang tạo khiếu nại mới.
+     *
+     * @param ticketId ID của vé
+     * @return URL chuyển hướng tương ứng
+     */
+    @GetMapping("/ticket/{ticketId}")
+    public String redirectToDisputeByTicket(@PathVariable Long ticketId) {
+        return disputeRepository.findByTicketId(ticketId)
+                .map(d -> "redirect:/disputes/" + d.getId())
+                .orElse("redirect:/disputes/new?ticketId=" + ticketId);
+    }
 
     /**
      * Hiển thị biểu mẫu mở khiếu nại cho một vé.
@@ -134,7 +172,7 @@ public class DisputeController {
 
         var dispute = fileDisputeUseCase.fileDispute(request.getTicketId(), buyerId,
                 request.getReason(), request.getDescription(), attachments);
-        return "redirect:/tickets/" + request.getTicketId();
+        return "redirect:/disputes/" + dispute.getId();
     }
 
     private Long resolveUserId(Principal principal) {
@@ -157,11 +195,37 @@ public class DisputeController {
      */
     @GetMapping("/{id}")
     public String showDetail(@PathVariable Long id, Model model, Principal principal) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: tra Dispute theo id, "
-                + "xác minh người đăng nhập là người mua hoặc người bán của khiếu nại (nếu không thì trả 403), "
-                + "nạp bằng chứng qua DisputeEvidenceRepository.findByDisputeId và dựng publicUrl bằng "
-                + "FileStorageService.buildPublicUrl, map sang DisputeResponse rồi đổ vào model; "
-                + "trả về tên view \"dispute/detail\".");
+        Dispute dispute = disputeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Dispute", id));
+
+        Long currentUserId = null;
+        boolean isAdmin = false;
+        if (principal != null) {
+            String email = principal.getName();
+            var userOpt = userRepository.findByEmail(email);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                currentUserId = user.getId();
+                isAdmin = user.getRole() == UserRole.ADMIN;
+            }
+        }
+
+        boolean isBuyer = currentUserId != null && Objects.equals(dispute.getBuyerId(), currentUserId);
+        boolean isSeller = currentUserId != null && Objects.equals(dispute.getSellerId(), currentUserId);
+
+        if (!isBuyer && !isSeller && !isAdmin) {
+            throw new BusinessRuleViolationException("Bạn không có quyền truy cập hồ sơ khiếu nại này.");
+        }
+
+        List<DisputeEvidence> evidences = disputeEvidenceRepository.findByDisputeId(id);
+        DisputeResponse disputeResponse = mapToResponse(dispute, evidences);
+
+        model.addAttribute("dispute", disputeResponse);
+        model.addAttribute("isBuyer", isBuyer);
+        model.addAttribute("isSeller", isSeller);
+        model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("buyerEvidences", disputeResponse.getEvidences());
+        return "dispute/detail";
     }
 
     /**
@@ -174,9 +238,9 @@ public class DisputeController {
      */
     @PostMapping("/{id}/respond")
     public String respond(@PathVariable Long id, @Valid RespondToDisputeRequest request, Principal principal) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: lấy sellerId từ principal, "
-                + "gọi respondToDisputeUseCase.submitSellerResponse(id, sellerId, request.getResponse()), "
-                + "rồi trả về \"redirect:/disputes/\" + id.");
+        Long sellerId = resolveUserId(principal);
+        respondToDisputeUseCase.submitSellerResponse(id, sellerId, request.getResponse());
+        return "redirect:/disputes/" + id;
     }
 
     /**
@@ -188,9 +252,48 @@ public class DisputeController {
      * @return chuyển hướng về trang chi tiết khiếu nại
      */
     @PostMapping("/{id}/withdraw")
-    public String withdraw(@PathVariable Long id, @RequestParam String reason, Principal principal) {
-        throw new UnsupportedOperationException("TODO [Người B] Prompt 2: lấy buyerId từ principal, "
-                + "gọi respondToDisputeUseCase.withdrawDispute(id, buyerId, reason), "
-                + "rồi trả về \"redirect:/disputes/\" + id.");
+    public String withdraw(@PathVariable Long id,
+                           @RequestParam(required = false, defaultValue = "Người mua tự nguyện rút khiếu nại") String reason,
+                           Principal principal) {
+        Long buyerId = resolveUserId(principal);
+        respondToDisputeUseCase.withdrawDispute(id, buyerId, reason);
+        return "redirect:/disputes/" + id;
+    }
+
+    /**
+     * Chuyển đổi entity {@link Dispute} sang {@link DisputeResponse} DTO.
+     */
+    private DisputeResponse mapToResponse(Dispute dispute, List<DisputeEvidence> evidences) {
+        DisputeResponse resp = new DisputeResponse();
+        resp.setId(dispute.getId());
+        resp.setTicketId(dispute.getTicketId());
+        resp.setBuyerId(dispute.getBuyerId());
+        resp.setSellerId(dispute.getSellerId());
+        resp.setStatus(dispute.getStatus());
+        resp.setReason(dispute.getReason());
+        resp.setDescription(dispute.getDescription());
+        resp.setFiledAt(dispute.getFiledAt());
+        resp.setWindowClosesAt(dispute.getWindowClosesAt());
+        resp.setSellerResponseDeadline(dispute.getSellerResponseDeadline());
+        resp.setSellerResponse(dispute.getSellerResponse());
+        resp.setOutcome(dispute.getOutcome());
+        resp.setTotalDeposit(dispute.getTotalDeposit());
+        resp.setFounderCut(dispute.getFounderCut());
+        resp.setBuyerCompensation(dispute.getBuyerCompensation());
+
+        if (evidences != null && !evidences.isEmpty()) {
+            List<DisputeEvidenceResponse> evidenceResponses = evidences.stream().map(e -> {
+                DisputeEvidenceResponse er = new DisputeEvidenceResponse();
+                er.setId(e.getId());
+                er.setEvidenceType(e.getEvidenceType());
+                er.setOriginalFilename(e.getOriginalFilename());
+                er.setPublicUrl(fileStorageService.buildPublicUrl(e.getStorageKey()));
+                er.setNote(e.getNote());
+                er.setUploadedAt(e.getUploadedAt());
+                return er;
+            }).toList();
+            resp.setEvidences(evidenceResponses);
+        }
+        return resp;
     }
 }
