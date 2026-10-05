@@ -25,57 +25,18 @@
                     color: var(--color-text-muted);
                 }
 
-                /* Filter Tabs */
-                .filter-bar {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    flex-wrap: wrap;
-                    gap: 16px;
-                    margin-bottom: 28px;
-                    background-color: var(--color-surface);
-                    padding: 14px 18px;
-                    border-radius: var(--radius-lg);
-                    border: 1px solid var(--color-border);
-                    box-shadow: var(--shadow-sm);
-                }
-
-                .filter-tabs {
-                    display: flex;
-                    gap: 8px;
-                    flex-wrap: wrap;
-                }
-
-                .filter-tab {
-                    padding: 8px 16px;
-                    border-radius: var(--radius-md);
-                    font-size: 13px;
-                    font-weight: 600;
-                    color: var(--color-text-secondary);
-                    background-color: var(--color-bg);
-                    border: 1px solid var(--color-border);
-                    transition: all var(--transition-base);
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                }
-
-                .filter-tab:hover {
-                    color: var(--color-primary);
-                    border-color: var(--color-primary-border);
-                }
-
-                .filter-tab.active {
-                    background-color: var(--color-primary);
-                    color: #ffffff;
-                    border-color: var(--color-primary);
-                }
 
                 /* Ticket Grid */
                 .ticket-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
                     gap: 20px;
+                }
+
+                @media (max-width: 640px) {
+                    .ticket-grid {
+                        grid-template-columns: 1fr;
+                    }
                 }
 
                 .ticket-card {
@@ -124,6 +85,55 @@
                     position: absolute;
                     top: 10px;
                     left: 10px;
+                }
+
+                /* Nút đánh sao tròn trên Card vé (Anti-Slop Modern UI) */
+                .btn-star-ticket {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    z-index: 2;
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.88);
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                    border: 1px solid rgba(255, 255, 255, 0.6);
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    color: #94a3b8;
+                    font-size: 14px;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    outline: none;
+                }
+
+                .btn-star-ticket:hover {
+                    color: #f59e0b;
+                    background: #ffffff;
+                    transform: scale(1.1);
+                    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+                }
+
+                .btn-star-ticket:active {
+                    transform: scale(0.92);
+                }
+
+                .btn-star-ticket.active {
+                    color: #f59e0b;
+                    background: #fffbeb;
+                    border-color: #fde68a;
+                    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+                    animation: starSpringPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+
+                @keyframes starSpringPop {
+                    0% { transform: scale(0.85); }
+                    50% { transform: scale(1.22); }
+                    100% { transform: scale(1); }
                 }
 
                 .ticket-body {
@@ -189,6 +199,144 @@
                     font-weight: 800;
                     color: var(--color-accent);
                 }
+
+                /* Search Meta Bar */
+                .search-meta-bar {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    padding: 12px 18px;
+                    margin-bottom: 24px;
+                    font-size: 14px;
+                    color: var(--color-text-main);
+                    box-shadow: var(--shadow-sm);
+                }
+
+                .search-meta-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                }
+
+                .search-meta-count {
+                    color: var(--color-text-muted);
+                    font-size: 13px;
+                }
+
+                .btn-clear-search {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--color-text-secondary);
+                    text-decoration: none;
+                    padding: 5px 12px;
+                    border-radius: var(--radius-sm);
+                    background-color: var(--color-bg);
+                    border: 1px solid var(--color-border);
+                    transition: all var(--transition-base);
+                }
+
+                .btn-clear-search:hover {
+                    color: var(--color-danger);
+                    border-color: var(--color-danger-border);
+                    background-color: var(--color-danger-surface);
+                }
+
+                /* Pagination Controls (Anti-Slop Modern UI) */
+                .pagination-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 14px;
+                    margin-top: 36px;
+                    padding-top: 24px;
+                    border-top: 1px solid var(--color-border);
+                }
+
+                .pagination-nav {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                .page-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 40px;
+                    height: 40px;
+                    padding: 0 12px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--color-text-main);
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    text-decoration: none;
+                    transition: all var(--transition-base);
+                    box-shadow: var(--shadow-sm);
+                    user-select: none;
+                }
+
+                .page-btn:hover:not(.disabled):not(.active) {
+                    color: var(--color-primary);
+                    border-color: var(--color-primary-border);
+                    background-color: var(--color-primary-surface);
+                    transform: translateY(-1px);
+                    box-shadow: var(--shadow-card);
+                }
+
+                .page-btn:active:not(.disabled) {
+                    transform: scale(0.96);
+                }
+
+                .page-btn.active {
+                    background-color: var(--color-primary);
+                    color: #ffffff;
+                    border-color: var(--color-primary);
+                    cursor: default;
+                    box-shadow: 0 2px 6px rgba(231, 26, 15, 0.3);
+                }
+
+                .page-btn.disabled {
+                    opacity: 0.4;
+                    cursor: not-allowed;
+                    background-color: var(--color-bg);
+                    border-color: var(--color-border);
+                    color: var(--color-text-muted);
+                    box-shadow: none;
+                    pointer-events: none;
+                }
+
+                .pagination-info {
+                    font-size: 13px;
+                    color: var(--color-text-muted);
+                    font-weight: 500;
+                    text-align: center;
+                }
+
+                @media (max-width: 640px) {
+                    .pagination-container {
+                        margin-top: 24px;
+                        gap: 10px;
+                    }
+
+                    .page-btn {
+                        min-width: 36px;
+                        height: 36px;
+                        padding: 0 8px;
+                        font-size: 13px;
+                    }
+                }
+
             </style>
 
             <div class="page-header">
@@ -196,46 +344,39 @@
                 <p class="page-desc">Danh sách vé điện tử chính chủ có ký quỹ bảo vệ từ TicketPass</p>
             </div>
 
-            <!-- Filter Navigation Bar -->
-            <div class="filter-bar">
-                <div class="filter-tabs">
-                    <a th:href="@{/tickets}"
-                       class="filter-tab"
-                       th:classappend="${selectedType == null or selectedType.isEmpty()} ? 'active' : ''">
-                        <i class="fa-solid fa-layer-group"></i> Tất cả vé
-                    </a>
-                    <a th:href="@{/tickets(ticketType='MOVIE')}"
-                       class="filter-tab"
-                       th:classappend="${selectedType != null and selectedType.toUpperCase() == 'MOVIE'} ? 'active' : ''">
-                        <i class="fa-solid fa-film"></i> Vé xem phim
-                    </a>
-                    <a th:href="@{/tickets(ticketType='CONCERT')}"
-                       class="filter-tab"
-                       th:classappend="${selectedType != null and selectedType.toUpperCase() == 'CONCERT'} ? 'active' : ''">
-                        <i class="fa-solid fa-music"></i> Vé concert
-                    </a>
-                    <a th:href="@{/tickets(ticketType='BUS')}"
-                       class="filter-tab"
-                       th:classappend="${selectedType != null and selectedType.toUpperCase() == 'BUS'} ? 'active' : ''">
-                        <i class="fa-solid fa-bus"></i> Vé xe khách
-                    </a>
-                </div>
 
-                <a th:href="@{/tickets/new}" class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-plus"></i> Đăng vé bán
+            <!-- Search Results Meta Bar -->
+            <div th:if="${keyword != null and !keyword.isEmpty()}" class="search-meta-bar">
+                <div class="search-meta-info">
+                    <i class="fa-solid fa-magnifying-glass" style="color: var(--color-primary);"></i>
+                    <span>Kết quả tìm kiếm cho: </span>
+                    <strong th:text="'&quot;' + ${keyword} + '&quot;'">"Tên sự kiện"</strong>
+                    <span class="search-meta-count" th:text="'(' + ${#lists.size(tickets)} + ' vé phù hợp)'">(0 vé phù hợp)</span>
+                </div>
+                <a th:href="@{/tickets(ticketType=${selectedType})}" class="btn-clear-search">
+                    <i class="fa-solid fa-xmark"></i> Xóa tìm kiếm
                 </a>
             </div>
 
             <!-- Empty State -->
             <div th:if="${#lists.isEmpty(tickets)}" class="empty-state">
                 <div class="empty-icon">
-                    <i class="fa-solid fa-ticket-simple"></i>
+                    <i th:if="${keyword != null and !keyword.isEmpty()}" class="fa-solid fa-magnifying-glass"></i>
+                    <i th:unless="${keyword != null and !keyword.isEmpty()}" class="fa-solid fa-ticket-simple"></i>
                 </div>
                 <h2 class="empty-title">Không tìm thấy vé phù hợp</h2>
-                <p class="empty-desc">
+                <p class="empty-desc" th:if="${keyword != null and !keyword.isEmpty()}">
+                    Không tìm thấy vé sự kiện nào khớp với từ khóa "<span th:text="${keyword}" style="font-weight: 600;">từ khóa</span>". Bạn hãy kiểm tra lại chính tả hoặc xóa bộ lọc để xem các vé khác.
+                </p>
+                <p class="empty-desc" th:unless="${keyword != null and !keyword.isEmpty()}">
                     Hiện tại chưa có vé nào thuộc danh mục này đang được rao bán trên sàn. Bạn có thể quay lại sau hoặc đăng bán vé ngay.
                 </p>
-                <div style="display: flex; gap: 10px; justify-content: center;">
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <a th:if="${keyword != null and !keyword.isEmpty()}"
+                       th:href="@{/tickets(ticketType=${selectedType})}"
+                       class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Xóa từ khóa tìm kiếm
+                    </a>
                     <a th:href="@{/tickets}" class="btn btn-outline btn-sm">Xem tất cả vé</a>
                     <a th:href="@{/tickets/new}" class="btn btn-primary btn-sm">Đăng bán vé ngay</a>
                 </div>
@@ -271,6 +412,19 @@
                                 <i class="fa-solid fa-bus"></i> Xe khách
                             </span>
                         </div>
+
+                        <!-- Nút Đánh sao nhanh trên ảnh vé -->
+                        <th:block sec:authorize="isAuthenticated()">
+                            <button type="button"
+                                    class="btn-star-ticket"
+                                    th:classappend="${starredTicketIds != null and starredTicketIds.contains(ticket.id)} ? 'active' : ''"
+                                    th:data-ticket-id="${ticket.id}"
+                                    th:title="${starredTicketIds != null and starredTicketIds.contains(ticket.id)} ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi'"
+                                    onclick="toggleStarFromList(this, event)"
+                                    aria-label="Lưu vé">
+                                <i class="fa-solid fa-star"></i>
+                            </button>
+                        </th:block>
                     </div>
 
                     <!-- Body -->
@@ -304,6 +458,125 @@
                     </div>
                 </div>
             </div>
+
+            <!-- CSRF Hidden Inputs cho client AJAX -->
+            <th:block sec:authorize="isAuthenticated()">
+                <input type="hidden" id="listCsrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <input type="hidden" id="listCsrfHeader" th:value="${_csrf.headerName}" />
+            </th:block>
+
+            <!-- Pagination (Chỉ hiển thị khi có nhiều hơn 1 trang) -->
+            <div th:if="${totalPages > 1}" class="pagination-container">
+                <nav class="pagination-nav" aria-label="Điều hướng phân trang sàn vé">
+                    <!-- Nút Trang trước -->
+                    <a th:if="${hasPrevious}"
+                       th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${currentPage - 1})}"
+                       class="page-btn"
+                       title="Trang trước"
+                       aria-label="Trang trước">
+                        <i class="fa-solid fa-chevron-left" style="font-size: 11px; margin-right: 4px;"></i> Trước
+                    </a>
+                    <span th:unless="${hasPrevious}" class="page-btn disabled" aria-disabled="true">
+                        <i class="fa-solid fa-chevron-left" style="font-size: 11px; margin-right: 4px;"></i> Trước
+                    </span>
+
+                    <!-- Danh sách các số trang -->
+                    <th:block th:each="p : ${pageNumbers}">
+                        <a th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${p})}"
+                           class="page-btn"
+                           th:classappend="${p == currentPage} ? 'active' : ''"
+                           th:text="${p + 1}"
+                           th:title="'Trang ' + ${p + 1}"
+                           th:attr="aria-current=${p == currentPage} ? 'page' : null">
+                            1
+                        </a>
+                    </th:block>
+
+                    <!-- Nút Trang sau -->
+                    <a th:if="${hasNext}"
+                       th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${currentPage + 1})}"
+                       class="page-btn"
+                       title="Trang sau"
+                       aria-label="Trang sau">
+                        Sau <i class="fa-solid fa-chevron-right" style="font-size: 11px; margin-left: 4px;"></i>
+                    </a>
+                    <span th:unless="${hasNext}" class="page-btn disabled" aria-disabled="true">
+                        Sau <i class="fa-solid fa-chevron-right" style="font-size: 11px; margin-left: 4px;"></i>
+                    </span>
+                </nav>
+
+                <!-- Dòng trạng thái tiến độ hiển thị -->
+                <div class="pagination-info">
+                    Hiển thị <strong th:text="${startItem}">1</strong>–<strong th:text="${endItem}">16</strong> trong tổng số <strong th:text="${totalElements}">48</strong> vé (Trang <span th:text="${currentPage + 1}">1</span> / <span th:text="${totalPages}">3</span>)
+                </div>
+            </div>
+
+            <!-- Client Screen Detector: Tự động đo màn hình và đặt cookie tp_page_size (0 request thừa) -->
+            <script>
+                (function() {
+                    function getTargetPageSize() {
+                        var w = window.innerWidth;
+                        if (w >= 1400) return 20; // 5 cột x 4 dòng
+                        if (w >= 1024) return 16; // 4 cột x 4 dòng
+                        if (w > 640) return 8;    // 2 cột x 4 dòng
+                        return 4;                 // 1 cột x 4 dòng
+                    }
+                    function syncPageSizeCookie() {
+                        var targetSize = getTargetPageSize();
+                        var cookieMatch = document.cookie.match(/(?:^|; )tp_page_size=([^;]*)/);
+                        var currentSize = cookieMatch ? cookieMatch[1] : null;
+                        if (currentSize != targetSize) {
+                            document.cookie = 'tp_page_size=' + targetSize + ';path=/;max-age=2592000;SameSite=Lax';
+                        }
+                    }
+                    syncPageSizeCookie();
+                    var resizeTimer;
+                    window.addEventListener('resize', function() {
+                        clearTimeout(resizeTimer);
+                        resizeTimer = setTimeout(syncPageSizeCookie, 300);
+                    });
+                })();
+
+                // Toggle Đánh sao vé nhanh trên Sàn (Optimistic UI)
+                function toggleStarFromList(btn, event) {
+                    if (event) {
+                        event.stopPropagation();
+                        event.preventDefault();
+                    }
+                    const ticketId = btn.getAttribute('data-ticket-id');
+                    if (!ticketId) return;
+
+                    const isCurrentlyActive = btn.classList.contains('active');
+                    const nextState = !isCurrentlyActive;
+                    btn.classList.toggle('active', nextState);
+                    btn.setAttribute('title', nextState ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+
+                    const csrfToken = document.getElementById('listCsrfToken')?.value;
+                    const csrfHeader = document.getElementById('listCsrfHeader')?.value || 'X-CSRF-TOKEN';
+
+                    fetch('/api/tickets/' + ticketId + '/star', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            [csrfHeader]: csrfToken || '',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) {
+                            btn.classList.toggle('active', isCurrentlyActive);
+                            btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+                            alert(data.message || 'Không thể cập nhật trạng thái lưu vé');
+                        }
+                    })
+                    .catch(err => {
+                        btn.classList.toggle('active', isCurrentlyActive);
+                        btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+                        console.error("Lỗi khi toggle sao vé:", err);
+                    });
+                }
+            </script>
         </content>
     </div>
 </body>

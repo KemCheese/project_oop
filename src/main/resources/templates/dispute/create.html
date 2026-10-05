@@ -94,7 +94,17 @@
 
                 <!-- Dispute Creation Form -->
                 <div class="dispute-form-card">
-                    <form th:action="@{/disputes}" method="post" enctype="multipart/form-data">
+                        <form th:action="@{/disputes}" method="post" enctype="multipart/form-data">
+                        <!-- Gate Dispute Urgent Notice (BR-09 Revised) -->
+                        <div th:if="${isGateDispute}" class="alert alert-danger" style="margin-bottom: 20px; font-size: 13px; border-left: 4px solid var(--color-danger); line-height: 1.6;">
+                            <i class="fa-solid fa-video" style="font-size: 20px; color: var(--color-danger); margin-right: 8px;"></i>
+                            <div>
+                                <strong style="font-size: 14px;">KHIẾU NẠI KHẨN CẤP TẠI CỔNG SOÁT VÉ (BR-09):</strong><br/>
+                                Sự kiện đã bắt đầu. Để đảm bảo tính minh bạch và ngăn chặn gian lận, bạn <strong>bắt buộc phải tải lên Video quay liên tục tại quầy/máy soát vé</strong> hiển thị rõ màn hình máy quét báo lỗi/từ chối hoặc <strong>Biên bản từ chối vào cổng (PDF)</strong> có xác nhận của nhân viên tại địa điểm.<br/>
+                                <span style="color: #991b1b; font-weight: 600;">* Hệ thống từ chối các khiếu nại tại cổng chỉ có ảnh chụp màn hình đơn thuần.</span>
+                            </div>
+                        </div>
+
                         <!-- Hidden Ticket ID -->
                         <input type="hidden" name="ticketId" th:value="${param.ticketId ?: (ticket != null ? ticket.id : 1)}" />
 

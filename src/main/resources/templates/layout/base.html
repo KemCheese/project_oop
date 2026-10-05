@@ -32,29 +32,35 @@
             --font-base: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
             /* Brand & Primary Actions */
-            --color-brand: #0f172a;           /* Slate 900 - Nền nã, uy quyền, cao cấp */
+            --color-brand: #0f172a;
+            /* Slate 900 - Nền nã, uy quyền, cao cấp */
             --color-brand-hover: #1e293b;
             --color-brand-surface: #f1f5f9;
 
-            --color-primary: #e71a0f;         /* CGV Red - Sắc nét, hành động mua/đăng vé */
+            --color-primary: #e71a0f;
+            /* CGV Red - Sắc nét, hành động mua/đăng vé */
             --color-primary-hover: #cc150b;
             --color-primary-surface: #fef2f2;
             --color-primary-border: #fecaca;
 
-            --color-accent: #ea580c;          /* Orange 600 - Điểm nhấn giá tiền, giao dịch */
+            --color-accent: #ea580c;
+            /* Orange 600 - Điểm nhấn giá tiền, giao dịch */
             --color-accent-hover: #c2410c;
 
             /* Semantic Status */
-            --color-success: #16a34a;         /* Xanh lá - Hoàn tất, vé khả dụng, uy tín cao */
+            --color-success: #16a34a;
+            /* Xanh lá - Hoàn tất, vé khả dụng, uy tín cao */
             --color-success-hover: #15803d;
             --color-success-surface: #f0fdf4;
             --color-success-border: #bbf7d0;
 
-            --color-warning: #d97706;         /* Vàng hổ phách - Chờ cọc, chờ xác nhận */
+            --color-warning: #d97706;
+            /* Vàng hổ phách - Chờ cọc, chờ xác nhận */
             --color-warning-surface: #fffbeb;
             --color-warning-border: #fde68a;
 
-            --color-danger: #dc2626;          /* Đỏ - Tranh chấp, hủy vé, cảnh báo lừa đảo */
+            --color-danger: #dc2626;
+            /* Đỏ - Tranh chấp, hủy vé, cảnh báo lừa đảo */
             --color-danger-surface: #fef2f2;
             --color-danger-border: #fecaca;
 
@@ -63,18 +69,24 @@
             --color-info-border: #bae6fd;
 
             /* Background & Surfaces */
-            --color-bg: #f8fafc;              /* Slate 50 - Nền sáng hiện đại, thanh thoát */
-            --color-surface: #ffffff;         /* Trắng thuần cho Card và Container */
-            --color-border: #e2e8f0;          /* Slate 200 */
+            --color-bg: #fcf9f8;
+            /* Slate 50 - Nền sáng hiện đại, thanh thoát */
+            --color-surface: #ffffff;
+            /* Trắng thuần cho Card và Container */
+            --color-border: #e2e8f0;
+            /* Slate 200 */
             --color-border-hover: #cbd5e1;
 
             /* Text */
-            --color-text-main: #0f172a;       /* Slate 900 */
-            --color-text-secondary: #475569;  /* Slate 600 */
-            --color-text-muted: #64748b;      /* Slate 500 */
+            --color-text-main: #0f172a;
+            /* Slate 900 */
+            --color-text-secondary: #475569;
+            /* Slate 600 */
+            --color-text-muted: #64748b;
+            /* Slate 500 */
 
-            /* Layout & Radius */
-            --container-max-width: 1200px;
+            /* Layout & Radius (Fluid Adaptive: tự co giãn theo mọi kích thước màn hình) */
+            --container-max-width: min(92vw, 1600px);
             --radius-sm: 6px;
             --radius-md: 10px;
             --radius-lg: 16px;
@@ -90,7 +102,9 @@
         /* ==========================================================================
            RESET & GLOBAL STYLES
            ========================================================================== */
-        *, *::before, *::after {
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
@@ -149,7 +163,8 @@
             align-items: center;
         }
 
-        .top-menu a, .top-menu button {
+        .top-menu a,
+        .top-menu button {
             text-decoration: none;
             color: var(--color-text-secondary);
             display: flex;
@@ -164,7 +179,8 @@
             font-family: inherit;
         }
 
-        .top-menu a:hover, .top-menu button:hover {
+        .top-menu a:hover,
+        .top-menu button:hover {
             color: var(--color-primary);
         }
 
@@ -202,9 +218,197 @@
             font-size: 14px;
         }
 
+        /* Header Search Form */
+        .nav-search-form {
+            display: flex;
+            align-items: center;
+            background-color: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            padding: 2px 4px 2px 14px;
+            width: 100%;
+            max-width: 360px;
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        .nav-search-form:focus-within {
+            background-color: var(--color-surface);
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(231, 26, 15, 0.1);
+        }
+
+        .nav-search-icon {
+            color: var(--color-text-muted);
+            font-size: 13px;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .nav-search-input {
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--color-text-main);
+            width: 100%;
+            padding: 7px 0;
+            outline: none;
+        }
+
+        .nav-search-input::placeholder {
+            color: var(--color-text-muted);
+            font-size: 13px;
+        }
+
+        .nav-search-btn {
+            background-color: var(--color-primary);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--radius-full);
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            font-size: 11px;
+            transition: all var(--transition-base);
+        }
+
+        .nav-search-btn:hover {
+            background-color: var(--color-primary-hover);
+            transform: scale(1.05);
+        }
+
+        .nav-search-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Search Suggestions Dropdown */
+        .search-suggestions-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-hover);
+            z-index: 1050;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: fadeInDropdown 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeInDropdown {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--color-text-main);
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color var(--transition-base);
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover,
+        .suggestion-item.active {
+            background-color: var(--color-brand-surface);
+        }
+
+        .suggestion-thumb {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            flex-shrink: 0;
+            background-color: var(--color-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--color-text-muted);
+            border: 1px solid var(--color-border);
+        }
+
+        .suggestion-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .suggestion-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+
+        .suggestion-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--color-text-muted);
+        }
+
+        .suggestion-price {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--color-primary);
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .suggestion-footer {
+            padding: 8px 14px;
+            background-color: var(--color-bg);
+            border-top: 1px solid var(--color-border);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-primary);
+            text-align: center;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            transition: background-color var(--transition-base);
+        }
+
+        .suggestion-footer:hover {
+            background-color: var(--color-primary-surface);
+        }
+
+        .suggestion-empty {
+            padding: 16px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--color-text-muted);
+        }
+
         .nav-items {
             display: flex;
-            gap: 24px;
+            gap: 16px;
             align-items: center;
         }
 
@@ -217,7 +421,8 @@
             transition: all var(--transition-base);
         }
 
-        .nav-items a:hover, .nav-items a.active {
+        .nav-items a:hover,
+        .nav-items a.active {
             color: var(--color-primary);
             background-color: var(--color-primary-surface);
         }
@@ -596,8 +801,33 @@
             color: var(--color-primary);
         }
 
+        /* Responsive Tablet & Small Laptop (Tránh vỡ dòng / Nav Wrap trên iPad và Laptop nhỏ) */
+        @media (max-width: 1120px) and (min-width: 769px) {
+            .nav-search-form {
+                max-width: 220px;
+            }
+
+            .nav-items {
+                gap: 8px;
+            }
+
+            .nav-items a {
+                padding: 6px 8px;
+                font-size: 13px;
+            }
+
+            .post-ticket-btn {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+        }
+
         /* Responsive Mobile */
         @media (max-width: 768px) {
+            :root {
+                --container-max-width: 100%;
+            }
+
             .top-bar {
                 flex-direction: column;
                 align-items: flex-start;
@@ -627,10 +857,157 @@
                 text-align: center;
             }
         }
+
+        /* Ẩn header và footer mặc định trên Home page để tập trung vào Logo, Slogan và nút duy nhất */
+        body.home-page .site-header,
+        body.home-page .site-footer {
+            display: none !important;
+        }
+
+        body.home-page .site-main {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+
+        /* ==========================================================================
+           CINEMATIC PAGE TRANSITION OVERLAY (Học tập từ rophim10.tv)
+           ========================================================================== */
+        .cinematic-transition-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .cinematic-transition-overlay.is-active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .cinematic-transition-backdrop {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 45%, #1c1012 0%, #090d16 65%, #04060a 100%);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .cinematic-transition-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 32px;
+            max-width: 680px;
+        }
+
+        .cinematic-logo-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            animation: cinematicPulse 2s ease-in-out infinite;
+        }
+
+        .cinematic-logo-text {
+            font-size: clamp(42px, 6vw, 68px);
+            font-weight: 900;
+            letter-spacing: -2px;
+            color: #ffffff;
+            text-shadow: 0 0 35px rgba(231, 26, 15, 0.45);
+        }
+
+        .cinematic-logo-icon {
+            font-size: clamp(28px, 4vw, 42px);
+            color: #e71a0f;
+            transform: rotate(15deg);
+            filter: drop-shadow(0 0 20px rgba(231, 26, 15, 0.85));
+        }
+
+        .cinematic-slogan {
+            font-size: clamp(16px, 2.2vw, 21px);
+            font-weight: 500;
+            color: #cbd5e1;
+            line-height: 1.5;
+            letter-spacing: 0.2px;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+            animation: cinematicFadeUp 0.8s ease-out forwards;
+        }
+
+        .cinematic-progress-bar-wrapper {
+            width: 240px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 9999px;
+            overflow: hidden;
+            margin-top: 12px;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+        }
+
+        .cinematic-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #e71a0f 0%, #ea580c 50%, #f97316 100%);
+            box-shadow: 0 0 14px #e71a0f;
+            border-radius: 9999px;
+            transition: width linear;
+        }
+
+        @keyframes cinematicPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.035);
+            }
+        }
+
+        @keyframes cinematicFadeUp {
+            0% {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
 <body>
+
+    <!-- =========================================================================
+         CINEMATIC PAGE TRANSITION OVERLAY (Học tập từ rophim10.tv)
+         Hiển thị Logo + Slogan và thanh tiến trình ngâm trong thời gian quy định
+         ========================================================================= -->
+    <div id="cinematicTransitionOverlay" class="cinematic-transition-overlay" aria-hidden="true">
+        <div class="cinematic-transition-backdrop"></div>
+        <div class="cinematic-transition-content">
+            <div class="cinematic-logo-box">
+                <span class="cinematic-logo-text">TicketPass</span>
+                <i class="fa-solid fa-asterisk cinematic-logo-icon"></i>
+            </div>
+            <div class="cinematic-slogan">Sàn Giao Dịch Vé – Mua bán thảnh thơi, trăm nơi đổ về.</div>
+            <div class="cinematic-progress-bar-wrapper">
+                <div class="cinematic-progress-bar" id="cinematicProgressBar"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Header Navigation -->
     <header class="site-header">
@@ -668,20 +1045,35 @@
                 <i class="fa-solid fa-asterisk logo-icon"></i>
             </a>
 
-            <!-- Menu Items: 3 loại vé chuẩn của sàn -->
+            <!-- Search Form -->
+            <form th:action="@{/tickets}" method="get" class="nav-search-form" role="search" id="navSearchForm">
+                <i class="fa-solid fa-magnifying-glass nav-search-icon"></i>
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm sự kiện, phim, tuyến xe..."
+                    class="nav-search-input" id="navSearchInput" autocomplete="off" aria-label="Tìm kiếm vé sự kiện" />
+                <input type="hidden" name="ticketType" th:if="${selectedType != null and !selectedType.isEmpty()}"
+                    th:value="${selectedType}" />
+                <button type="submit" class="nav-search-btn" aria-label="Tìm kiếm">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+
+                <!-- Autocomplete Dropdown -->
+                <div class="search-suggestions-dropdown" id="navSuggestionsDropdown" style="display: none;"></div>
+            </form>
+
+            <!-- Menu Items: 3 loai ve chuan cua san -->
             <div class="nav-items">
-                <a th:href="@{/tickets}"
-                   th:classappend="${selectedType == null and tickets != null} ? 'active' : ''">Tất cả vé</a>
-                <a th:href="@{/tickets(ticketType='MOVIE')}"
-                   th:classappend="${selectedType != null and selectedType.toUpperCase() == 'MOVIE'} ? 'active' : ''">
+                <a th:href="@{/tickets(keyword=${keyword != null and !keyword.isEmpty() ? keyword : null})}"
+                    th:classappend="${selectedType == null and tickets != null} ? 'active' : ''">Tất cả vé</a>
+                <a th:href="@{/tickets(ticketType='MOVIE', keyword=${keyword != null and !keyword.isEmpty() ? keyword : null})}"
+                    th:classappend="${selectedType != null and selectedType.toUpperCase() == 'MOVIE'} ? 'active' : ''">
                     <i class="fa-solid fa-film"></i> Vé xem phim
                 </a>
-                <a th:href="@{/tickets(ticketType='CONCERT')}"
-                   th:classappend="${selectedType != null and selectedType.toUpperCase() == 'CONCERT'} ? 'active' : ''">
+                <a th:href="@{/tickets(ticketType='CONCERT', keyword=${keyword != null and !keyword.isEmpty() ? keyword : null})}"
+                    th:classappend="${selectedType != null and selectedType.toUpperCase() == 'CONCERT'} ? 'active' : ''">
                     <i class="fa-solid fa-music"></i> Vé sự kiện
                 </a>
-                <a th:href="@{/tickets(ticketType='BUS')}"
-                   th:classappend="${selectedType != null and selectedType.toUpperCase() == 'BUS'} ? 'active' : ''">
+                <a th:href="@{/tickets(ticketType='BUS', keyword=${keyword != null and !keyword.isEmpty() ? keyword : null})}"
+                    th:classappend="${selectedType != null and selectedType.toUpperCase() == 'BUS'} ? 'active' : ''">
                     <i class="fa-solid fa-bus"></i> Vé xe khách
                 </a>
             </div>
@@ -714,6 +1106,212 @@
             </div>
         </div>
     </footer>
+
+    <!-- Live Search Autocomplete Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            function setupLiveSearch(inputEl, dropdownEl, formEl) {
+                if (!inputEl || !dropdownEl) return;
+
+                let debounceTimer = null;
+                let activeIndex = -1;
+
+                inputEl.addEventListener('input', function () {
+                    const keyword = this.value.trim();
+                    clearTimeout(debounceTimer);
+
+                    if (!keyword) {
+                        dropdownEl.style.display = 'none';
+                        dropdownEl.innerHTML = '';
+                        return;
+                    }
+
+                    debounceTimer = setTimeout(() => {
+                        fetch('/tickets/suggestions?keyword=' + encodeURIComponent(keyword))
+                            .then(res => res.json())
+                            .then(items => {
+                                if (!items || items.length === 0) {
+                                    dropdownEl.innerHTML = '<div class="suggestion-empty"><i class="fa-regular fa-face-frown" style="margin-right: 6px;"></i> Không tìm thấy vé sự kiện phù hợp</div>';
+                                    dropdownEl.style.display = 'flex';
+                                    return;
+                                }
+
+                                let html = '';
+                                items.forEach((item, idx) => {
+                                    const displayName = item.eventName ? item.eventName : item.title;
+                                    const subInfo = item.venue ? item.venue : item.title;
+                                    const thumbHtml = item.thumbnailUrl
+                                        ? `<img src="${item.thumbnailUrl}" class="suggestion-thumb" alt="${displayName}">`
+                                        : `<div class="suggestion-thumb"><i class="fa-solid fa-ticket"></i></div>`;
+
+                                    html += `
+                                        <a href="${item.detailUrl}" class="suggestion-item" data-index="${idx}">
+                                            ${thumbHtml}
+                                            <div class="suggestion-info">
+                                                <div class="suggestion-title">${displayName}</div>
+                                                <div class="suggestion-meta">
+                                                    <span class="badge ${item.ticketType === 'MOVIE' ? 'badge-movie' : item.ticketType === 'CONCERT' ? 'badge-concert' : 'badge-bus'}" style="padding: 2px 6px; font-size: 10px;">${item.ticketTypeLabel}</span>
+                                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${subInfo}</span>
+                                                </div>
+                                            </div>
+                                            <div class="suggestion-price">${item.formattedPrice}</div>
+                                        </a>
+                                    `;
+                                });
+
+                                html += `<a href="/tickets?keyword=${encodeURIComponent(keyword)}" class="suggestion-footer"><i class="fa-solid fa-magnifying-glass" style="margin-right: 4px;"></i> Xem tất cả kết quả cho "${keyword}"</a>`;
+
+                                dropdownEl.innerHTML = html;
+                                dropdownEl.style.display = 'flex';
+                                activeIndex = -1;
+                            })
+                            .catch(err => {
+                                console.error('Lỗi tải gợi ý:', err);
+                            });
+                    }, 250);
+                });
+
+                // Keyboard navigation
+                inputEl.addEventListener('keydown', function (e) {
+                    const items = dropdownEl.querySelectorAll('.suggestion-item');
+                    if (dropdownEl.style.display === 'none' || items.length === 0) return;
+
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        activeIndex = (activeIndex + 1) % items.length;
+                        updateActiveItem(items);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        activeIndex = (activeIndex - 1 + items.length) % items.length;
+                        updateActiveItem(items);
+                    } else if (e.key === 'Enter') {
+                        if (activeIndex >= 0 && items[activeIndex]) {
+                            e.preventDefault();
+                            items[activeIndex].click();
+                        }
+                    } else if (e.key === 'Escape') {
+                        dropdownEl.style.display = 'none';
+                    }
+                });
+
+                function updateActiveItem(items) {
+                    items.forEach((it, idx) => {
+                        if (idx === activeIndex) {
+                            it.classList.add('active');
+                            it.scrollIntoView({ block: 'nearest' });
+                        } else {
+                            it.classList.remove('active');
+                        }
+                    });
+                }
+
+                // Click outside to close
+                document.addEventListener('click', function (e) {
+                    if (!inputEl.contains(e.target) && !dropdownEl.contains(e.target)) {
+                        dropdownEl.style.display = 'none';
+                    }
+                });
+
+                // Focus on input opens dropdown if keyword has value
+                inputEl.addEventListener('focus', function () {
+                    if (this.value.trim() && dropdownEl.innerHTML.trim()) {
+                        dropdownEl.style.display = 'flex';
+                    }
+                });
+            }
+
+            // Initialize for Navbar search
+            setupLiveSearch(
+                document.getElementById('navSearchInput'),
+                document.getElementById('navSuggestionsDropdown'),
+                document.getElementById('navSearchForm')
+            );
+
+            // Initialize for In-page search if present
+            setupLiveSearch(
+                document.getElementById('pageSearchInput'),
+                document.getElementById('pageSuggestionsDropdown'),
+                document.getElementById('pageSearchForm')
+            );
+        });
+    </script>
+
+    <!-- =========================================================================
+         TRANSITION ENGINE SCRIPT (CẤU HÌNH 1 DÒNG DUY NHẤT)
+         ========================================================================= -->
+    <script>
+        // =========================================================================
+        // CẤU HÌNH THỜI GIAN CHUYỂN CẢNH (ĐƠN VỊ: MILI-GIÂY) - SỬA TẠI DÒNG NÀY:
+        const TRANSITION_HOLD_MS = 2000;
+        // =========================================================================
+
+        (function () {
+            const overlay = document.getElementById('cinematicTransitionOverlay');
+            const progressBar = document.getElementById('cinematicProgressBar');
+
+            function triggerCinematicTransition(onComplete) {
+                if (!overlay || !progressBar) {
+                    if (onComplete) onComplete();
+                    return;
+                }
+
+                // Reset tiến trình
+                progressBar.style.transition = 'none';
+                progressBar.style.width = '0%';
+                overlay.classList.add('is-active');
+                overlay.setAttribute('aria-hidden', 'false');
+
+                // Kích hoạt animation thanh tiến trình chạy theo đúng thời gian cấu hình
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        progressBar.style.transition = `width ${TRANSITION_HOLD_MS}ms cubic-bezier(0.15, 0.6, 0.2, 1)`;
+                        progressBar.style.width = '100%';
+                    });
+                });
+
+                // Ngâm đúng TRANSITION_HOLD_MS rồi chuyển hướng mượt mà
+                setTimeout(() => {
+                    if (onComplete) {
+                        onComplete();
+                    } else {
+                        overlay.classList.remove('is-active');
+                        overlay.setAttribute('aria-hidden', 'true');
+                    }
+                }, TRANSITION_HOLD_MS);
+            }
+
+            // Expose hàm ra window để các nút hay template có thể gọi trực tiếp
+            window.triggerCinematicTransition = triggerCinematicTransition;
+
+            // Kích hoạt khi submit tìm kiếm (cần reload dữ liệu mới)
+            const searchForm = document.getElementById('navSearchForm');
+            if (searchForm) {
+                searchForm.addEventListener('submit', function (e) {
+                    const input = this.querySelector('input[name="keyword"]');
+                    if (input && input.value.trim().length > 0) {
+                        e.preventDefault();
+                        triggerCinematicTransition(() => {
+                            searchForm.submit();
+                        });
+                    }
+                });
+            }
+
+            // Bắt sự kiện click vào các liên kết có gắn data-transition="true" (như nút Khám phá vé)
+            document.addEventListener('click', function (e) {
+                const targetLink = e.target.closest('a[data-transition="true"]');
+                if (targetLink && targetLink.href) {
+                    const targetUrl = targetLink.href;
+                    if (!e.ctrlKey && !e.metaKey && !e.shiftKey && targetLink.target !== '_blank') {
+                        e.preventDefault();
+                        triggerCinematicTransition(() => {
+                            window.location.href = targetUrl;
+                        });
+                    }
+                }
+            });
+        })();
+    </script>
 
 </body>
 

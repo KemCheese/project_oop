@@ -105,6 +105,7 @@ Prompt 1 đã dựng xong toàn bộ khung: entity, interface, ký hiệu method
 | C10 | Cung cấp dữ liệu người dùng và uy tín cho tầng view; phối hợp với Người A để đưa dữ liệu ra giao diện hiển thị. | `user/web/UserController`, `reputation/web/ReputationController` |
 | C11 | Hoàn thiện xử lý ngoại lệ toàn cục: map `BusinessRuleViolationException`, `ResourceNotFoundException`, lỗi validate và lỗi 500 sang trang lỗi thân thiện; giữ nguyên hành vi JSON cho các endpoint API. | `shared/exception/GlobalExceptionHandler` |
 | C12 | Ghép điểm uy tín vào hồ sơ: `UserProfileResponse` phải trả kèm điểm uy tín (`BigDecimal`) và số giao dịch thành công, lấy từ module `reputation`. | `user/web/dto/UserProfileResponse`, `user/application/UserQueryService` |
+| C13 | Hiện thực 3 cơ chế Must-Have trọng yếu: (1) `DepositTimeoutScheduler` quét timeout nạp cọc 30m, hoàn tiền 100%, huỷ vé `CANCELLED`, phạt -15đ uy tín (`recordDepositTimeout`); (2) `DeliveryTimeoutScheduler` quét timeout nhận vé 30m tự động chuyển `AWAITING_USE`, dừng timeout khi Buyer báo hỏng ảnh QR sang `TECHNICAL_ISSUE`; (3) Gate Dispute theo BR-09 Revised: `min(receivedAt + disputeWindow, eventStartAt + 30m)`, bắt buộc Video/Biên bản tại cổng, cấp Seller 24h giải trình. | `payment/application/DepositTimeoutScheduler`, `ticket/application/DeliveryTimeoutScheduler`, `dispute/domain/DisputeWindowPolicy`, `dispute/application/FileDisputeUseCase`, `reputation/application/UpdateReputationUseCase` |
 
 ---
 

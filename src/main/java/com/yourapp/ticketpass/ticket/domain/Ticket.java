@@ -119,7 +119,11 @@ public class Ticket {
 
     private Instant listedAt;
 
+    private Instant escrowedAt;
+
     private Instant transferredAt;
+
+    private Instant receivedAt;
 
     private Instant disputeWindowClosesAt;
 

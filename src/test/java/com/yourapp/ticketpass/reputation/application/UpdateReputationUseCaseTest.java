@@ -445,6 +445,48 @@ class UpdateReputationUseCaseTest {
     }
 
     // =========================================================================
+    // 4b. Nhóm recordDepositTimeout (UC-04b)
+    // =========================================================================
+    @Nested
+    @DisplayName("Nhóm recordDepositTimeout (UC-04b)")
+    class DepositTimeoutTests {
+
+        @Test
+        @DisplayName("recordDepositTimeout: trừ 15 điểm uy tín và tăng cancelledListings thêm 1")
+        void depositTimeout_minus15Points() {
+            Long sellerId = 1L;
+            UserReputationScore sellerScore = createSampleScore(sellerId, new BigDecimal("90.00"), 5, 5);
+            when(reputationRepository.findByUserId(sellerId)).thenReturn(Optional.of(sellerScore));
+
+            updateReputationUseCase.recordDepositTimeout(sellerId);
+
+            assertThat(sellerScore.getScore()).isEqualByComparingTo("75.00");
+            assertThat(sellerScore.getDisputesLost()).isEqualTo(1);
+            verify(reputationRepository).save(sellerScore);
+        }
+
+        @Test
+        @DisplayName("recordDepositTimeout: điểm áp sàn 0.00 khi bị trừ dưới 0 (10.00 - 15 -> 0.00)")
+        void depositTimeout_scoreFlooredAt0() {
+            Long sellerId = 1L;
+            UserReputationScore sellerScore = createSampleScore(sellerId, new BigDecimal("10.00"), 5, 1);
+            when(reputationRepository.findByUserId(sellerId)).thenReturn(Optional.of(sellerScore));
+
+            updateReputationUseCase.recordDepositTimeout(sellerId);
+
+            assertThat(sellerScore.getScore()).isEqualByComparingTo("0.00");
+            assertThat(sellerScore.getDisputesLost()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("recordDepositTimeout: ném ngoại lệ khi sellerId là null")
+        void depositTimeout_nullSellerId_throwsException() {
+            assertThatThrownBy(() -> updateReputationUseCase.recordDepositTimeout(null))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    // =========================================================================
     // 5. Nhóm Concurrency & Retry (Optimistic Locking)
     // =========================================================================
     @Nested

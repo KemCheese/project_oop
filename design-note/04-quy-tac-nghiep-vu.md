@@ -267,39 +267,27 @@ Cấu hình mặc định:
 | Loại vé | Cửa sổ sau khi nhận vé | Ràng buộc thêm |
 |---|---|---|
 | MOVIE | 2 giờ | Phải trước giờ chiếu |
-| CONCERT | 24 giờ | Phải trước giờ diễn |
-| BUS | 3 giờ | Phải trước giờ khởi hành |
+| CONCERT | 24 giờ | Trước giờ diễn + 30 phút |
+| BUS | 3 giờ | Trước giờ xuất bến + 30 phút |
 
-Thời điểm đóng cửa sổ được tính bằng:
+Thời điểm đóng cửa sổ được tính theo **BR-09 Revised (Cơ chế Khiếu nại tại cổng — Gate Dispute)**:
 
 ```
 computeWindowClose(receivedAt, ticketType, eventStartAt)
-    = min(receivedAt + cửa_sổ(ticketType), eventStartAt)
+    = min(receivedAt + cửa_sổ(ticketType), eventStartAt + 30 phút)
 ```
 
 trong đó `receivedAt` là thời điểm vé chuyển sang `AWAITING_USE`. Hàm luôn trả về **mốc sớm hơn** trong hai mốc.
 
-**Lý do cửa sổ khác nhau theo loại vé.** Hai áp lực đối nghịch phải cân bằng: cửa sổ dài bảo vệ người mua tốt hơn, cửa sổ ngắn trả tiền cho người bán nhanh hơn. Điểm cân bằng khác nhau theo đặc tính từng loại vé:
+**Lý do mở rộng vùng đệm 30 phút (Gate Dispute — BR-09 Revised):**
+Quy tắc cũ đóng cửa sổ ngay tại `eventStartAt` khiến người mua đến cổng đúng giờ sự kiện nhưng bị máy quét báo lỗi/từ chối không còn cơ hội khiếu nại. Vùng đệm 30 phút (`eventStartAt + 30 phút`) cho phép người mua mở khiếu nại khẩn cấp ngay tại cổng soát vé. Sau mốc này, cửa sổ mới chính thức đóng lại và hệ thống kích hoạt `AUTO_COMPLETE`.
 
-- **Vé phim (2 giờ)** — giá trị thấp, thường mua để dùng ngay trong ngày. Bắt người bán chờ 24 giờ để nhận 200.000đ là vô lý và sẽ khiến không ai muốn bán vé phim trên sàn.
-- **Vé concert (24 giờ)** — giá trị cao nhất, thường được mua trước sự kiện nhiều ngày. Người mua cần thời gian để kiểm tra kỹ mã QR, đối chiếu với ban tổ chức, thậm chí hỏi lại nơi phát hành. Rủi ro lớn thì đáng để người bán chờ lâu hơn.
-- **Vé xe khách (3 giờ)** — nằm ở giữa.
+**Ràng buộc bằng chứng BẮT BUỘC khi khiếu nại tại cổng (Gate Dispute):**
+- Khi nộp khiếu nại sau giờ sự kiện (`now > eventStartAt`), người mua **bắt buộc phải nộp Video quay liên tục tại quầy/máy soát vé** hiển thị rõ màn hình máy quét báo lỗi/từ chối hoặc **Biên bản từ chối vào cổng (PDF)** có xác nhận của nhân viên tại địa điểm.
+- **Hệ thống từ chối các bằng chứng chỉ là ảnh chụp màn hình đơn thuần** (nhằm chống gian lận xem xong sự kiện rồi quay ra đòi tiền).
+- **Quy trình đối chất:** Khi có khiếu nại tại cổng, tiền Escrow và Cọc bị đóng băng lập tức (`DISPUTE_UNDER_REVIEW`). Người bán có **24 giờ** để giải trình và nộp bằng chứng nguồn gốc vé chính chủ (email gốc mua vé, hoá đơn ban đầu).
 
-**Lý do phải chặn tại `eventStartAt`.** Sau khi sự kiện bắt đầu, không còn cách nào xác minh vé có dùng được hay không. Người mua có thể vào cửa bình thường rồi vẫn mở khiếu nại nói vé hỏng, và không ai chứng minh được điều ngược lại. Đóng cửa sổ trước giờ sự kiện loại bỏ hoàn toàn kiểu lạm dụng này. Đây là lý do `computeWindowClose` lấy mốc **sớm hơn** chứ không phải muộn hơn.
-
-**Thời hạn phản hồi của người bán.** Khi có khiếu nại, người bán có `sellerResponseWindow` (mặc định đề xuất **24 giờ**) để nộp phản hồi và bằng chứng. Quá hạn mà không phản hồi, `AutoCompleteScheduler.expireOverdueSellerResponses()` đánh dấu tranh chấp là quá hạn phản hồi để admin xử lý. Việc im lặng **không** tự động đồng nghĩa với thua: admin vẫn xem bằng chứng của người mua rồi mới phán quyết, nhưng việc không phản hồi là một tình tiết bất lợi được ghi nhận trong hồ sơ.
-
-**Nơi hiện thực.** Interface `DisputeWindowPolicy` trong `dispute.domain` (đây là **Strategy pattern**: mỗi loại vé một chính sách cửa sổ). `AutoCompleteScheduler` chạy định kỳ, quét các vé `AWAITING_USE` đã quá `windowCloseAt` và đẩy sang `AUTO_COMPLETE`.
-
-**Ví dụ.**
-
-| Loại vé | Thời điểm nhận vé (`receivedAt`) | Giờ sự kiện (`eventStartAt`) | `receivedAt` + cửa sổ | Cửa sổ đóng lúc | Mốc nào thắng |
-|---|---|---|---|---|---|
-| MOVIE | 08/09 18:00 | 08/09 19:30 | 08/09 20:00 | **08/09 19:30** | `eventStartAt` sớm hơn |
-| MOVIE | 08/09 10:00 | 08/09 21:00 | 08/09 12:00 | **08/09 12:00** | Cửa sổ 2 giờ sớm hơn |
-| CONCERT | 10/12 09:00 | 20/12 20:00 | 11/12 09:00 | **11/12 09:00** | Cửa sổ 24 giờ sớm hơn |
-| CONCERT | 19/12 15:00 | 20/12 20:00 | 20/12 15:00 | **20/12 15:00** | Cửa sổ 24 giờ sớm hơn |
-| BUS | 08/09 05:00 | 08/09 07:00 | 08/09 08:00 | **08/09 07:00** | `eventStartAt` sớm hơn |
+**Nơi hiện thực.** Interface `DisputeWindowPolicy` và các implementation (`MovieDisputeWindowPolicy`, `ConcertDisputeWindowPolicy`, `BusDisputeWindowPolicy`), `FileDisputeUseCase`, `TicketStateMachineService`. `AutoCompleteScheduler` quét các vé `AWAITING_USE` đã quá `windowCloseAt` và đẩy sang `AUTO_COMPLETE`.
 
 ---
 
@@ -357,6 +345,7 @@ Kiểm tra tính đúng đắn: ở mọi dòng, `founder_cut + buyer_compensati
 | Giao dịch hoàn tất (`AUTO_COMPLETE` hoặc `RESOLVED_SELLER_WINS`) | **+2** | Cả người bán và người mua |
 | Thắng tranh chấp | **+1** | Bên thắng |
 | Thua tranh chấp | **−15** | Bên thua |
+| Quá hạn nạp cọc 30 phút (UC-04b — Seller Deposit Timeout) | **−15** | Người bán (chế tài nghiêm khắc nhất để triệt tiêu hành vi bỏ rơi giao dịch) |
 | Huỷ listing sau khi người mua đã thanh toán | **−10** | Người bán |
 
 Điểm bị **chặn trên tại 100** và **chặn dưới tại 0**: cộng thêm khi đang ở 100 vẫn là 100, trừ đi khi đang ở 5 thì thành 0 chứ không âm.

@@ -3,6 +3,8 @@ package com.yourapp.ticketpass.ticket.domain;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Port luu tru cua module {@code ticket}, khai bao o tang domain.
@@ -68,6 +70,35 @@ public interface TicketRepository {
     List<Ticket> findListedByType(TicketType ticketType);
 
     /**
+     * Tim kiem va loc cac ve dang rao ban ({@link TicketStatus#LISTED}) theo tu khoa va loai ve.
+     *
+     * @param keyword tu khoa tim kiem theo ten su kien hoac tieu de (co the null hoac trong)
+     * @param ticketType loai ve can loc (co the null neu tim tat ca loai ve)
+     * @return danh sach ve dang ban thoa man dieu kien
+     */
+    List<Ticket> searchListed(String keyword, TicketType ticketType);
+
+    /**
+     * Tim kiem va loc cac ve dang rao ban theo tu khoa, loai ve va ho tro phan trang.
+     *
+     * @param keyword tu khoa tim kiem theo ten su kien hoac tieu de
+     * @param ticketType loai ve can loc
+     * @param pageable thong tin phan trang va sap xep
+     * @return trang ve thoa man dieu kien
+     */
+    Page<Ticket> searchListed(String keyword, TicketType ticketType, Pageable pageable);
+
+    /**
+     * Lay danh sach ve dang rao ban phuc vu goi y tim kiem nhanh (autocomplete).
+     * Sap xep theo thoi gian dang moi nhat va gioi han so luong tra ve.
+     *
+     * @param keyword tu khoa tim kiem theo ten su kien hoac tieu de
+     * @param limit so luong ban ghi toi da (thuong la 5)
+     * @return danh sach ve thoa man dieu kien
+     */
+    List<Ticket> findTopSuggestions(String keyword, int limit);
+
+    /**
      * Lay cac ve den han tu dong hoan tat: dang o trang thai chi dinh va
      * cua so khieu nai da dong truoc moc thoi gian dua vao.
      *
@@ -76,6 +107,22 @@ public interface TicketRepository {
      * @return danh sach ve can chuyen sang {@link TicketStatus#AUTO_COMPLETE}
      */
     List<Ticket> findDueForAutoComplete(TicketStatus status, Instant before);
+
+    /**
+     * Lay cac ve qua han nap coc (trang thai PAYMENT_ESCROWED va escrowedAt truoc moc chi dinh).
+     *
+     * @param before moc thoi gian so sanh voi escrowedAt (now - 30 phut)
+     * @return danh sach ve qua han nap coc
+     */
+    List<Ticket> findOverdueDepositTickets(Instant before);
+
+    /**
+     * Lay cac ve qua han xac nhan nhan ve (trang thai TRANSFERRED va transferredAt truoc moc chi dinh).
+     *
+     * @param before moc thoi gian so sanh voi transferredAt (now - 30 phut)
+     * @return danh sach ve qua han nhan ve can auto-confirm
+     */
+    List<Ticket> findOverdueDeliveryTickets(Instant before);
 
     /**
      * Xoa mot ve theo id.

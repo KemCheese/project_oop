@@ -207,6 +207,11 @@ public class LocalFileStorageAdapter implements FileStorageService {
             return "";
         }
 
+        // Neu storageKey la URL truc tiep tu internet (Unsplash, CDN ngoai), tra ve nguyen ven
+        if (storageKey.startsWith("http://") || storageKey.startsWith("https://")) {
+            return storageKey;
+        }
+
         // Đảm bảo prefix không kết thúc bằng '/'
         String prefix = publicUrlPrefix.endsWith("/")
                 ? publicUrlPrefix.substring(0, publicUrlPrefix.length() - 1)

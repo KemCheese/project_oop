@@ -104,31 +104,36 @@ Toàn bộ vòng đời **không có cạnh quay lui**: không trạng thái nà
 | Trạng thái hiện tại | Trạng thái đích cho phép | Ai/cái gì kích hoạt | Class chịu trách nhiệm | Tác dụng phụ |
 |---|---|---|---|---|
 | *(vé mới tạo)* | `LISTED` | Hệ thống tự kiểm tra tính hợp lệ và cho lên sàn | `ValidateTicketService`, `TicketStateMachineService` | Vé xuất hiện trên trang danh sách công khai |
-| `LISTED` | `PAYMENT_ESCROWED` | Người mua, sau khi MoMo Test xác nhận thanh toán thành công | `HoldFundsUseCase` gọi `PaymentGateway.charge(...)`, rồi `TicketStateMachineService.transition(...)` | Tạo `EscrowTransaction` với `EscrowStatus.HELD`, ghi `amount` = giá bán và `buyerFeeAmount`; ghi `buyerId` vào `Ticket`; vé bị gỡ khỏi danh sách mua được để người khác không mua trùng |
-| `PAYMENT_ESCROWED` | `DEPOSIT_LOCKED` | Người bán, sau khi MoMo Test xác nhận thu cọc | `LockDepositUseCase` | Tạo `Deposit` với `DepositStatus.LOCKED`, số tiền bằng 50% giá bán theo BR-04; mở khoá nút "Đã chuyển vé" cho người bán |
-| `DEPOSIT_LOCKED` | `TRANSFERRED` | Người bán bấm "Đã chuyển vé" sau khi thực hiện theo `TransferInstruction` | `TransferTicketService` | Ghi `transferredAt`; sinh `TransferInstruction` tương ứng từ `TicketAdapter` của loại vé và hiển thị cho hai bên; thông báo cho người mua vào xác nhận |
-| `TRANSFERRED` | `AWAITING_USE` | Người mua bấm "Đã nhận vé" | `TicketController` → `TicketStateMachineService` | Ghi `receivedAt`; tính `windowCloseAt` bằng `DisputeWindowPolicy.computeWindowClose(...)` theo BR-09; vé lọt vào phạm vi quét của `AutoCompleteScheduler` |
-| `AWAITING_USE` | `AUTO_COMPLETE` | `AutoCompleteScheduler` chạy định kỳ, phát hiện `now > windowCloseAt` và không có tranh chấp mở | `AutoCompleteScheduler`, `CommissionCalculatorService`, `TaxWithholdingService`, `ReleaseFundsUseCase` | Tính `CommissionBreakdown` (BR-05 đến BR-07) và `TaxWithholding` (BR-08); giải ngân phần còn lại cho người bán; hoàn 100% cọc; `EscrowStatus` → `RELEASED`, `DepositStatus` → `REFUNDED`; publish `TicketTransactionCompletedEvent` với `CompletionReason.AUTO_COMPLETE` |
-| `AWAITING_USE` | `DISPUTE_UNDER_REVIEW` | Người mua mở khiếu nại trước khi `windowCloseAt` | `FileDisputeUseCase` | Tạo `Dispute` với `DisputeStatus` mở và `DisputeReason` tương ứng; lưu file bằng chứng qua `FileStorageService`; đặt hạn phản hồi của người bán (mặc định 24 giờ); đóng băng escrow và cọc; `AutoCompleteScheduler` bỏ qua vé này |
-| `DISPUTE_UNDER_REVIEW` | `RESOLVED_BUYER_WINS` | Admin phán quyết trên trang quản trị | `ReviewDisputeUseCase`, `RefundBuyerUseCase`, `ForfeitDepositPolicy` | Hoàn 100% escrow và hoàn phí người mua; tính `ForfeitBreakdown` theo BR-10, sàn giữ `founder_cut`, chuyển `buyer_compensation` cho người mua; `EscrowStatus` → `REFUNDED`, `DepositStatus` → `FORFEITED`; publish `DisputeResolvedEvent` với `DisputeOutcome.BUYER_WINS` → uy tín người bán −15, người mua +1 |
-| `DISPUTE_UNDER_REVIEW` | `RESOLVED_SELLER_WINS` | Admin phán quyết trên trang quản trị | `ReviewDisputeUseCase`, `CommissionCalculatorService`, `TaxWithholdingService`, `ReleaseFundsUseCase` | Giải ngân và hoàn cọc y hệt nhánh `AUTO_COMPLETE`; publish `DisputeResolvedEvent` với `DisputeOutcome.SELLER_WINS` → uy tín người bán +1, và `TicketTransactionCompletedEvent` với `CompletionReason.DISPUTE_RESOLVED` → cộng điểm giao dịch hoàn tất |
+| `LISTED` | `PAYMENT_ESCROWED` | Người mua, sau khi MoMo Test xác nhận thanh toán thành công | `HoldFundsUseCase` gọi `PaymentGateway.charge(...)`, rồi `TicketStateMachineService.transition(...)` | Tạo `EscrowTransaction` với `EscrowStatus.HELD`, ghi `amount` = giá bán và `buyerFeeAmount`; ghi `buyerId` vào `Ticket`; ghi `escrowedAt = now`; vé bị gỡ khỏi danh sách mua được |
+| `LISTED` | `CANCELLED` | Người bán tự huỷ khi chưa có người mua | `TransferTicketService` | Gỡ vé khỏi sàn |
+| `PAYMENT_ESCROWED` | `DEPOSIT_LOCKED` | Người bán khoá cọc thành công trong vòng 30 phút | `LockDepositUseCase` | Tạo `Deposit` với `DepositStatus.LOCKED`, số tiền bằng 50% giá bán theo BR-04 |
+| `PAYMENT_ESCROWED` | `CANCELLED` | Hệ thống tự động khi quá hạn 30 phút nạp cọc (UC-04b) | `DepositTimeoutScheduler` | Hoàn 100% tiền vé + phí sàn cho Buyer; gỡ vé khỏi sàn (cấm quay lại LISTED); trừ −15 điểm uy tín của Seller |
+| `DEPOSIT_LOCKED` | `TRANSFERRED` | Người bán bấm "Đã chuyển vé" sau khi thực hiện theo `TransferInstruction` | `TransferTicketService` | Ghi `transferredAt = now`; mở khoá ảnh QR ẩn cho Người mua; bắt đầu đếm timeout 30 phút nhận vé |
+| `TRANSFERRED` | `AWAITING_USE` | Người mua bấm "Đã nhận vé" hoặc Hệ thống tự động auto-confirm sau 30 phút (UC-06b) | `TicketController` / `DeliveryTimeoutScheduler` → `TicketStateMachineService` | Ghi `receivedAt = now`; tính `windowCloseAt` theo BR-09 Revised: `min(receivedAt + disputeWindow, eventStartAt + 30 phút)` |
+| `TRANSFERRED` | `TECHNICAL_ISSUE` | Người mua bấm "Báo lỗi ảnh QR không xem được / hỏng" trong 30 phút (UC-06b) | `TicketController` → `TransferTicketService` | Đóng băng bộ đếm timeout, chuyển sang xem xét kỹ thuật để Admin/kỹ thuật hỗ trợ |
+| `TECHNICAL_ISSUE` | `TRANSFERRED` / `AWAITING_USE` / `CANCELLED` | Admin khắc phục ảnh xong / Buyer xác nhận / Huỷ nếu hỏng hoàn toàn | `TransferTicketService` / Admin | Xử lý theo kết quả khắc phục kỹ thuật |
+| `AWAITING_USE` | `AUTO_COMPLETE` | `AutoCompleteScheduler` chạy định kỳ, phát hiện `now > windowCloseAt` và không có tranh chấp mở | `AutoCompleteScheduler`, `CommissionCalculatorService`, `TaxWithholdingService`, `ReleaseFundsUseCase` | Tính hoa hồng, thuế, giải ngân cho Seller, hoàn cọc 100% |
+| `AWAITING_USE` | `DISPUTE_UNDER_REVIEW` | Người mua mở khiếu nại trước `windowCloseAt` (kèm Video/Biên bản nếu sau giờ sự kiện) | `FileDisputeUseCase` | Tạo `Dispute`; đóng băng Escrow + Cọc; cấp 24h cho Seller giải trình |
+| `DISPUTE_UNDER_REVIEW` | `RESOLVED_BUYER_WINS` | Admin phán quyết Buyer thắng | `ReviewDisputeUseCase`, `RefundBuyerUseCase`, `ForfeitDepositPolicy` | Hoàn 100% Escrow + phí cho Buyer; tịch thu cọc theo BR-10 |
+| `DISPUTE_UNDER_REVIEW` | `RESOLVED_SELLER_WINS` | Admin phán quyết Seller thắng | `ReviewDisputeUseCase`, `ReleaseFundsUseCase` | Giải ngân cho Seller và hoàn cọc |
 
 ### 4.1 Ma trận chuyển đổi hợp lệ (from → to)
 
 Cùng thông tin trên, viết dưới dạng ma trận để tra nhanh khi hiện thực và khi viết test. Ký hiệu **OK** là hợp lệ; ô trống là bị chặn và phải ném `IllegalTicketTransitionException`.
 
-| From \ To | LISTED | PAYMENT_ESCROWED | DEPOSIT_LOCKED | TRANSFERRED | AWAITING_USE | AUTO_COMPLETE | DISPUTE_UNDER_REVIEW | RESOLVED_BUYER_WINS | RESOLVED_SELLER_WINS | CANCELLED |
-|---|---|---|---|---|---|---|---|---|---|---|
-| **LISTED** | | OK | | | | | | | | OK |
-| **PAYMENT_ESCROWED** | | | OK | | | | | | | |
-| **DEPOSIT_LOCKED** | | | | OK | | | | | | |
-| **TRANSFERRED** | | | | | OK | | | | | |
-| **AWAITING_USE** | | | | | | OK | OK | | | |
-| **AUTO_COMPLETE** | | | | | | | | | | |
-| **DISPUTE_UNDER_REVIEW** | | | | | | | | OK | OK | |
-| **RESOLVED_BUYER_WINS** | | | | | | | | | | |
-| **RESOLVED_SELLER_WINS** | | | | | | | | | | |
-| **CANCELLED** | | | | | | | | | | |
+| From \ To | LISTED | PAYMENT_ESCROWED | DEPOSIT_LOCKED | TRANSFERRED | TECHNICAL_ISSUE | AWAITING_USE | AUTO_COMPLETE | DISPUTE_UNDER_REVIEW | RESOLVED_BUYER_WINS | RESOLVED_SELLER_WINS | CANCELLED |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **LISTED** | | OK | | | | | | | | | OK |
+| **PAYMENT_ESCROWED** | | | OK | | | | | | | | OK |
+| **DEPOSIT_LOCKED** | | | | OK | | | | | | | |
+| **TRANSFERRED** | | | | | OK | OK | | | | | |
+| **TECHNICAL_ISSUE** | | | | OK | | OK | | | | | OK |
+| **AWAITING_USE** | | | | | | | OK | OK | | | |
+| **AUTO_COMPLETE** | | | | | | | | | | | |
+| **DISPUTE_UNDER_REVIEW** | | | | | | | | | OK | OK | |
+| **RESOLVED_BUYER_WINS** | | | | | | | | | | | |
+| **RESOLVED_SELLER_WINS** | | | | | | | | | | | |
+| **CANCELLED** | | | | | | | | | | | |
 
 Tổng cộng **chín** chuyển đổi hợp lệ. Ba đặc điểm của ma trận cần giữ đúng khi hiện thực:
 
