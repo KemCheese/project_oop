@@ -38,3 +38,4 @@ skills-lock.json
 cloudflared.exe
 .gitignore
 ./cloudflared.exe
+.claude/
