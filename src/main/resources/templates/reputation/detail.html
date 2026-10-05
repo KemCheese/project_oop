@@ -118,7 +118,8 @@
                             Hồ Sơ Minh Bạch Hệ Thống
                         </div>
                         <h1 style="font-size: 26px; font-weight: 800; margin-bottom: 8px;">
-                            Thành Viên #<span th:text="*{userId}">101</span>
+                            <span th:text="*{fullName}">Thành Viên #1</span>
+                            <span style="font-size: 20px; opacity: 0.8; font-weight: normal; margin-left: 8px;" th:text="'(#' + *{userId} + ')'">(#1)</span>
                         </h1>
 
                         <!-- Reliability Badge -->

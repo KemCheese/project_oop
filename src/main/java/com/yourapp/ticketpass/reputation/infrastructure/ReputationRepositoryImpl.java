@@ -42,6 +42,6 @@ public class ReputationRepositoryImpl implements ReputationRepository {
 
     @Override
     public List<UserReputationScore> findTopSellers(int limit) {
-        return reputationJpaRepository.findAllByOrderByScoreDesc(PageRequest.of(0, limit));
+        return reputationJpaRepository.findAllByOrderByScoreDescSuccessfulTransactionsDesc(PageRequest.of(0, limit));
     }
 }
