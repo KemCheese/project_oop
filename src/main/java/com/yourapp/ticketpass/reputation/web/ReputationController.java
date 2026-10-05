@@ -4,6 +4,7 @@ import com.yourapp.ticketpass.reputation.application.UpdateReputationUseCase;
 import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.reputation.web.dto.ReputationResponse;
+import com.yourapp.ticketpass.user.application.UserQueryService;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -17,24 +18,39 @@ import org.springframework.web.bind.annotation.RequestParam;
 /**
  * Controller hiển thị thông tin uy tín công khai.
  *
- * <p>Bảng route:</p>
+ * <p>
+ * Bảng route:
+ * </p>
+ * 
  * <pre>
  * GET /reputation/{userId}  -&gt; ho so uy tin cong khai (view "reputation/detail")
  * GET /reputation/top       -&gt; bang xep hang seller (view "reputation/top")
  * </pre>
  *
- * <p>Cả hai route đều {@code permitAll()} trong {@code SecurityConfig} — uy tín là thông tin
- * công khai, guest cũng xem được khi duyệt marketplace.</p>
+ * <p>
+ * Cả hai route đều {@code permitAll()} trong {@code SecurityConfig} — uy tín là
+ * thông tin
+ * công khai, guest cũng xem được khi duyệt marketplace.
+ * </p>
  *
- * <p>Controller chỉ trả {@link ReputationResponse} (DTO) chứ không đẩy entity
- * {@link UserReputationScore} ra view, bảo vệ các trường nội bộ ({@code version},
- * {@code cancelledListings}, {@code disputesOpenedAgainst}).</p>
+ * <p>
+ * Controller chỉ trả {@link ReputationResponse} (DTO) chứ không đẩy entity
+ * {@link UserReputationScore} ra view, bảo vệ các trường nội bộ
+ * ({@code version},
+ * {@code cancelledListings}, {@code disputesOpenedAgainst}).
+ * </p>
  *
- * <p><b>Lưu ý từ Task C8:</b> Khi {@code reputationRepository.findByUserId()} trả về
- * {@code Optional.empty()}, gọi {@code updateReputationUseCase.getOrCreate(userId)}
- * để đảm bảo luôn có bản ghi trả về cho view.</p>
+ * <p>
+ * <b>Lưu ý từ Task C8:</b> Khi {@code reputationRepository.findByUserId()} trả
+ * về
+ * {@code Optional.empty()}, gọi
+ * {@code updateReputationUseCase.getOrCreate(userId)}
+ * để đảm bảo luôn có bản ghi trả về cho view.
+ * </p>
  *
- * <p>Module: reputation</p>
+ * <p>
+ * Module: reputation
+ * </p>
  *
  * Chủ sở hữu: Người C
  */
@@ -47,11 +63,16 @@ public class ReputationController {
 
     private final UpdateReputationUseCase updateReputationUseCase;
 
+    private final UserQueryService userQueryService;
+
     /**
      * Hiển thị hồ sơ uy tín công khai của một người dùng.
      *
-     * <p>Tuân thủ lưu ý Task C8: dùng {@code getOrCreate()} thay vì {@code findByUserId()}
-     * để đảm bảo luôn có bản ghi (tạo mặc định 100.00 nếu chưa tồn tại).</p>
+     * <p>
+     * Tuân thủ lưu ý Task C8: dùng {@code getOrCreate()} thay vì
+     * {@code findByUserId()}
+     * để đảm bảo luôn có bản ghi (tạo mặc định 100.00 nếu chưa tồn tại).
+     * </p>
      *
      * @param userId id người dùng cần xem
      * @param model  model của view
@@ -69,8 +90,10 @@ public class ReputationController {
     /**
      * Hiển thị bảng xếp hạng người bán theo điểm uy tín.
      *
-     * <p>Tham số {@code limit} được chặn trong khoảng [1, 100] để tránh truy vấn
-     * quá nặng hoặc giá trị vô nghĩa.</p>
+     * <p>
+     * Tham số {@code limit} được chặn trong khoảng [1, 100] để tránh truy vấn
+     * quá nặng hoặc giá trị vô nghĩa.
+     * </p>
      *
      * @param limit số người bán hiển thị, mặc định 10
      * @param model model của view
@@ -93,9 +116,13 @@ public class ReputationController {
     /**
      * Chuyển đổi entity sang DTO để trả ra view.
      *
-     * <p>Chỉ copy các trường công khai; bỏ qua {@code version}, {@code cancelledListings},
-     * {@code disputesOpenedAgainst}, {@code createdAt}, {@code lastUpdatedAt} — không cần
-     * hiển thị cho người xem bên ngoài.</p>
+     * <p>
+     * Chỉ copy các trường công khai; bỏ qua {@code version},
+     * {@code cancelledListings},
+     * {@code disputesOpenedAgainst}, {@code createdAt}, {@code lastUpdatedAt} —
+     * không cần
+     * hiển thị cho người xem bên ngoài.
+     * </p>
      *
      * @param score entity bản ghi điểm uy tín
      * @return DTO cho view
@@ -109,6 +136,14 @@ public class ReputationController {
         response.setDisputesLost(score.getDisputesLost());
         response.setDisputesWon(score.getDisputesWon());
         response.setLastTransactionAt(score.getLastTransactionAt());
+
+        userQueryService.findById(score.getUserId()).ifPresent(user -> {
+            response.setFullName(user.getFullName());
+        });
+        if (response.getFullName() == null) {
+            response.setFullName("Thành viên #" + score.getUserId());
+        }
+
         return response;
     }
 }

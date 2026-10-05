@@ -32,5 +32,5 @@ public interface ReputationJpaRepository extends JpaRepository<UserReputationSco
      * @param pageable thông tin phân trang, dùng để giới hạn số dòng trả về
      * @return danh sách bản ghi của trang tương ứng
      */
-    List<UserReputationScore> findAllByOrderByScoreDesc(Pageable pageable);
+    List<UserReputationScore> findAllByOrderByScoreDescSuccessfulTransactionsDesc(Pageable pageable);
 }
