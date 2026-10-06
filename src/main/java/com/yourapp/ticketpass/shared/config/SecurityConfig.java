@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CsrfFilter;
 import com.yourapp.ticketpass.shared.security.CsrfDeferredTokenInitFilter;
+import com.yourapp.ticketpass.shared.security.SmartAuthenticationSuccessHandler;
 
 /**
  * Cấu hình bảo mật của ứng dụng: ai được vào đường dẫn nào, đăng nhập/đăng xuất ra sao,
@@ -70,7 +71,7 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/tickets", false)
+                        .successHandler(new SmartAuthenticationSuccessHandler("/tickets"))
                         .permitAll()
                 )
                 .logout(logout -> logout

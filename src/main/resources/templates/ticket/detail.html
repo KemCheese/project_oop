@@ -83,6 +83,177 @@
                     border-radius: var(--radius-md);
                     background-color: #ffffff;
                     padding: 8px;
+                    display: block;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                }
+
+                .zoomable-image-wrapper {
+                    position: relative;
+                    cursor: zoom-in;
+                    display: inline-block;
+                    max-width: 100%;
+                }
+
+                .zoomable-image-wrapper:hover .qr-preview-img,
+                .zoomable-image-wrapper:hover .ticket-main-image {
+                    transform: scale(1.02);
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                }
+
+                .image-zoom-badge {
+                    position: absolute;
+                    bottom: 24px;
+                    right: 16px;
+                    background: rgba(15, 23, 42, 0.75);
+                    color: #ffffff;
+                    font-size: 11px;
+                    font-weight: 600;
+                    padding: 4px 10px;
+                    border-radius: 20px;
+                    backdrop-filter: blur(6px);
+                    pointer-events: none;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+                }
+
+                .btn-download-ticket {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 9px 18px;
+                    background: linear-gradient(135deg, var(--color-brand, #0f172a), #1e293b);
+                    color: #ffffff;
+                    font-size: 13px;
+                    font-weight: 600;
+                    border-radius: var(--radius-md, 8px);
+                    border: none;
+                    cursor: pointer;
+                    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.15);
+                    transition: all 0.2s ease;
+                }
+
+                .btn-download-ticket:hover {
+                    background: var(--color-brand, #0f172a);
+                    color: #ffffff;
+                    transform: translateY(-1px);
+                    box-shadow: 0 5px 14px rgba(15, 23, 42, 0.25);
+                }
+
+                /* Lightbox Modal (Design Taste Frontend) */
+                .tp-lightbox-modal {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 99999;
+                    background: rgba(15, 23, 42, 0.88);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                    padding: 20px;
+                }
+
+                .tp-lightbox-modal.is-open {
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+
+                .tp-lightbox-container {
+                    background: #ffffff;
+                    border-radius: 16px;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                    max-width: 90vw;
+                    max-height: 90vh;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    transform: scale(0.94);
+                    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                .tp-lightbox-modal.is-open .tp-lightbox-container {
+                    transform: scale(1);
+                }
+
+                .tp-lightbox-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 12px 20px;
+                    border-bottom: 1px solid #e2e8f0;
+                    background: #f8fafc;
+                }
+
+                .tp-lightbox-title {
+                    font-weight: 700;
+                    font-size: 15px;
+                    color: var(--color-brand, #0f172a);
+                }
+
+                .tp-lightbox-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .tp-lightbox-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 7px 14px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    border-radius: 8px;
+                    border: 1px solid #cbd5e1;
+                    background: #ffffff;
+                    color: #0f172a;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+
+                .tp-lightbox-btn:hover {
+                    background: #0f172a;
+                    color: #ffffff;
+                    border-color: #0f172a;
+                }
+
+                .tp-lightbox-close {
+                    width: 34px;
+                    height: 34px;
+                    padding: 0;
+                    justify-content: center;
+                }
+
+                .tp-lightbox-body {
+                    padding: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: #0b1120;
+                    overflow: auto;
+                    max-height: calc(85vh - 110px);
+                }
+
+                .tp-lightbox-img {
+                    max-width: 100%;
+                    max-height: calc(85vh - 130px);
+                    object-fit: contain;
+                    border-radius: 8px;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+                }
+
+                .tp-lightbox-footer {
+                    padding: 10px 20px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #64748b;
+                    background: #f8fafc;
+                    border-top: 1px solid #e2e8f0;
                 }
 
                 /* Specs Table */
@@ -326,8 +497,13 @@
 
                     <!-- Public Ticket Image -->
                     <div class="ticket-hero-media">
-                        <img th:if="${ticket.ticketImageUrl != null and !ticket.ticketImageUrl.isEmpty()}"
-                            th:src="${ticket.ticketImageUrl}" th:alt="${ticket.title}" class="ticket-main-image" />
+                        <div th:if="${ticket.ticketImageUrl != null and !ticket.ticketImageUrl.isEmpty()}"
+                            class="zoomable-image-wrapper" style="width: 100%; text-align: center;"
+                            th:onclick="openImageLightbox(this.querySelector('img').src, 'Ảnh thông tin vé: ' + /*[[${ticket.title}]]*/ '')"
+                            title="Nhấn để phóng to ảnh vé">
+                            <img th:src="${ticket.ticketImageUrl}" th:alt="${ticket.title}" class="ticket-main-image" />
+                            <div class="image-zoom-badge"><i class="fa-solid fa-magnifying-glass-plus"></i> Nhấn phóng to</div>
+                        </div>
                         <div th:unless="${ticket.ticketImageUrl != null and !ticket.ticketImageUrl.isEmpty()}"
                             class="ticket-image-empty">
                             <i class="fa-solid fa-ticket fa-3x" style="margin-bottom: 12px;"></i>
@@ -336,20 +512,32 @@
                     </div>
 
                     <!-- Secret QR Check-in Box (Screen 6: Lifecycle-driven QR unlock) -->
-                    <!-- UNLOCKED STATE: When status is AWAITING_USE or COMPLETED -->
-                    <div th:if="${(ticket.status != null and (ticket.status.name() == 'AWAITING_USE' or ticket.status.name() == 'COMPLETED')) and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
+                    <!-- UNLOCKED STATE: When status is TRANSFERRED, AWAITING_USE, COMPLETED, AUTO_COMPLETE, TECHNICAL_ISSUE, DISPUTE... -->
+                    <div th:if="${(ticket.status != null and ticket.status.name() != 'LISTED' and ticket.status.name() != 'PAYMENT_ESCROWED' and ticket.status.name() != 'DEPOSIT_LOCKED' and ticket.status.name() != 'CANCELLED') and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
                         class="qr-unlocked-box">
                         <div
                             style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-success); font-weight: 700; font-size: 16px;">
                             <i class="fa-solid fa-circle-check"></i> Mã Check-in QR Đã Mở Khóa An Toàn
                         </div>
                         <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 6px;">
-                            Bạn là chủ sở hữu hợp lệ của giao dịch này. Vui lòng xuất trình mã này tại quầy soát vé để
-                            check-in.
+                            Bạn là chủ sở hữu hợp lệ của giao dịch này. Vui lòng xuất trình mã này tại quầy soát vé để check-in.
                         </p>
 
-                        <div th:if="${ticket.qrImageUrl != null and !ticket.qrImageUrl.isEmpty()}">
-                            <img th:src="${ticket.qrImageUrl}" alt="Mã QR Check-in Bí Mật" class="qr-preview-img" />
+                        <div th:if="${ticket.qrImageUrl != null and !ticket.qrImageUrl.isEmpty()}" style="text-align: center;">
+                            <div class="zoomable-image-wrapper"
+                                th:onclick="openImageLightbox(this.querySelector('img').src, 'Mã Check-in QR Bí Mật - ' + /*[[${ticket.title}]]*/ '')"
+                                title="Nhấn để phóng to mã QR">
+                                <img th:src="${ticket.qrImageUrl}" alt="Mã QR Check-in Bí Mật" class="qr-preview-img" />
+                                <div class="image-zoom-badge"><i class="fa-solid fa-magnifying-glass-plus"></i> Nhấn phóng to</div>
+                            </div>
+                            <div style="margin-top: 10px; display: flex; justify-content: center; gap: 10px;">
+                                <button type="button" class="btn-download-ticket"
+                                    th:data-url="${ticket.qrImageUrl}"
+                                    th:data-filename="'ve-' + ${ticket.id} + '-checkin.png'"
+                                    onclick="downloadImageDirect(this.getAttribute('data-url'), this.getAttribute('data-filename'))">
+                                    <i class="fa-solid fa-download"></i> Tải mã QR về máy
+                                </button>
+                            </div>
                         </div>
                         <div th:unless="${ticket.qrImageUrl != null and !ticket.qrImageUrl.isEmpty()}"
                             style="padding: 20px; font-size: 14px; color: var(--color-text-muted);">
@@ -363,8 +551,7 @@
                                 <i class="fa-regular fa-clock" style="color: var(--color-warning);"></i>
                                 Cửa sổ khiếu nại đóng lúc:
                                 <strong
-                                    th:text="${#temporals.format(ticket.disputeWindowClosesAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời
-                                    gian</strong>
+                                    th:text="${#temporals.format(ticket.disputeWindowClosesAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời gian</strong>
                             </div>
                             <a th:href="@{/disputes/new(ticketId=${ticket.id})}" class="btn btn-danger-outline btn-sm">
                                 <i class="fa-solid fa-triangle-exclamation"></i> Vé có vấn đề? Mở khiếu nại ngay
@@ -372,8 +559,8 @@
                         </div>
                     </div>
 
-                    <!-- LOCKED STATE: When ticket is still in LISTED / ESCROW_HELD / DEPOSIT_LOCKED -->
-                    <div th:unless="${(ticket.status != null and (ticket.status.name() == 'AWAITING_USE' or ticket.status.name() == 'COMPLETED')) and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
+                    <!-- LOCKED STATE: When ticket is still in LISTED / ESCROW_HELD / DEPOSIT_LOCKED (pre-transfer) -->
+                    <div th:unless="${(ticket.status != null and ticket.status.name() != 'LISTED' and ticket.status.name() != 'PAYMENT_ESCROWED' and ticket.status.name() != 'DEPOSIT_LOCKED' and ticket.status.name() != 'CANCELLED') and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
                         class="qr-locked-box">
                         <i class="fa-solid fa-shield-halved fa-2x" style="color: #94a3b8; margin-bottom: 8px;"></i>
                         <h4 style="font-size: 15px; font-weight: 700; color: var(--color-brand); margin-bottom: 4px;">
@@ -479,7 +666,7 @@
                         <div style="display: flex; flex-direction: column; gap: 10px;">
                             <!-- Guest User: Not logged in -->
                             <div th:if="${currentUserId == null}">
-                                <a th:href="@{/login}" class="btn btn-primary" style="width: 100%;">
+                                <a th:href="@{/login(redirect=@{/tickets/{id}(id=${ticket.id})})}" class="btn btn-primary" style="width: 100%;">
                                     <i class="fa-regular fa-user"></i> Đăng nhập để mua vé
                                 </a>
                                 <p
@@ -543,30 +730,34 @@
                             <!-- Ticket is DEPOSIT_LOCKED and current user is Seller (Needs to transfer ticket) -->
                             <div th:if="${ticket.status != null and ticket.status.name() == 'DEPOSIT_LOCKED' and isSeller}">
                                 <div class="alert alert-success" style="margin-bottom: 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-circle-check"></i> Đã hoàn tất khóa cọc 50%. Hãy gửi vé cho người mua theo hướng dẫn, sau đó xác nhận bàn giao.
+                                    <i class="fa-solid fa-circle-check"></i> Đã hoàn tất khóa cọc 50%. Hệ thống đang chuẩn bị mở vé cho người mua.
                                 </div>
-                                <form th:action="@{/tickets/{id}/transfer(id=${ticket.id})}" method="post">
-                                    <button type="submit" class="btn btn-primary" style="width: 100%;">
-                                        <i class="fa-solid fa-paper-plane"></i> Xác nhận đã bàn giao vé cho người mua
-                                    </button>
-                                </form>
                             </div>
 
                             <!-- Ticket is DEPOSIT_LOCKED and current user is Buyer -->
                             <div th:if="${ticket.status != null and ticket.status.name() == 'DEPOSIT_LOCKED' and isBuyer}">
                                 <div class="alert alert-info" style="margin-bottom: 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-hourglass-half"></i> Người bán đã khóa cọc thành công và đang chuẩn bị bàn giao vé cho bạn.
+                                    <i class="fa-solid fa-hourglass-half"></i> Người bán đã khóa cọc thành công và hệ thống đang mở khóa vé cho bạn.
+                                </div>
+                            </div>
+
+                            <!-- Ticket is TRANSFERRED and current user is Seller -->
+                            <div th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED' and isSeller}">
+                                <div class="alert alert-success" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success);">
+                                    <i class="fa-solid fa-circle-check"></i> <strong>Đã bàn giao vé thành công:</strong><br/>
+                                    Hệ thống đã khóa cọc 50% và tự động mở mã QR check-in cho người mua. Đang trong thời hạn 30 phút để người mua kiểm tra vé.
                                 </div>
                             </div>
 
                             <!-- Ticket is TRANSFERRED and current user is Buyer (Lifecycle receipt confirm) -->
                             <div th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED' and isBuyer}">
-                                <div class="alert alert-warning" style="margin-bottom: 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-bell"></i> Người bán đã hoàn tất bàn giao vé. Vui lòng kiểm tra mã QR trong vòng 30 phút.
+                                <div class="alert alert-warning" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-warning);">
+                                    <i class="fa-solid fa-bell"></i> <strong>Mã QR đã được mở khóa:</strong><br/>
+                                    Vui lòng kiểm tra mã QR ở khung bên cạnh trong vòng 30 phút. Bạn có thể nhấn vào ảnh để xem to hoặc tải về máy.
                                 </div>
                                 <form th:action="@{/tickets/{id}/received(id=${ticket.id})}" method="post" style="margin-bottom: 8px;">
-                                    <button type="submit" class="btn btn-success" style="width: 100%;">
-                                        <i class="fa-solid fa-check"></i> Xác nhận đã nhận vé &amp; Mở mã QR
+                                    <button type="submit" class="btn btn-success" style="width: 100%; font-weight: 700; padding: 12px 16px;">
+                                        <i class="fa-solid fa-circle-check"></i> Xác nhận vé hợp lệ &amp; Sẵn sàng sử dụng
                                     </button>
                                 </form>
                                 <form th:action="@{/tickets/{id}/technical-issue(id=${ticket.id})}" method="post">
@@ -667,7 +858,110 @@
             </div>
 
             <!-- JavaScript Toggle Sao vé mượt mà (Optimistic UI) -->
+            <!-- Lightbox Modal Markup (Design Taste Frontend) -->
+            <div id="imageLightboxModal" class="tp-lightbox-modal" aria-hidden="true" onclick="handleLightboxBackdropClick(event)">
+                <div class="tp-lightbox-container">
+                    <div class="tp-lightbox-header">
+                        <span class="tp-lightbox-title" id="lightboxTitle">Chi tiết vé</span>
+                        <div class="tp-lightbox-actions">
+                            <button type="button" class="tp-lightbox-btn" id="lightboxDownloadBtn" onclick="downloadCurrentLightboxImage()" title="Tải ảnh về máy">
+                                <i class="fa-solid fa-download"></i> Tải về máy
+                            </button>
+                            <button type="button" class="tp-lightbox-btn tp-lightbox-close" onclick="closeImageLightbox()" title="Đóng (ESC)">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="tp-lightbox-body">
+                        <img id="lightboxImage" src="" alt="Ảnh vé phóng to" class="tp-lightbox-img" />
+                    </div>
+                    <div class="tp-lightbox-footer">
+                        <span><i class="fa-solid fa-circle-info"></i> Nhấn phím ESC hoặc nhấp ra ngoài để đóng xem ảnh</span>
+                    </div>
+                </div>
+            </div>
+
             <script>
+                // --- Lightbox & Image Download Engine ---
+                let currentLightboxUrl = '';
+                let currentLightboxFilename = 'ticket-pass-image.png';
+
+                function openImageLightbox(imageUrl, title) {
+                    if (!imageUrl) return;
+                    currentLightboxUrl = imageUrl;
+                    currentLightboxFilename = (title || 'ticket')
+                        .toLowerCase()
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^a-z0-9]/g, '-')
+                        .replace(/-+/g, '-') + '.png';
+
+                    const modal = document.getElementById('imageLightboxModal');
+                    const img = document.getElementById('lightboxImage');
+                    const titleElem = document.getElementById('lightboxTitle');
+
+                    if (modal && img) {
+                        img.src = imageUrl;
+                        if (titleElem && title) titleElem.textContent = title;
+                        modal.classList.add('is-active', 'is-open');
+                        modal.setAttribute('aria-hidden', 'false');
+                        document.body.style.overflow = 'hidden';
+                    }
+                }
+
+                function closeImageLightbox() {
+                    const modal = document.getElementById('imageLightboxModal');
+                    if (modal) {
+                        modal.classList.remove('is-active', 'is-open');
+                        modal.setAttribute('aria-hidden', 'true');
+                        document.body.style.overflow = '';
+                    }
+                }
+
+                function handleLightboxBackdropClick(e) {
+                    if (e.target && e.target.id === 'imageLightboxModal') {
+                        closeImageLightbox();
+                    }
+                }
+
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' || e.keyCode === 27) {
+                        closeImageLightbox();
+                    }
+                });
+
+                async function downloadImageDirect(url, defaultName) {
+                    if (!url) return;
+                    try {
+                        const response = await fetch(url);
+                        const blob = await response.blob();
+                        const blobUrl = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = blobUrl;
+                        a.download = defaultName || 'ticket-pass-image.png';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(blobUrl);
+                        document.body.removeChild(a);
+                    } catch (err) {
+                        // Fallback tải qua liên kết thông thường
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = defaultName || 'ticket-pass-image.png';
+                        a.target = '_blank';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                }
+
+                function downloadCurrentLightboxImage() {
+                    if (currentLightboxUrl) {
+                        downloadImageDirect(currentLightboxUrl, currentLightboxFilename);
+                    }
+                }
+
                 function toggleStarFromDetail(btn) {
                     const ticketId = btn.getAttribute('data-ticket-id');
                     if (!ticketId) return;

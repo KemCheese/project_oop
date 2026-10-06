@@ -54,6 +54,10 @@
                 </p>
 
                 <form method="post" th:action="@{/register}" th:object="${registerRequest}" novalidate>
+                    <!-- Preserve redirect URL for guest users -->
+                    <input type="hidden" name="redirect" th:value="${redirect != null ? redirect : param.redirect}"
+                           th:if="${(redirect != null and !redirect.isEmpty()) or (param.redirect != null and !#strings.isEmpty(param.redirect))}" />
+
                     <!-- Global errors -->
                     <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}" style="font-size: 13px;">
                         <i class="fa-solid fa-triangle-exclamation"></i>
@@ -109,7 +113,7 @@
                 </form>
 
                 <div style="margin-top: 20px; text-align: center; font-size: 13px; color: var(--color-text-muted);">
-                    Đã có tài khoản? <a th:href="@{/login}" style="color: var(--color-primary); font-weight: 600;">Đăng nhập tại đây</a>
+                    Đã có tài khoản? <a th:href="@{/login(redirect=${redirect != null ? redirect : param.redirect})}" style="color: var(--color-primary); font-weight: 600;">Đăng nhập tại đây</a>
                 </div>
             </div>
         </content>

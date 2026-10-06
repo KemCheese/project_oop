@@ -156,6 +156,20 @@ class UserControllerTest {
         }
 
         @Test
+        @DisplayName("Đăng ký thành công có redirect param: chuyển hướng sang /login?registered&redirect=...")
+        void register_WhenValidWithRedirect_ShouldPreserveRedirect() {
+            RegisterRequest request = new RegisterRequest();
+            request.setEmail("newuser@example.com");
+            BindingResult bindingResult = new BeanPropertyBindingResult(request, "registerRequest");
+
+            String view = userController.register(request, bindingResult, "/tickets/99", null);
+
+            assertThat(view).contains("redirect:/login?registered&redirect=");
+            assertThat(view).contains("%2Ftickets%2F99");
+            verify(registerUserUseCase).register(request);
+        }
+
+        @Test
         @DisplayName("Lỗi Bean Validation: trả về view auth/register và không gọi UseCase")
         void register_WhenBindingErrors_ShouldReturnRegisterView() {
             RegisterRequest request = new RegisterRequest();
