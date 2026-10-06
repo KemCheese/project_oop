@@ -2,51 +2,67 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <title>Kết quả thanh toán - TicketPass</title>
+    <title>Kết quả giao dịch - TicketPass</title>
 </head>
 
 <body>
-    <div th:replace="~{layout/base :: layout('Kết quả thanh toán - TicketPass', ~{::content})}">
+    <div th:replace="~{layout/base :: layout('Kết quả giao dịch - TicketPass', ~{::content})}">
         <content>
             <style>
-                .result-container {
-                    max-width: 600px;
-                    margin: 40px auto;
+                .result-wrapper {
+                    max-width: 680px;
+                    margin: 36px auto 60px auto;
+                    padding: 0 16px;
+                }
+
+                .result-card {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
                     border-radius: var(--radius-lg);
-                    padding: 36px 30px;
+                    padding: 36px 32px;
                     box-shadow: var(--shadow-card);
                     text-align: center;
+                    position: relative;
                 }
 
-                .result-icon {
-                    width: 72px;
-                    height: 72px;
+                @media (max-width: 640px) {
+                    .result-card {
+                        padding: 24px 18px;
+                    }
+                }
+
+                /* Circular Status Icon with Double Ring Halo */
+                .status-halo {
+                    width: 76px;
+                    height: 76px;
                     border-radius: 50%;
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
                     font-size: 32px;
                     margin-bottom: 20px;
+                    position: relative;
                 }
 
-                .result-icon-success {
+                .status-halo-success {
                     background-color: var(--color-success-surface);
                     color: var(--color-success);
                     border: 2px solid var(--color-success-border);
+                    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.08);
                 }
 
-                .result-icon-failed {
+                .status-halo-failed {
                     background-color: var(--color-danger-surface);
                     color: var(--color-danger);
                     border: 2px solid var(--color-danger-border);
+                    box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.08);
                 }
 
                 .result-title {
                     font-size: 24px;
                     font-weight: 800;
                     color: var(--color-brand);
+                    letter-spacing: -0.02em;
                     margin-bottom: 8px;
                 }
 
@@ -54,24 +70,114 @@
                     font-size: 14px;
                     color: var(--color-text-secondary);
                     margin-bottom: 24px;
-                    line-height: 1.6;
+                    line-height: 1.5;
                 }
 
-                .receipt-card {
+                /* Escrow Lifecycle Stepper */
+                .escrow-stepper {
+                    background-color: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: var(--radius-md);
+                    padding: 16px 14px;
+                    margin-bottom: 24px;
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 8px;
+                    text-align: center;
+                    position: relative;
+                }
+
+                @media (max-width: 580px) {
+                    .escrow-stepper {
+                        grid-template-columns: 1fr 1fr;
+                        gap: 12px;
+                    }
+                }
+
+                .step-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 4px;
+                    position: relative;
+                }
+
+                .step-badge {
+                    width: 26px;
+                    height: 26px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 11px;
+                    font-weight: 700;
+                }
+
+                .step-badge.done {
+                    background-color: var(--color-success);
+                    color: #ffffff;
+                }
+
+                .step-badge.active {
+                    background-color: var(--color-primary);
+                    color: #ffffff;
+                    box-shadow: 0 0 0 4px rgba(231, 26, 15, 0.15);
+                }
+
+                .step-badge.pending {
+                    background-color: #e2e8f0;
+                    color: #64748b;
+                }
+
+                .step-label {
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: var(--color-text-secondary);
+                    line-height: 1.3;
+                }
+
+                .step-label.active {
+                    color: var(--color-brand);
+                    font-weight: 700;
+                }
+
+                /* Digital Escrow Receipt Slip */
+                .receipt-slip {
                     background-color: #fafbfc;
                     border: 1px solid var(--color-border);
                     border-radius: var(--radius-md);
-                    padding: 20px;
+                    padding: 20px 24px;
                     margin-bottom: 24px;
                     text-align: left;
+                }
+
+                @media (max-width: 640px) {
+                    .receipt-slip {
+                        padding: 16px 16px;
+                    }
+                }
+
+                .receipt-slip-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding-bottom: 12px;
+                    margin-bottom: 12px;
+                    border-bottom: 1px solid #e2e8f0;
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: var(--color-brand);
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
                 }
 
                 .receipt-row {
                     display: flex;
                     justify-content: space-between;
+                    align-items: center;
                     font-size: 13px;
-                    padding: 9px 0;
-                    border-bottom: 1px dashed #e2e8f0;
+                    padding: 10px 0;
+                    border-bottom: 1px solid #f1f5f9;
                 }
 
                 .receipt-row:last-child {
@@ -80,154 +186,276 @@
                 }
 
                 .receipt-label {
-                    color: var(--color-text-muted);
+                    color: var(--color-text-secondary);
+                    font-weight: 500;
                 }
 
                 .receipt-value {
-                    font-weight: 600;
+                    font-weight: 700;
                     color: var(--color-brand);
                 }
 
-                .step-box {
+                .receipt-value.price {
+                    font-size: 18px;
+                    color: var(--color-accent);
+                    letter-spacing: -0.01em;
+                }
+
+                .receipt-value.status-shield {
+                    color: var(--color-success);
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                }
+
+                /* Next Step Guidance Box */
+                .guidance-box {
                     background-color: var(--color-info-surface);
                     border: 1px solid var(--color-info-border);
                     border-radius: var(--radius-md);
-                    padding: 16px;
+                    padding: 16px 18px;
                     font-size: 13px;
                     text-align: left;
-                    margin-bottom: 24px;
+                    margin-bottom: 28px;
                     line-height: 1.5;
                     color: #0369a1;
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 10px;
+                }
+
+                .guidance-box i {
+                    font-size: 16px;
+                    margin-top: 2px;
+                    flex-shrink: 0;
+                    color: #0284c7;
+                }
+
+                /* Actions Row */
+                .action-buttons-group {
+                    display: flex;
+                    gap: 12px;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+
+                .action-buttons-group .btn {
+                    min-height: 44px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    padding: 10px 20px;
+                }
+
+                .btn-next-action {
+                    background-color: var(--color-success);
+                    color: #ffffff;
+                    border: none;
+                    border-radius: var(--radius-md);
+                    font-weight: 700;
+                    font-size: 14px;
+                    box-shadow: 0 1px 3px rgba(22, 163, 74, 0.2);
+                    transition: all var(--transition-base);
+                }
+
+                .btn-next-action:hover {
+                    background-color: var(--color-success-hover);
+                    box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
+                }
+
+                .btn-next-action:active {
+                    transform: scale(0.98);
+                }
+
+                /* Error Card Specifics */
+                .error-reassurance {
+                    background-color: #fef2f2;
+                    border: 1px solid #fee2e2;
+                    border-radius: var(--radius-md);
+                    padding: 14px 16px;
+                    margin-bottom: 24px;
+                    text-align: left;
+                    font-size: 13px;
+                    color: #991b1b;
+                    line-height: 1.5;
                 }
             </style>
 
-            <div class="result-container">
-                <!-- THÀNH CÔNG: Khi không có biến error -->
-                <th:block th:if="${error == null}">
-                    <div class="result-icon result-icon-success">
-                        <i class="fa-solid fa-check"></i>
-                    </div>
-                    <h1 class="result-title">Đã Ghi Nhận Chuyển Khoản</h1>
-                    <p class="result-desc" th:text="${successMessage ?: 'Hệ thống đã tiếp nhận xác nhận chuyển khoản của bạn. Quỹ giao dịch đang được bảo vệ an toàn theo cơ chế ký quỹ Escrow của TicketPass.'}">
-                        Hệ thống đã tiếp nhận xác nhận chuyển khoản của bạn.
-                    </p>
-
-                    <!-- Chi tiết biên nhận giao dịch -->
-                    <div class="receipt-card">
-                        <div class="receipt-row">
-                            <span class="receipt-label">Phương thức thanh toán</span>
-                            <span class="receipt-value">Chuyển khoản QR Trung gian</span>
+            <div class="result-wrapper">
+                <div class="result-card">
+                    <!-- THÀNH CÔNG: Khi không có biến error -->
+                    <th:block th:if="${error == null}">
+                        <div class="status-halo status-halo-success">
+                            <i class="fa-solid fa-check"></i>
                         </div>
 
-                        <!-- Nếu là Escrow (mua vé) -->
-                        <th:block th:if="${escrow != null}">
-                            <div class="receipt-row">
-                                <span class="receipt-label">Mã giao dịch ký quỹ</span>
-                                <span class="receipt-value" th:text="'ESCROW-#' + ${escrow.id}">ESCROW-#1</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span class="receipt-label">Mã vé liên quan</span>
-                                <span class="receipt-value" th:text="'Vé #' + ${escrow.ticketId}">Vé #1</span>
-                            </div>
-                            <div class="receipt-row">
-                                <span class="receipt-label">Số tiền thanh toán</span>
-                                <span class="receipt-value" style="color: var(--color-accent); font-size: 16px; font-weight: 800;"
-                                      th:text="${#numbers.formatDecimal(escrow.salePrice, 0, 'POINT', 0, 'POINT')} + ' ₫'">
-                                    250.000 ₫
-                                </span>
-                            </div>
-                            <div class="receipt-row">
-                                <span class="receipt-label">Trạng thái ký quỹ</span>
-                                <span class="receipt-value" style="color: var(--color-success);">
-                                    <i class="fa-solid fa-shield-halved"></i> Đã kích hoạt Escrow bảo đảm
-                                </span>
-                            </div>
-                        </th:block>
+                        <h1 class="result-title">Đã Ghi Nhận Chuyển Khoản</h1>
+                        <p class="result-desc" th:text="${successMessage ?: 'Hệ thống đã tiếp nhận xác nhận chuyển khoản của bạn. Quỹ giao dịch đang được bảo lưu an toàn tuyệt đối theo cơ chế ký quỹ Escrow của TicketPass.'}">
+                            Hệ thống đã tiếp nhận xác nhận chuyển khoản của bạn.
+                        </p>
 
-                        <!-- Nếu là Deposit (bán vé đóng cọc) -->
-                        <th:block th:if="${deposit != null}">
-                            <div class="receipt-row">
-                                <span class="receipt-label">Mã khoản cọc</span>
-                                <span class="receipt-value" th:text="'DEPOSIT-#' + ${deposit.id}">DEPOSIT-#1</span>
+                        <!-- Escrow Lifecycle Stepper: 4 bước rõ ràng -->
+                        <div class="escrow-stepper">
+                            <div class="step-item">
+                                <span class="step-badge done"><i class="fa-solid fa-check"></i></span>
+                                <span class="step-label active">1. Nạp Ký Quỹ</span>
                             </div>
-                            <div class="receipt-row">
-                                <span class="receipt-label">Mã vé liên quan</span>
-                                <span class="receipt-value" th:text="'Vé #' + ${deposit.ticketId}">Vé #1</span>
+                            <div class="step-item">
+                                <span class="step-badge active">2</span>
+                                <span class="step-label active">2. Khóa Cọc Bán</span>
                             </div>
-                            <div class="receipt-row">
-                                <span class="receipt-label">Số tiền cọc</span>
-                                <span class="receipt-value" style="color: var(--color-accent); font-size: 16px; font-weight: 800;"
-                                      th:text="${#numbers.formatDecimal(deposit.amount, 0, 'POINT', 0, 'POINT')} + ' ₫'">
-                                    125.000 ₫
-                                </span>
+                            <div class="step-item">
+                                <span class="step-badge pending">3</span>
+                                <span class="step-label">3. Giao Nhận Vé</span>
                             </div>
-                            <div class="receipt-row">
-                                <span class="receipt-label">Trạng thái tiền cọc</span>
-                                <span class="receipt-value" style="color: var(--color-success);">
-                                    <i class="fa-solid fa-lock"></i> Đã khoá cọc bảo đảm
-                                </span>
+                            <div class="step-item">
+                                <span class="step-badge pending">4</span>
+                                <span class="step-label">4. Giải Ngân</span>
                             </div>
-                        </th:block>
-                    </div>
-
-                    <!-- Hướng dẫn bước tiếp theo -->
-                    <div class="step-box">
-                        <i class="fa-solid fa-circle-info" style="margin-right: 6px;"></i>
-                        <strong>Bước tiếp theo:</strong>
-                        <span th:if="${escrow != null}">
-                            Người bán đã nhận được thông báo để bàn giao vé cho bạn. Sau khi người bán gửi vé và bạn xác nhận đã nhận vé hợp lệ, tiền mới được giải ngân.
-                        </span>
-                        <span th:if="${deposit != null}">
-                            Khoản tiền bảo lãnh cọc đã được ghi nhận. Vé của bạn đã sẵn sàng mở bán trên sàn TicketPass.
-                        </span>
-                        <span th:if="${escrow == null and deposit == null}">
-                            Giao dịch đang được bộ phận trung gian sàn kiểm tra và phê duyệt trong thời gian sớm nhất.
-                        </span>
-                    </div>
-                </th:block>
-
-                <!-- THẤT BẠI: Khi có biến error -->
-                <th:block th:if="${error != null}">
-                    <div class="result-icon result-icon-failed">
-                        <i class="fa-solid fa-xmark"></i>
-                    </div>
-                    <h1 class="result-title">Giao Dịch Thất Bại</h1>
-                    <p class="result-desc">
-                        Không thể hoàn tất xác nhận chuyển khoản. Vui lòng kiểm tra lại thông tin hoặc liên hệ ban quản trị để được hỗ trợ.
-                    </p>
-
-                    <div class="receipt-card">
-                        <div class="receipt-row">
-                            <span class="receipt-label">Chi tiết lỗi</span>
-                            <span class="receipt-value" style="color: var(--color-danger);" th:text="${error}">
-                                Có lỗi xảy ra trong quá trình xác nhận giao dịch.
-                            </span>
                         </div>
+
+                        <!-- Chi tiết biên nhận giao dịch điện tử -->
+                        <div class="receipt-slip">
+                            <div class="receipt-slip-header">
+                                <span>Biên nhận giao dịch điện tử</span>
+                                <span style="color: var(--color-success);"><i class="fa-solid fa-shield-halved"></i> Đã Bảo Đảm</span>
+                            </div>
+
+                            <div class="receipt-row">
+                                <span class="receipt-label">Phương thức thanh toán</span>
+                                <span class="receipt-value">Chuyển khoản QR Trung gian (VietQR)</span>
+                            </div>
+
+                            <!-- Nếu là Escrow (mua vé) -->
+                            <th:block th:if="${escrow != null}">
+                                <div class="receipt-row">
+                                    <span class="receipt-label">Mã giao dịch ký quỹ</span>
+                                    <span class="receipt-value" th:text="'ESCROW-#' + ${escrow.id}">ESCROW-#1</span>
+                                </div>
+                                <div class="receipt-row">
+                                    <span class="receipt-label">Mã vé liên quan</span>
+                                    <span class="receipt-value" th:text="'Vé #' + ${escrow.ticketId}">Vé #1</span>
+                                </div>
+                                <div class="receipt-row">
+                                    <span class="receipt-label">Số tiền đã ký quỹ</span>
+                                    <span class="receipt-value price"
+                                          th:text="${#numbers.formatDecimal(escrow.salePrice, 0, 'POINT', 0, 'POINT')} + ' ₫'">
+                                        250.000 ₫
+                                    </span>
+                                </div>
+                                <div class="receipt-row">
+                                    <span class="receipt-label">Trạng thái ký quỹ</span>
+                                    <span class="receipt-value status-shield">
+                                        <i class="fa-solid fa-shield-halved"></i> Đã kích hoạt Escrow bảo đảm
+                                    </span>
+                                </div>
+                            </th:block>
+
+                            <!-- Nếu là Deposit (bán vé đóng cọc) -->
+                            <th:block th:if="${deposit != null}">
+                                <div class="receipt-row">
+                                    <span class="receipt-label">Mã khoản cọc bảo lãnh</span>
+                                    <span class="receipt-value" th:text="'DEPOSIT-#' + ${deposit.id}">DEPOSIT-#1</span>
+                                </div>
+                                <div class="receipt-row">
+                                    <span class="receipt-label">Mã vé liên quan</span>
+                                    <span class="receipt-value" th:text="'Vé #' + ${deposit.ticketId}">Vé #1</span>
+                                </div>
+                                <div class="receipt-row">
+                                    <span class="receipt-label">Số tiền cọc đã khóa</span>
+                                    <span class="receipt-value price"
+                                          th:text="${#numbers.formatDecimal(deposit.amount, 0, 'POINT', 0, 'POINT')} + ' ₫'">
+                                        125.000 ₫
+                                    </span>
+                                </div>
+                                <div class="receipt-row">
+                                    <span class="receipt-label">Trạng thái tiền cọc</span>
+                                    <span class="receipt-value status-shield">
+                                        <i class="fa-solid fa-lock"></i> Đã khoá cọc bảo đảm
+                                    </span>
+                                </div>
+                            </th:block>
+                        </div>
+
+                        <!-- Hướng dẫn bước tiếp theo -->
+                        <div class="guidance-box">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <div>
+                                <strong>Bước tiếp theo: </strong>
+                                <span th:if="${escrow != null}">
+                                    Người bán đã nhận được thông báo để khóa cọc 50% và bàn giao mã vé cho bạn. Sau khi bạn nhận vé và kiểm tra hợp lệ, tiền mới được giải ngân.
+                                </span>
+                                <span th:if="${deposit != null}">
+                                    Khoản tiền bảo lãnh cọc 50% đã được ghi nhận an toàn. Hãy chuyển sang bước bàn giao vé để người mua nhận được mã check-in.
+                                </span>
+                                <span th:if="${escrow == null and deposit == null}">
+                                    Giao dịch đang được bộ phận trung gian sàn kiểm tra và phê duyệt trong thời gian sớm nhất.
+                                </span>
+                            </div>
+                        </div>
+                    </th:block>
+
+                    <!-- THẤT BẠI: Khi có biến error -->
+                    <th:block th:if="${error != null}">
+                        <div class="status-halo status-halo-failed">
+                            <i class="fa-solid fa-xmark"></i>
+                        </div>
+
+                        <h1 class="result-title">Chưa Thể Hoàn Tất Thanh Toán</h1>
+                        <p class="result-desc">
+                            Hệ thống chưa ghi nhận được khoản chuyển khoản hợp lệ hoặc giao dịch đã bị hủy bởi người dùng.
+                        </p>
+
+                        <div class="error-reassurance">
+                            <strong><i class="fa-solid fa-shield-halved"></i> Tài khoản của bạn được an toàn:</strong>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #b91c1c;">
+                                Tiền của bạn chưa bị khấu trừ. Bạn có thể quay lại trang vé để quét mã QR thực hiện lại hoặc chọn phương thức khác.
+                            </p>
+                        </div>
+
+                        <div class="receipt-slip">
+                            <div class="receipt-slip-header">
+                                <span>Chi tiết thông báo</span>
+                                <span style="color: var(--color-danger);"><i class="fa-solid fa-circle-exclamation"></i> Báo Lỗi</span>
+                            </div>
+                            <div class="receipt-row">
+                                <span class="receipt-label">Lý do thất bại</span>
+                                <span class="receipt-value" style="color: var(--color-danger);" th:text="${error}">
+                                    Giao dịch thanh toán không thành công.
+                                </span>
+                            </div>
+                        </div>
+                    </th:block>
+
+                    <!-- Điều hướng hành động -->
+                    <div class="action-buttons-group">
+                        <!-- Nút Tiếp tục nổi bật khi thành công -->
+                        <a th:if="${error == null and (ticketId != null or escrow != null or deposit != null)}"
+                           th:href="@{'/tickets/' + ${ticketId ?: (escrow != null ? escrow.ticketId : deposit.ticketId)}}"
+                           class="btn btn-next-action">
+                            <span>Chuyển sang bước tiếp theo của vé</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+
+                        <!-- Nút Thử lại khi thất bại -->
+                        <a th:if="${error != null and ticketId != null}"
+                           th:href="@{'/tickets/' + ${ticketId}}"
+                           class="btn btn-primary">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Quay lại vé để thử lại</span>
+                        </a>
+
+                        <a th:href="@{/tickets}" class="btn btn-outline">
+                            <i class="fa-solid fa-tags"></i>
+                            <span>Về sàn vé</span>
+                        </a>
+
+                        <a th:href="@{/profile}" class="btn btn-outline">
+                            <i class="fa-solid fa-user-circle"></i>
+                            <span>Hồ sơ của tôi</span>
+                        </a>
                     </div>
-                </th:block>
-
-                <!-- Nút điều hướng -->
-                <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 10px;">
-                    <!-- Nút Tiếp tục nổi bật khi thành công -->
-                    <a th:if="${error == null and (ticketId != null or escrow != null or deposit != null)}"
-                       th:href="@{'/tickets/' + ${ticketId ?: (escrow != null ? escrow.ticketId : deposit.ticketId)}}"
-                       class="btn btn-success btn-lg" style="font-weight: 700;">
-                        <i class="fa-solid fa-arrow-right"></i> Chuyển sang bước tiếp theo của vé
-                    </a>
-
-                    <!-- Nút Thử lại khi thất bại -->
-                    <a th:if="${error != null and ticketId != null}"
-                       th:href="@{'/tickets/' + ${ticketId}}"
-                       class="btn btn-primary btn-lg" style="font-weight: 600;">
-                        <i class="fa-solid fa-rotate-left"></i> Quay lại chi tiết vé để thử lại
-                    </a>
-
-                    <a th:href="@{/tickets}" class="btn btn-outline">
-                        <i class="fa-solid fa-tags"></i> Về sàn vé
-                    </a>
-                    <a th:href="@{/profile}" class="btn btn-outline">
-                        <i class="fa-solid fa-user-circle"></i> Hồ sơ của tôi
-                    </a>
                 </div>
             </div>
         </content>

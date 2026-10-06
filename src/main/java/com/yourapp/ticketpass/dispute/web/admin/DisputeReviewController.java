@@ -86,6 +86,9 @@ public class DisputeReviewController {
     /** Dịch vụ truy vấn người dùng để tìm adminId từ Principal. */
     private final UserQueryService userQueryService;
 
+    /** Cổng truy cập dữ liệu vé để cung cấp bối cảnh sự kiện cho admin khi phán quyết. */
+    private final com.yourapp.ticketpass.ticket.domain.TicketRepository ticketRepository;
+
     /**
      * Danh sách khiếu nại đang chờ admin xử lý.
      *
@@ -158,6 +161,10 @@ public class DisputeReviewController {
                     .build();
             model.addAttribute("deposit", depositDto);
         });
+
+        if (dispute.getTicketId() != null) {
+            ticketRepository.findById(dispute.getTicketId()).ifPresent(ticket -> model.addAttribute("ticket", ticket));
+        }
 
         model.addAttribute("dispute", disputeResponse);
         model.addAttribute("reviewRequest", new ReviewDisputeRequest());

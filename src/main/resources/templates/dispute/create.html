@@ -9,165 +9,486 @@
     <div th:replace="~{layout/base :: layout('Mở khiếu nại vé - TicketPass', ~{::content})}">
         <content>
             <style>
-                .dispute-create-wrapper {
-                    max-width: 680px;
+                /* ==========================================================================
+                   DISPUTE FILING PORTAL STYLES
+                   ========================================================================== */
+                .dispute-create-container {
+                    max-width: 780px;
                     margin: 0 auto;
                 }
 
-                .ticket-summary-box {
+                /* Ticket Brief Context Card */
+                .ticket-brief-card {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
                     border-radius: var(--radius-lg);
-                    padding: 20px;
+                    padding: 22px;
                     margin-bottom: 24px;
                     box-shadow: var(--shadow-card);
-                    display: flex;
-                    justify-content: space-between;
+                    display: grid;
+                    grid-template-columns: 1fr auto;
+                    gap: 20px;
                     align-items: center;
-                    flex-wrap: wrap;
-                    gap: 16px;
                 }
 
-                .dispute-form-card {
+                .ticket-brief-info h2 {
+                    font-size: 17px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    margin: 0 0 6px 0;
+                }
+
+                .ticket-brief-meta {
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                    font-size: 13px;
+                    color: var(--color-text-secondary);
+                }
+
+                .ticket-escrow-badge {
+                    text-align: right;
+                    background-color: #fafbfc;
+                    border: 1px solid var(--color-border);
+                    padding: 12px 18px;
+                    border-radius: var(--radius-md);
+                }
+
+                /* Form Container Card */
+                .filing-card {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
                     border-radius: var(--radius-lg);
-                    padding: 28px;
+                    padding: 32px;
                     box-shadow: var(--shadow-card);
                 }
 
-                .evidence-dropzone {
+                /* Urgent Gate Dispute Alert (BR-09) */
+                .gate-dispute-alert {
+                    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+                    border: 1px solid #fecaca;
+                    border-left: 5px solid var(--color-danger);
+                    border-radius: var(--radius-md);
+                    padding: 18px 20px;
+                    margin-bottom: 24px;
+                    color: #991b1b;
+                }
+
+                .gate-dispute-header {
+                    font-size: 14px;
+                    font-weight: 800;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 8px;
+                    color: #991b1b;
+                }
+
+                .gate-checklist {
+                    margin: 8px 0 0 0;
+                    padding-left: 20px;
+                    font-size: 13px;
+                    line-height: 1.6;
+                }
+
+                /* Drag & Drop Evidence Dropzone */
+                .dropzone-box {
                     border: 2px dashed var(--color-border);
                     border-radius: var(--radius-md);
-                    padding: 24px;
+                    padding: 28px 20px;
                     text-align: center;
                     background-color: #fafbfc;
                     cursor: pointer;
-                    transition: all var(--transition-base);
+                    transition: border-color var(--transition-base), background-color var(--transition-base);
+                    position: relative;
                 }
 
-                .evidence-dropzone:hover {
-                    border-color: var(--color-danger);
+                .dropzone-box:hover,
+                .dropzone-box.dragover {
+                    border-color: var(--color-primary);
                     background-color: #fffbfa;
+                }
+
+                .dropzone-icon {
+                    width: 50px;
+                    height: 50px;
+                    border-radius: var(--radius-full);
+                    background-color: var(--color-primary-surface);
+                    color: var(--color-primary);
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 22px;
+                    margin-bottom: 10px;
+                }
+
+                /* Preview Grid for Uploaded Files */
+                .file-preview-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                    gap: 12px;
+                    margin-top: 14px;
+                }
+
+                .file-preview-item {
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    overflow: hidden;
+                    background-color: #ffffff;
+                    position: relative;
+                    box-shadow: var(--shadow-sm);
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .preview-thumb {
+                    height: 80px;
+                    background-color: #f1f5f9;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                }
+
+                .preview-thumb img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+
+                .preview-info {
+                    padding: 6px;
+                    font-size: 11px;
+                    color: var(--color-text-muted);
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    text-align: center;
+                }
+
+                .remove-file-btn {
+                    position: absolute;
+                    top: 4px;
+                    right: 4px;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: var(--radius-full);
+                    background-color: rgba(220, 38, 38, 0.85);
+                    color: #fff;
+                    border: none;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 11px;
+                }
+
+                .remove-file-btn:hover {
+                    background-color: #dc2626;
+                }
+
+                /* Escrow Reassurance Box */
+                .reassurance-strip {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    background-color: #f0fdf4;
+                    border: 1px solid #bbf7d0;
+                    border-radius: var(--radius-md);
+                    padding: 14px 18px;
+                    margin-bottom: 24px;
+                    font-size: 13px;
+                    color: #166534;
+                    line-height: 1.5;
+                }
+
+                @media (max-width: 640px) {
+                    .ticket-brief-card {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .ticket-escrow-badge {
+                        text-align: left;
+                    }
+
+                    .filing-card {
+                        padding: 20px;
+                    }
                 }
             </style>
 
-            <div class="dispute-create-wrapper">
-                <div style="margin-bottom: 20px;">
+            <div class="dispute-create-container">
+                <!-- Navigation Link -->
+                <div style="margin-bottom: 16px;">
                     <a th:href="@{/tickets/{id}(id=${param.ticketId ?: (ticket != null ? ticket.id : 1)})}"
-                       style="font-size: 13px; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 6px;">
+                       class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
                         <i class="fa-solid fa-arrow-left"></i> Quay lại chi tiết vé
                     </a>
-                    <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand); margin-top: 8px;">
+                </div>
+
+                <!-- Flash Alerts -->
+                <div th:if="${errorMessage != null}" class="alert alert-danger" style="margin-bottom: 20px; padding: 14px 18px; border-radius: var(--radius-md); background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span th:text="${errorMessage}"></span>
+                </div>
+                <div th:if="${successMessage != null}" class="alert alert-success" style="margin-bottom: 20px; padding: 14px 18px; border-radius: var(--radius-md); background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span th:text="${successMessage}"></span>
+                </div>
+
+                <!-- Page Header Title -->
+                <div style="margin-bottom: 20px;">
+                    <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand); margin: 0 0 6px 0;">
                         Mở Khiếu Nại Giao Dịch Vé
                     </h1>
-                    <p style="font-size: 14px; color: var(--color-text-muted);">
-                        Sàn TicketPass phong tỏa dòng tiền và đối soát công bằng để bảo vệ quyền lợi của bạn
+                    <p style="font-size: 14px; color: var(--color-text-muted); margin: 0;">
+                        Sàn TicketPass lập tức phong tỏa tiền Escrow và giữ cọc của Người bán để đảm bảo quyền lợi tuyệt đối cho bạn.
                     </p>
                 </div>
 
-                <!-- Ticket Quick Summary -->
-                <div class="ticket-summary-box">
-                    <div>
-                        <span class="badge badge-warning" style="margin-bottom: 6px;">
-                            <i class="fa-solid fa-triangle-exclamation"></i> Đang yêu cầu khiếu nại
-                        </span>
-                        <h2 style="font-size: 16px; font-weight: 700; color: var(--color-brand); margin: 0;"
-                            th:text="${ticket != null ? ticket.title : 'Vé Concert / Phim đang khiếu nại'}">
-                            Vé Concert / Phim đang khiếu nại
+                <!-- Ticket Quick Context Summary Card -->
+                <div class="ticket-brief-card">
+                    <div class="ticket-brief-info">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                            <span class="badge badge-warning" style="font-size: 11px;">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Giao dịch cần xử lý
+                            </span>
+                            <span style="font-size: 13px; font-weight: 700; color: var(--color-text-muted);">
+                                Mã vé: #<span th:text="${param.ticketId ?: (ticket != null ? ticket.id : '101')}">101</span>
+                            </span>
+                        </div>
+                        <h2 th:text="${ticket != null ? ticket.title : 'Vé sự kiện đang khiếu nại'}">
+                            Vé Concert Anh Trai Say Hi
                         </h2>
-                        <div style="font-size: 13px; color: var(--color-text-muted); margin-top: 4px;">
-                            Mã vé: #<span th:text="${param.ticketId ?: (ticket != null ? ticket.id : '101')}">101</span>
+                        <div class="ticket-brief-meta">
+                            <span th:if="${ticket != null and ticket.ticketType != null}">
+                                <i class="fa-solid fa-tag" style="color: var(--color-primary);"></i>
+                                Loại vé: <strong th:text="${ticket.ticketType.name()}">CONCERT</strong>
+                            </span>
+                            <span th:if="${ticket != null and ticket.venue != null}">
+                                <i class="fa-solid fa-location-dot" style="color: var(--color-info);"></i>
+                                Địa điểm: <strong th:text="${ticket.venue}">Sân vận động Mỹ Đình</strong>
+                            </span>
+                            <span th:if="${ticket != null and ticket.seatInfo != null}">
+                                <i class="fa-solid fa-chair" style="color: var(--color-warning);"></i>
+                                Ghế: <strong th:text="${ticket.seatInfo}">Khu A - Ghế 12</strong>
+                            </span>
                         </div>
                     </div>
 
-                    <div style="text-align: right;">
-                        <div style="font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; font-weight: 600;">
-                            Tiền Ký Quỹ Đang Giữ
+                    <!-- Escrow Protection Badge -->
+                    <div class="ticket-escrow-badge">
+                        <div style="font-size: 11px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">
+                            Tiền Escrow Được Bảo Vệ
                         </div>
-                        <div style="font-size: 18px; font-weight: 800; color: var(--color-accent);"
+                        <div style="font-size: 20px; font-weight: 800; color: var(--color-primary); margin-top: 2px;"
                              th:text="${ticket != null and ticket.salePrice != null ? #numbers.formatDecimal(ticket.salePrice, 0, 'POINT', 0, 'POINT') + ' ₫' : '250.000 ₫'}">
                             250.000 ₫
+                        </div>
+                        <div style="font-size: 11px; color: var(--color-success); margin-top: 2px;">
+                            <i class="fa-solid fa-shield"></i> Hoàn 100% nếu thắng
                         </div>
                     </div>
                 </div>
 
-                <!-- Dispute Creation Form -->
-                <div class="dispute-form-card">
-                        <form th:action="@{/disputes}" method="post" enctype="multipart/form-data">
-                        <!-- Gate Dispute Urgent Notice (BR-09 Revised) -->
-                        <div th:if="${isGateDispute}" class="alert alert-danger" style="margin-bottom: 20px; font-size: 13px; border-left: 4px solid var(--color-danger); line-height: 1.6;">
-                            <i class="fa-solid fa-video" style="font-size: 20px; color: var(--color-danger); margin-right: 8px;"></i>
-                            <div>
-                                <strong style="font-size: 14px;">KHIẾU NẠI KHẨN CẤP TẠI CỔNG SOÁT VÉ (BR-09):</strong><br/>
-                                Sự kiện đã bắt đầu. Để đảm bảo tính minh bạch và ngăn chặn gian lận, bạn <strong>bắt buộc phải tải lên Video quay liên tục tại quầy/máy soát vé</strong> hiển thị rõ màn hình máy quét báo lỗi/từ chối hoặc <strong>Biên bản từ chối vào cổng (PDF)</strong> có xác nhận của nhân viên tại địa điểm.<br/>
-                                <span style="color: #991b1b; font-weight: 600;">* Hệ thống từ chối các khiếu nại tại cổng chỉ có ảnh chụp màn hình đơn thuần.</span>
+                <!-- Main Form Card -->
+                <div class="filing-card">
+                    <form th:action="@{/disputes}" method="post" enctype="multipart/form-data" id="disputeForm">
+                        <input type="hidden" name="ticketId" th:value="${param.ticketId ?: (ticket != null ? ticket.id : 1)}" />
+
+                        <!-- BR-09 Gate Dispute Urgent Notice -->
+                        <div th:if="${isGateDispute}" class="gate-dispute-alert">
+                            <div class="gate-dispute-header">
+                                <i class="fa-solid fa-triangle-exclamation" style="font-size: 18px;"></i>
+                                KHIẾU NẠI KHẨN CẤP TẠI CỔNG SOÁT VÉ (BR-09)
+                            </div>
+                            <p style="margin: 0; font-size: 13px; line-height: 1.5;">
+                                Sự kiện đã bắt đầu. Để ngăn chặn gian lận vé đã sử dụng, quy chế sàn <strong>bắt buộc bạn phải tải lên tệp kiểm chứng</strong> thuộc một trong hai loại sau:
+                            </p>
+                            <ul class="gate-checklist">
+                                <li><strong>Video quay liên tục</strong> màn hình máy quét báo mã vé lỗi hoặc nhân viên quầy vé từ chối check-in.</li>
+                                <li><strong>Biên bản từ chối vào cổng (PDF/Ảnh)</strong> có đóng dấu xác nhận của ban tổ chức tại địa điểm.</li>
+                            </ul>
+                            <div style="font-size: 12px; font-weight: 700; margin-top: 8px;">
+                                * Lưu ý: Ảnh chụp màn hình đơn thuần sẽ bị từ chối phán quyết tại cổng.
                             </div>
                         </div>
 
-                        <!-- Hidden Ticket ID -->
-                        <input type="hidden" name="ticketId" th:value="${param.ticketId ?: (ticket != null ? ticket.id : 1)}" />
-
-                        <!-- Dispute Reason Selector -->
-                        <div class="form-group">
-                            <label class="form-label" for="reason">
+                        <!-- Form Field 1: Reason Selector -->
+                        <div class="form-group" style="margin-bottom: 22px;">
+                            <label class="form-label" for="reasonSelect" style="font-weight: 700; font-size: 14px;">
                                 Lý do khiếu nại <span class="required">*</span>
                             </label>
-                            <select id="reason" name="reason" class="form-control" required>
-                                <option value="" disabled selected>-- Chọn lý do gặp phải --</option>
+                            <select id="reasonSelect" name="reason" class="form-control" required style="font-size: 14px; padding: 10px 14px;">
+                                <option value="" disabled selected>-- Chọn lý do sự cố gặp phải --</option>
                                 <option value="TICKET_INVALID">Vé không hợp lệ (Không quét được mã / Đã bị check-in trước)</option>
                                 <option value="DUPLICATE_SOLD">Vé bị bán trùng cho người khác</option>
                                 <option value="WRONG_SEAT_OR_SHOWTIME">Sai vị trí ghế hoặc sai suất chiếu / giờ xe</option>
                                 <option value="NOT_TRANSFERRED">Người bán chưa thực sự chuyển vé</option>
                                 <option value="SELLER_UNRESPONSIVE">Không liên lạc được với người bán</option>
-                                <option value="OTHER">Lý do khác (Mô tả chi tiết bên dưới)</option>
+                                <option value="OTHER">Lý do khác (Vui lòng mô tả chi tiết bên dưới)</option>
                             </select>
                         </div>
 
-                        <!-- Description -->
-                        <div class="form-group">
-                            <label class="form-label" for="description">
-                                Mô tả chi tiết vấn đề <span class="required">*</span>
+                        <!-- Form Field 2: Description Textarea -->
+                        <div class="form-group" style="margin-bottom: 22px;">
+                            <label class="form-label" for="descriptionInput" style="font-weight: 700; font-size: 14px;">
+                                Mô tả chi tiết sự việc <span class="required">*</span>
                             </label>
-                            <textarea id="description" name="description" rows="5" class="form-control" required
-                                      placeholder="Vui lòng cung cấp chi tiết: Bạn gặp lỗi lúc nào, nhân viên soát vé thông báo gì, sự khác biệt so với cam kết ban đầu..."></textarea>
-                            <span class="form-text">Tối đa 2000 ký tự. Thông tin càng rõ ràng giúp Admin xử lý càng nhanh.</span>
+                            <textarea id="descriptionInput" name="description" rows="5" class="form-control" required
+                                      placeholder="Mô tả cụ thể: Bạn đến địa điểm lúc mấy giờ, máy quét báo thông tin gì, nhân viên nói sao, bạn đã liên hệ người bán ra sao..."></textarea>
+                            <span class="form-text" style="font-size: 12px; color: var(--color-text-muted);">
+                                Tối đa 2000 ký tự. Thông tin mô tả càng chi tiết sẽ giúp Ban Quản Trị đối soát và xử lý thắng cho bạn càng nhanh chóng.
+                            </span>
                         </div>
 
-                        <!-- Multi-file Evidence Upload -->
-                        <div class="form-group">
-                            <label class="form-label">
-                                Tệp bằng chứng xác thực (Ảnh chụp / Video)
+                        <!-- Form Field 3: Drag & Drop Evidence Dropzone -->
+                        <div class="form-group" style="margin-bottom: 24px;">
+                            <label class="form-label" style="font-weight: 700; font-size: 14px;">
+                                Tệp bằng chứng xác thực (Ảnh chụp / Video) <span th:if="${isGateDispute}" class="required">*</span>
                             </label>
-                            <div class="evidence-dropzone">
-                                <i class="fa-solid fa-cloud-arrow-up fa-2x" style="color: var(--color-danger); margin-bottom: 8px;"></i>
-                                <div style="font-size: 14px; font-weight: 600; color: var(--color-brand); margin-bottom: 4px;">
-                                    Tải lên ảnh chụp tại quầy vé hoặc video check-in bị từ chối
+
+                            <div class="dropzone-box" id="dropzoneBox" onclick="document.getElementById('evidenceInput').click()">
+                                <div class="dropzone-icon">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
                                 </div>
-                                <div style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px;">
-                                    Định dạng hỗ trợ: JPG, PNG, MP4. Có thể chọn nhiều tệp cùng lúc.
+                                <div style="font-size: 15px; font-weight: 700; color: var(--color-brand); margin-bottom: 4px;">
+                                    Kéo thả tệp vào đây hoặc bấm để chọn tệp
                                 </div>
-                                <input type="file" name="evidences" multiple accept="image/*,video/*" style="cursor: pointer;" />
+                                <div style="font-size: 12px; color: var(--color-text-muted);">
+                                    Hỗ trợ ảnh (JPG, PNG, WebP) và video (MP4, MOV). Có thể chọn nhiều tệp cùng lúc.
+                                </div>
+                                <input type="file" id="evidenceInput" name="evidences" multiple accept="image/*,video/*" style="display: none;" />
                             </div>
+
+                            <!-- Live Thumbnail Preview Grid -->
+                            <div class="file-preview-grid" id="previewGrid"></div>
                         </div>
 
-                        <!-- Notice of Process -->
-                        <div class="alert alert-warning" style="font-size: 13px; margin-bottom: 24px;">
-                            <i class="fa-solid fa-scale-balanced" style="font-size: 18px;"></i>
+                        <!-- Escrow Reassurance Banner -->
+                        <div class="reassurance-strip">
+                            <i class="fa-solid fa-shield-halved fa-2x" style="color: var(--color-success); flex-shrink: 0;"></i>
                             <div>
-                                <strong>Quy trình xử lý tranh chấp:</strong> Sau khi mở khiếu nại, người bán có 24 giờ để gửi giải trình. Nếu quá hạn không giải trình hoặc bằng chứng vi phạm rõ ràng, Admin sẽ phán quyết hoàn 100% tiền Escrow và bồi thường cho bạn từ tiền cọc của người bán.
+                                <strong>Cam kết bảo vệ tài chính từ sàn TicketPass:</strong> Khi bạn nộp khiếu nại, tiền ký quỹ sẽ được giữ an toàn tại sàn. Người bán có 24 giờ để giải trình. Nếu quá hạn hoặc bằng chứng vi phạm rõ ràng, bạn sẽ nhận lại 100% tiền mua vé và bồi thường từ tiền cọc của người bán.
                             </div>
                         </div>
 
-                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                            <a th:href="@{/tickets}" class="btn btn-outline">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-danger btn-lg">
+                        <!-- Form Actions -->
+                        <div style="display: flex; gap: 12px; justify-content: flex-end; align-items: center; border-top: 1px solid var(--color-border); padding-top: 20px;">
+                            <a th:href="@{/tickets/{id}(id=${param.ticketId ?: (ticket != null ? ticket.id : 1)})}" class="btn btn-outline">
+                                Hủy bỏ
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg" style="font-weight: 800; padding: 12px 28px;">
                                 <i class="fa-solid fa-paper-plane"></i> Gửi khiếu nại chính thức
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
+
+            <!-- JavaScript for Drag & Drop + Live Thumbnail Preview -->
+            <script>
+                (function initFileDropzone() {
+                    var dropzone = document.getElementById('dropzoneBox');
+                    var fileInput = document.getElementById('evidenceInput');
+                    var previewGrid = document.getElementById('previewGrid');
+                    var fileStore = new DataTransfer();
+
+                    if (!dropzone || !fileInput || !previewGrid) return;
+
+                    // Drag & Drop events
+                    ['dragenter', 'dragover'].forEach(function(eventName) {
+                        dropzone.addEventListener(eventName, function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            dropzone.classList.add('dragover');
+                        }, false);
+                    });
+
+                    ['dragleave', 'drop'].forEach(function(eventName) {
+                        dropzone.addEventListener(eventName, function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            dropzone.classList.remove('dragover');
+                        }, false);
+                    });
+
+                    dropzone.addEventListener('drop', function(e) {
+                        var files = e.dataTransfer.files;
+                        handleNewFiles(files);
+                    });
+
+                    fileInput.addEventListener('change', function() {
+                        handleNewFiles(fileInput.files);
+                    });
+
+                    function handleNewFiles(files) {
+                        for (var i = 0; i < files.length; i++) {
+                            fileStore.items.add(files[i]);
+                        }
+                        fileInput.files = fileStore.files;
+                        renderPreviews();
+                    }
+
+                    function renderPreviews() {
+                        previewGrid.innerHTML = '';
+                        var files = fileStore.files;
+
+                        for (var i = 0; i < files.length; i++) {
+                            (function(file, index) {
+                                var itemEl = document.createElement('div');
+                                itemEl.className = 'file-preview-item';
+
+                                var thumbEl = document.createElement('div');
+                                thumbEl.className = 'preview-thumb';
+
+                                if (file.type.startsWith('image/')) {
+                                    var img = document.createElement('img');
+                                    img.src = URL.createObjectURL(file);
+                                    thumbEl.appendChild(img);
+                                } else if (file.type.startsWith('video/')) {
+                                    thumbEl.innerHTML = '<i class="fa-solid fa-file-video fa-2x" style="color: #6366f1;"></i>';
+                                } else {
+                                    thumbEl.innerHTML = '<i class="fa-solid fa-file fa-2x" style="color: #94a3b8;"></i>';
+                                }
+
+                                var infoEl = document.createElement('div');
+                                infoEl.className = 'preview-info';
+                                infoEl.textContent = file.name;
+                                infoEl.title = file.name;
+
+                                var removeBtn = document.createElement('button');
+                                removeBtn.type = 'button';
+                                removeBtn.className = 'remove-file-btn';
+                                removeBtn.innerHTML = '&times;';
+                                removeBtn.onclick = function(e) {
+                                    e.stopPropagation();
+                                    removeFileAtIndex(index);
+                                };
+
+                                itemEl.appendChild(thumbEl);
+                                itemEl.appendChild(infoEl);
+                                itemEl.appendChild(removeBtn);
+                                previewGrid.appendChild(itemEl);
+                            })(files[i], i);
+                        }
+                    }
+
+                    function removeFileAtIndex(indexToRemove) {
+                        var newStore = new DataTransfer();
+                        var files = fileStore.files;
+                        for (var i = 0; i < files.length; i++) {
+                            if (i !== indexToRemove) {
+                                newStore.items.add(files[i]);
+                            }
+                        }
+                        fileStore = newStore;
+                        fileInput.files = fileStore.files;
+                        renderPreviews();
+                    }
+                })();
+            </script>
         </content>
     </div>
 </body>

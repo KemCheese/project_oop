@@ -86,10 +86,17 @@ public class RespondToDisputeUseCase {
             throw new BusinessRuleViolationException("Người dùng (ID: " + sellerId + ") không phải là người bán của khiếu nại này.");
         }
 
-        // (3) Kiểm tra status đang là OPEN hoặc AWAITING_SELLER_RESPONSE
+        // (3) Kiểm tra status đang là OPEN, AWAITING_SELLER_RESPONSE hoặc UNDER_REVIEW (chưa có phán quyết cuối cùng)
         DisputeStatus currentStatus = dispute.getStatus();
-        if (currentStatus != DisputeStatus.OPEN && currentStatus != DisputeStatus.AWAITING_SELLER_RESPONSE) {
+        if (currentStatus != DisputeStatus.OPEN
+                && currentStatus != DisputeStatus.AWAITING_SELLER_RESPONSE
+                && currentStatus != DisputeStatus.UNDER_REVIEW) {
             throw new BusinessRuleViolationException("Khiếu nại không ở trạng thái cho phép người bán gửi giải trình (trạng thái hiện tại: " + currentStatus + ").");
+        }
+
+        // Chặn gửi lặp lại nếu người bán đã giải trình trước đó
+        if (dispute.getSellerResponse() != null && !dispute.getSellerResponse().isBlank()) {
+            throw new BusinessRuleViolationException("Bạn đã gửi giải trình cho khiếu nại này trước đó.");
         }
 
         // Kiểm tra Instant.now() chưa vượt sellerResponseDeadline — quá hạn thì ném BusinessRuleViolationException

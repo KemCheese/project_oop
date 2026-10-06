@@ -2,21 +2,23 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <title>Phán quyết tranh chấp - Admin TicketPass</title>
+    <title>Hồ sơ phán quyết tranh chấp - Admin TicketPass</title>
 </head>
 
 <body>
-    <div th:replace="~{layout/base :: layout('Phán quyết tranh chấp - Admin TicketPass', ~{::content})}">
+    <div th:replace="~{layout/base :: layout('Hồ sơ phán quyết tranh chấp - Admin TicketPass', ~{::content})}">
         <content>
             <style>
-                .admin-review-layout {
-                    display: grid;
-                    grid-template-columns: 1fr 360px;
-                    gap: 30px;
-                    align-items: start;
+                /* ==========================================================================
+                   ADMIN DISPUTE ARBITRATION SUITE STYLES
+                   ========================================================================== */
+                .arbitration-container {
+                    max-width: 1400px;
+                    margin: 0 auto;
                 }
 
-                .review-card {
+                /* Case Header Banner */
+                .case-header-bar {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
                     border-radius: var(--radius-lg);
@@ -25,226 +27,748 @@
                     box-shadow: var(--shadow-card);
                 }
 
-                .review-card-title {
-                    font-size: 16px;
-                    font-weight: 700;
-                    color: var(--color-brand);
-                    margin-bottom: 16px;
+                .case-header-top {
                     display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                    margin-bottom: 12px;
+                }
+
+                .case-id-badge {
+                    display: inline-flex;
                     align-items: center;
                     gap: 8px;
-                    border-bottom: 1px solid #f1f5f9;
-                    padding-bottom: 10px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: var(--color-brand);
+                    background-color: var(--color-brand-surface);
+                    padding: 4px 12px;
+                    border-radius: var(--radius-full);
                 }
 
-                .evidence-grid {
+                .ticket-context-strip {
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 16px;
+                    padding-top: 14px;
+                    border-top: 1px solid var(--color-border);
+                    font-size: 13px;
+                    color: var(--color-text-secondary);
+                }
+
+                .ticket-context-item {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                /* Financial Balance Bar */
+                .financial-gauge-card {
+                    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                    color: #ffffff;
+                    border-radius: var(--radius-lg);
+                    padding: 24px;
+                    margin-bottom: 28px;
+                    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
+                }
+
+                .financial-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                    gap: 12px;
-                    margin-top: 12px;
+                    grid-template-columns: 1fr auto 1fr;
+                    gap: 24px;
+                    align-items: center;
                 }
 
-                .evidence-thumb {
-                    border: 1px solid var(--color-border);
+                .financial-pillar {
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
                     border-radius: var(--radius-md);
-                    overflow: hidden;
-                    height: 120px;
-                    background-color: #f1f5f9;
+                    padding: 16px 20px;
+                    backdrop-filter: blur(4px);
                 }
 
-                .evidence-img {
+                .financial-pillar.buyer {
+                    border-left: 4px solid var(--color-primary);
+                }
+
+                .financial-pillar.seller {
+                    border-left: 4px solid var(--color-warning);
+                }
+
+                .financial-label {
+                    font-size: 12px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    color: #94a3b8;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    margin-bottom: 6px;
+                }
+
+                .financial-amount {
+                    font-size: 24px;
+                    font-weight: 800;
+                    letter-spacing: -0.02em;
+                }
+
+                .financial-divider-scale {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    color: #cbd5e1;
+                    padding: 0 12px;
+                }
+
+                .scale-icon-circle {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: var(--radius-full);
+                    background: rgba(255, 255, 255, 0.1);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 20px;
+                    color: #f8fafc;
+                    margin-bottom: 4px;
+                }
+
+                /* Side-by-Side Dual Dossier */
+                .dossier-comparison-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 24px;
+                    margin-bottom: 28px;
+                }
+
+                .dossier-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    box-shadow: var(--shadow-card);
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                }
+
+                .dossier-header {
+                    padding: 18px 22px;
+                    border-bottom: 1px solid var(--color-border);
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    background-color: #fafbfc;
+                }
+
+                .dossier-title {
+                    font-size: 15px;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .dossier-body {
+                    padding: 22px;
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 18px;
+                }
+
+                .claim-statement-box {
+                    background-color: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: var(--radius-md);
+                    padding: 16px;
+                    font-size: 14px;
+                    line-height: 1.65;
+                    color: var(--color-text-main);
+                    white-space: pre-wrap;
+                }
+
+                .evidence-gallery {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                    gap: 12px;
+                    margin-top: 8px;
+                }
+
+                .evidence-item {
+                    position: relative;
+                    border-radius: var(--radius-md);
+                    border: 1px solid var(--color-border);
+                    overflow: hidden;
+                    height: 110px;
+                    background-color: #f1f5f9;
+                    cursor: pointer;
+                    transition: transform var(--transition-base), box-shadow var(--transition-base);
+                }
+
+                .evidence-item:hover {
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow-hover);
+                }
+
+                .evidence-item img {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
                 }
 
-                .ruling-box {
-                    background-color: #fafbfc;
-                    border: 1px solid var(--color-border);
+                .evidence-item .evidence-badge {
+                    position: absolute;
+                    bottom: 6px;
+                    right: 6px;
+                    background: rgba(15, 23, 42, 0.75);
+                    color: #ffffff;
+                    font-size: 10px;
+                    padding: 2px 6px;
+                    border-radius: var(--radius-sm);
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+
+                /* Ruling Station Card */
+                .ruling-station-card {
+                    background-color: var(--color-surface);
+                    border: 2px solid #cbd5e1;
                     border-radius: var(--radius-lg);
-                    padding: 24px;
+                    padding: 28px;
+                    margin-bottom: 30px;
                     box-shadow: var(--shadow-card);
                 }
 
+                .ruling-station-title {
+                    font-size: 18px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 8px;
+                }
+
+                .ruling-action-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                    margin-top: 20px;
+                }
+
+                .ruling-option-card {
+                    border: 2px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    padding: 20px;
+                    background-color: #fafbfc;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    transition: border-color var(--transition-base), background-color var(--transition-base);
+                }
+
+                .ruling-option-card.buyer-fav:hover {
+                    border-color: var(--color-danger);
+                    background-color: #fffbfa;
+                }
+
+                .ruling-option-card.seller-fav:hover {
+                    border-color: var(--color-success);
+                    background-color: #f0fdf4;
+                }
+
+                .consequence-list {
+                    list-style: none;
+                    padding: 0;
+                    margin: 12px 0 16px 0;
+                    font-size: 13px;
+                    color: var(--color-text-secondary);
+                    line-height: 1.6;
+                }
+
+                .consequence-list li {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 8px;
+                    margin-bottom: 6px;
+                }
+
+                /* Modal Lightbox */
+                .modal-lightbox {
+                    display: none;
+                    position: fixed;
+                    z-index: 1050;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background-color: rgba(15, 23, 42, 0.85);
+                    backdrop-filter: blur(6px);
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                }
+
+                .modal-lightbox.active {
+                    display: flex;
+                }
+
+                .modal-lightbox-content {
+                    max-width: 90vw;
+                    max-height: 85vh;
+                    border-radius: var(--radius-lg);
+                    overflow: hidden;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                    background-color: #000;
+                    position: relative;
+                }
+
+                .modal-lightbox-img {
+                    max-width: 100%;
+                    max-height: 80vh;
+                    display: block;
+                    object-fit: contain;
+                }
+
+                .modal-close-btn {
+                    position: absolute;
+                    top: 14px;
+                    right: 14px;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: var(--radius-full);
+                    background: rgba(15, 23, 42, 0.7);
+                    color: #fff;
+                    border: none;
+                    font-size: 18px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: background var(--transition-base);
+                }
+
+                .modal-close-btn:hover {
+                    background: rgba(220, 38, 38, 0.9);
+                }
+
+                /* Responsive Breakpoints */
                 @media (max-width: 992px) {
-                    .admin-review-layout {
+                    .dossier-comparison-grid {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .financial-grid {
+                        grid-template-columns: 1fr;
+                        gap: 16px;
+                    }
+
+                    .financial-divider-scale {
+                        display: none;
+                    }
+
+                    .ruling-action-grid {
                         grid-template-columns: 1fr;
                     }
                 }
             </style>
 
-            <!-- Breadcrumb Navigation -->
-            <div style="margin-bottom: 20px;">
-                <a th:href="@{/admin/disputes}" style="font-size: 13px; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-arrow-left"></i> Quay lại danh sách khiếu nại
-                </a>
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 8px;">
-                    <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand);">
-                        Hồ Sơ Phán Quyết Tranh Chấp #<span th:text="${dispute != null ? dispute.id : 1}">1</span>
-                    </h1>
-                    <span class="badge badge-warning" th:text="${dispute != null and dispute.status != null ? dispute.status.name() : 'UNDER_REVIEW'}">
-                        UNDER_REVIEW
-                    </span>
+            <div class="arbitration-container">
+                <!-- Navigation Breadcrumb -->
+                <div style="margin-bottom: 16px;">
+                    <a th:href="@{/admin/disputes}" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-arrow-left"></i> Quay lại danh sách quản trị khiếu nại
+                    </a>
+                </div>
+
+                <!-- Case Header Dossier Bar -->
+                <div class="case-header-bar">
+                    <div class="case-header-top">
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <span class="case-id-badge">
+                                <i class="fa-solid fa-folder-open"></i> HỒ SƠ TRANH CHẤP #<span th:text="${dispute != null ? dispute.id : 1}">1</span>
+                            </span>
+                            <h1 style="font-size: 24px; font-weight: 800; color: var(--color-brand); margin: 0;">
+                                Phán Quyết Trọng Tài Sàn Vé
+                            </h1>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'UNDER_REVIEW'}" class="badge badge-warning" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-magnifying-glass"></i> Đang đối soát chứng cứ
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'AWAITING_SELLER_RESPONSE'}" class="badge badge-warning" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-regular fa-clock"></i> Chờ người bán giải trình
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'SELLER_RESPONDED'}" class="badge badge-info" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-reply-all"></i> Người bán đã phản hồi
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'RESOLVED_BUYER_WINS'}" class="badge badge-success" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-circle-check"></i> Đã phán quyết: Người mua thắng
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'RESOLVED_SELLER_WINS'}" class="badge badge-success" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-circle-check"></i> Đã phán quyết: Người bán thắng
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'WITHDRAWN'}" class="badge badge-neutral" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-handshake"></i> Người mua đã rút khiếu nại
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Ticket Context Info Strip -->
+                    <div class="ticket-context-strip">
+                        <div class="ticket-context-item">
+                            <i class="fa-solid fa-ticket" style="color: var(--color-primary);"></i>
+                            <span>Vé liên quan: #<strong th:text="${dispute != null ? dispute.ticketId : '---'}">101</strong></span>
+                        </div>
+                        <div class="ticket-context-item" th:if="${ticket != null}">
+                            <i class="fa-solid fa-clapperboard" style="color: var(--color-info);"></i>
+                            <span>Tên sự kiện/vé: <strong th:text="${ticket.title ?: ticket.eventName}">Concert 2026</strong></span>
+                        </div>
+                        <div class="ticket-context-item" th:if="${ticket != null and ticket.ticketType != null}">
+                            <span class="badge badge-neutral" th:text="${ticket.ticketType.name()}">CONCERT</span>
+                        </div>
+                        <div class="ticket-context-item">
+                            <i class="fa-regular fa-calendar-check"></i>
+                            <span>Mở khiếu nại lúc: <strong th:text="${dispute != null and dispute.filedAt != null ? #temporals.format(dispute.filedAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : '---'}">01/10/2026</strong></span>
+                        </div>
+                        <div class="ticket-context-item" style="margin-left: auto;">
+                            <a th:if="${dispute != null and dispute.ticketId != null}" th:href="@{/tickets/{id}(id=${dispute.ticketId})}" target="_blank" style="color: var(--color-primary); font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                Xem vé gốc ngoài sàn <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 11px;"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Balance Meter (Cán Cân Ký Quỹ & Cọc) -->
+                <div class="financial-gauge-card">
+                    <div style="font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-vault" style="color: #38bdf8;"></i> Cán Cân Tài Chính Đang Phong Tỏa Tại Sàn
+                    </div>
+
+                    <div class="financial-grid">
+                        <!-- Buyer Escrow Stake -->
+                        <div class="financial-pillar buyer">
+                            <div class="financial-label">
+                                <i class="fa-solid fa-user-tag" style="color: var(--color-primary);"></i>
+                                Tiền Ký Quỹ Escrow (Người Mua)
+                            </div>
+                            <div class="financial-amount" style="color: #f87171;"
+                                 th:text="${escrow != null and escrow.amount != null ? #numbers.formatDecimal(escrow.amount, 0, 'POINT', 0, 'POINT') + ' ₫' : (dispute != null and dispute.totalDeposit != null ? #numbers.formatDecimal(dispute.totalDeposit.multiply(new java.math.BigDecimal(2)), 0, 'POINT', 0, 'POINT') + ' ₫' : '250.000 ₫')}">
+                                250.000 ₫
+                            </div>
+                            <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;">
+                                Trạng thái: <strong th:text="${escrow != null and escrow.status != null ? escrow.status.name() : 'HELD'}">HELD</strong> (Đóng băng an toàn)
+                            </div>
+                        </div>
+
+                        <!-- Scale Balance Icon -->
+                        <div class="financial-divider-scale">
+                            <div class="scale-icon-circle">
+                                <i class="fa-solid fa-scale-balanced"></i>
+                            </div>
+                            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Đối trọng</span>
+                        </div>
+
+                        <!-- Seller Deposit Stake -->
+                        <div class="financial-pillar seller">
+                            <div class="financial-label">
+                                <i class="fa-solid fa-shield" style="color: var(--color-warning);"></i>
+                                Tiền Cọc Bảo Đảm 50% (Người Bán)
+                            </div>
+                            <div class="financial-amount" style="color: #fbbf24;"
+                                 th:text="${deposit != null and deposit.depositAmount != null ? #numbers.formatDecimal(deposit.depositAmount, 0, 'POINT', 0, 'POINT') + ' ₫' : (dispute != null and dispute.totalDeposit != null ? #numbers.formatDecimal(dispute.totalDeposit, 0, 'POINT', 0, 'POINT') + ' ₫' : '125.000 ₫')}">
+                                125.000 ₫
+                            </div>
+                            <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;">
+                                Trạng thái: <strong th:text="${deposit != null and deposit.status != null ? deposit.status.name() : 'LOCKED'}">LOCKED</strong> (Sẵn sàng tịch thu bồi thường)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Side-by-Side Dual Dossier Comparison -->
+                <div class="dossier-comparison-grid">
+                    <!-- Column 1: Bên Người Mua (Buyer Dossier) -->
+                    <div class="dossier-card">
+                        <div class="dossier-header" style="border-left: 4px solid var(--color-primary);">
+                            <div class="dossier-title" style="color: var(--color-brand);">
+                                <i class="fa-solid fa-user-check" style="color: var(--color-primary); font-size: 18px;"></i>
+                                <span>1. Bên Mở Khiếu Nại (Buyer #<span th:text="${dispute != null ? dispute.buyerId : 2}">2</span>)</span>
+                            </div>
+                            <span class="badge badge-danger">Khiếu nại</span>
+                        </div>
+
+                        <div class="dossier-body">
+                            <!-- Dispute Reason -->
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 4px;">
+                                    Lý do khiếu nại đưa ra
+                                </div>
+                                <div style="font-size: 16px; font-weight: 800; color: var(--color-danger);"
+                                     th:text="${dispute != null and dispute.reason != null ? dispute.reason.name() : 'TICKET_INVALID'}">
+                                    TICKET_INVALID
+                                </div>
+                            </div>
+
+                            <!-- Buyer Description -->
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                                    Tường trình sự việc từ người mua
+                                </div>
+                                <div class="claim-statement-box"
+                                     th:text="${dispute != null and dispute.description != null ? dispute.description : 'Tôi đến quầy soát vé thì nhân viên báo mã đã được check-in trước đó.'}">
+                                    Mô tả khiếu nại...
+                                </div>
+                            </div>
+
+                            <!-- Buyer Evidences Gallery -->
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between;">
+                                    <span>Tệp bằng chứng đối soát</span>
+                                    <span style="font-weight: 600; color: var(--color-text-muted);"
+                                          th:text="${dispute != null and dispute.evidences != null ? #lists.size(dispute.evidences) + ' tệp' : '0 tệp'}">1 tệp</span>
+                                </div>
+
+                                <div class="evidence-gallery">
+                                    <th:block th:if="${dispute != null and dispute.evidences != null and !#lists.isEmpty(dispute.evidences)}">
+                                        <div th:each="ev : ${dispute.evidences}" class="evidence-item"
+                                             th:onclick="openLightbox([[${ev.fileUrl}]])">
+                                            <img th:src="${ev.fileUrl}" alt="Bằng chứng khiếu nại" />
+                                            <span class="evidence-badge">
+                                                <i class="fa-solid fa-magnifying-glass-plus"></i> Phóng to
+                                            </span>
+                                        </div>
+                                    </th:block>
+
+                                    <th:block th:if="${dispute == null or dispute.evidences == null or #lists.isEmpty(dispute.evidences)}">
+                                        <div class="evidence-item" style="display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; cursor: default;">
+                                            <i class="fa-regular fa-image fa-2x" style="margin-bottom: 4px;"></i>
+                                            <span style="font-size: 11px;">Chưa đính kèm tệp</span>
+                                        </div>
+                                    </th:block>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Bên Người Bán (Seller Dossier) -->
+                    <div class="dossier-card">
+                        <div class="dossier-header" style="border-left: 4px solid var(--color-warning);">
+                            <div class="dossier-title" style="color: var(--color-brand);">
+                                <i class="fa-solid fa-user-shield" style="color: var(--color-warning); font-size: 18px;"></i>
+                                <span>2. Bên Bị Khiếu Nại (Seller #<span th:text="${dispute != null ? dispute.sellerId : 1}">1</span>)</span>
+                            </div>
+                            <span class="badge badge-warning">Giải trình</span>
+                        </div>
+
+                        <div class="dossier-body">
+                            <!-- Seller Deadline & Status -->
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 4px;">
+                                    Thời hạn phản hồi 24 giờ
+                                </div>
+                                <div th:if="${dispute != null and dispute.sellerResponseDeadline != null}" style="font-size: 14px; font-weight: 700; color: var(--color-brand); display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-regular fa-clock" style="color: var(--color-warning);"></i>
+                                    Hạn chót: <span th:text="${#temporals.format(dispute.sellerResponseDeadline, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">24/10/2026 18:00</span>
+                                </div>
+                            </div>
+
+                            <!-- Seller Response Content -->
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                                    Nội dung giải trình phản biện
+                                </div>
+
+                                <div th:if="${dispute != null and dispute.sellerResponse != null and !dispute.sellerResponse.isEmpty()}"
+                                     class="claim-statement-box" style="border-left: 3px solid var(--color-info);"
+                                     th:text="${dispute.sellerResponse}">
+                                    Giải trình từ người bán...
+                                </div>
+
+                                <div th:if="${dispute == null or dispute.sellerResponse == null or dispute.sellerResponse.isEmpty()}"
+                                     style="padding: 18px; background-color: #fffbfa; border: 1px dashed #fca5a5; border-radius: var(--radius-md);">
+                                    <div style="font-weight: 700; color: var(--color-danger); font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Người bán chưa gửi giải trình phản hồi
+                                    </div>
+                                    <p style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; margin: 8px 0 0 0;">
+                                        Theo quy định sàn TicketPass, người bán có 24 giờ để đưa ra giải trình và chứng minh vé hợp lệ. Nếu quá hạn không có phản hồi, Admin được quyền xử Người Mua Thắng ngay lập tức.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Seller Guidance note -->
+                            <div style="margin-top: auto; padding: 14px; background-color: #f8fafc; border-radius: var(--radius-md); font-size: 12px; color: var(--color-text-muted); line-height: 1.5;">
+                                <i class="fa-solid fa-circle-info" style="color: var(--color-info);"></i>
+                                <strong>Lưu ý đối soát:</strong> Kiểm tra kỹ lịch sử thời điểm check-in tại cổng hoặc tin nhắn trao đổi giữa hai bên để đảm bảo không xử nhầm gian lận.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ruling Action Section (Khi hồ sơ chưa giải quyết) -->
+                <div th:if="${dispute != null and dispute.status != null and dispute.status.name() != 'RESOLVED_BUYER_WINS' and dispute.status.name() != 'RESOLVED_SELLER_WINS' and dispute.status.name() != 'WITHDRAWN'}"
+                     class="ruling-station-card">
+                    <div class="ruling-station-title">
+                        <i class="fa-solid fa-gavel" style="color: var(--color-brand); font-size: 22px;"></i>
+                        Trạm Phán Quyết Trọng Tài Của Quản Trị Viên
+                    </div>
+                    <p style="font-size: 14px; color: var(--color-text-muted); margin: 0 0 20px 0;">
+                        Phán quyết này là quyết định cuối cùng, lập tức kích hoạt hợp đồng thông minh thực thi giải ngân hoặc hoàn tiền và cập nhật điểm uy tín.
+                    </p>
+
+                    <!-- Reason text input -->
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label" for="resolutionNoteInput" style="font-weight: 700; font-size: 14px;">
+                            Căn cứ và lý giải phán quyết chính thức <span class="required">*</span>
+                        </label>
+                        <textarea id="resolutionNoteInput" rows="3" class="form-control"
+                                  placeholder="Nhập chi tiết căn cứ đối chiếu chứng cứ để thông báo tới cả Người mua và Người bán..." required></textarea>
+                        <span class="form-text" style="font-size: 12px; color: var(--color-text-muted);">
+                            Văn bản này sẽ được lưu vào lịch sử đối soát và gửi trực tiếp qua thông báo cho hai bên.
+                        </span>
+                    </div>
+
+                    <!-- Dual Ruling Action Cards -->
+                    <div class="ruling-action-grid">
+                        <!-- Option 1: Buyer Wins -->
+                        <div class="ruling-option-card buyer-fav">
+                            <div>
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                    <h3 style="font-size: 16px; font-weight: 800; color: var(--color-danger); margin: 0;">
+                                        Xử Người Mua Thắng
+                                    </h3>
+                                    <span class="badge badge-danger">Hoàn tiền 100%</span>
+                                </div>
+                                <ul class="consequence-list">
+                                    <li><i class="fa-solid fa-check text-success"></i> Hoàn 100% tiền Escrow cho Người mua</li>
+                                    <li><i class="fa-solid fa-check text-success"></i> Tịch thu khoản cọc 50% của Người bán</li>
+                                    <li><i class="fa-solid fa-check text-success"></i> Bồi thường tiền cọc cho Người mua</li>
+                                    <li><i class="fa-solid fa-triangle-exclamation text-danger"></i> Trừ 15 điểm uy tín của Người bán (sàn 0.00)</li>
+                                    <li><i class="fa-solid fa-plus text-success"></i> Cộng 1 điểm uy tín cho Người mua</li>
+                                </ul>
+                            </div>
+                            <form th:action="@{/admin/disputes/{id}/buyer-wins(id=${dispute.id})}" method="post"
+                                  onsubmit="return handleRulingSubmit(this, 'BUYER_WINS');">
+                                <input type="hidden" name="resolutionNote" />
+                                <button type="submit" class="btn btn-danger" style="width: 100%; padding: 12px; font-weight: 700;">
+                                    <i class="fa-solid fa-user-check"></i> Xác nhận Người Mua Thắng
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Option 2: Seller Wins -->
+                        <div class="ruling-option-card seller-fav">
+                            <div>
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                    <h3 style="font-size: 16px; font-weight: 800; color: var(--color-success); margin: 0;">
+                                        Xử Người Bán Thắng
+                                    </h3>
+                                    <span class="badge badge-success">Giải ngân tiền vé</span>
+                                </div>
+                                <ul class="consequence-list">
+                                    <li><i class="fa-solid fa-check text-success"></i> Giải ngân 100% tiền bán vé cho Người bán</li>
+                                    <li><i class="fa-solid fa-check text-success"></i> Hoàn trả 100% tiền cọc 50% cho Người bán</li>
+                                    <li><i class="fa-solid fa-triangle-exclamation text-danger"></i> Trừ 15 điểm uy tín của Người mua do khiếu nại sai</li>
+                                    <li><i class="fa-solid fa-plus text-success"></i> Cộng 1 điểm uy tín cho Người bán</li>
+                                </ul>
+                            </div>
+                            <form th:action="@{/admin/disputes/{id}/seller-wins(id=${dispute.id})}" method="post"
+                                  onsubmit="return handleRulingSubmit(this, 'SELLER_WINS');">
+                                <input type="hidden" name="resolutionNote" />
+                                <button type="submit" class="btn btn-success" style="width: 100%; padding: 12px; font-weight: 700;">
+                                    <i class="fa-solid fa-user-shield"></i> Xác nhận Người Bán Thắng
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Case Already Resolved Summary Card -->
+                <div th:if="${dispute != null and dispute.status != null and (dispute.status.name() == 'RESOLVED_BUYER_WINS' or dispute.status.name() == 'RESOLVED_SELLER_WINS' or dispute.status.name() == 'WITHDRAWN')}"
+                     class="case-header-bar" style="border-left: 6px solid var(--color-success);">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <i class="fa-solid fa-award fa-2x" style="color: var(--color-success);"></i>
+                        <div>
+                            <h2 style="font-size: 18px; font-weight: 800; color: var(--color-brand); margin: 0;">
+                                Vụ Tranh Chấp Này Đã Được Đóng &amp; Thi Hành Phán Quyết
+                            </h2>
+                            <span style="font-size: 13px; color: var(--color-text-muted);">
+                                Kết quả: <strong th:text="${dispute.status.name()}">RESOLVED</strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div style="background-color: #f8fafc; border-radius: var(--radius-md); padding: 16px; margin-top: 10px;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 4px;">
+                            Căn cứ phán quyết đã ban hành
+                        </div>
+                        <p style="font-size: 14px; color: var(--color-text-main); margin: 0; line-height: 1.6;"
+                           th:text="${dispute.description ?: 'Không có văn bản đính kèm.'}">
+                            Nội dung phán quyết...
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div class="admin-review-layout">
-                <!-- Left Column: Evidence Comparison -->
-                <div class="main-column">
-                    <!-- Bên Người Mua (Buyer) -->
-                    <div class="review-card">
-                        <div class="review-card-title">
-                            <i class="fa-solid fa-user-check" style="color: var(--color-primary);"></i>
-                            1. Khiếu Nại &amp; Bằng Chứng Người Mua (User #<span th:text="${dispute != null ? dispute.buyerId : 2}">2</span>)
-                        </div>
-
-                        <div style="margin-bottom: 14px;">
-                            <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">
-                                Lý do khiếu nại
-                            </div>
-                            <div style="font-size: 15px; font-weight: 700; color: var(--color-danger); margin-top: 2px;"
-                                 th:text="${dispute != null and dispute.reason != null ? dispute.reason.name() : 'TICKET_INVALID'}">
-                                TICKET_INVALID
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 14px;">
-                            <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">
-                                Mô tả từ người mua
-                            </div>
-                            <p style="font-size: 14px; color: var(--color-text-secondary); line-height: 1.6; margin-top: 4px;"
-                               th:text="${dispute != null and dispute.description != null ? dispute.description : 'Mã vé báo đã được sử dụng trước lúc check-in tại quầy.'}">
-                                Mô tả sự việc...
-                            </p>
-                        </div>
-
-                        <!-- Evidences list -->
-                        <div>
-                            <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">
-                                Bằng chứng đính kèm
-                            </div>
-                            <div class="evidence-grid">
-                                <th:block th:if="${dispute != null and dispute.evidences != null and !#lists.isEmpty(dispute.evidences)}">
-                                    <div th:each="ev : ${dispute.evidences}" class="evidence-thumb">
-                                        <a th:href="${ev.fileUrl}" target="_blank">
-                                            <img th:src="${ev.fileUrl}" alt="Bằng chứng" class="evidence-img" />
-                                        </a>
-                                    </div>
-                                </th:block>
-                                <th:block th:if="${dispute == null or dispute.evidences == null or #lists.isEmpty(dispute.evidences)}">
-                                    <div class="evidence-thumb" style="display: flex; align-items: center; justify-content: center; color: #94a3b8;">
-                                        <i class="fa-solid fa-image fa-2x"></i>
-                                    </div>
-                                </th:block>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bên Người Bán (Seller) -->
-                    <div class="review-card">
-                        <div class="review-card-title">
-                            <i class="fa-solid fa-user-shield" style="color: var(--color-info);"></i>
-                            2. Giải Trình Người Bán (User #<span th:text="${dispute != null ? dispute.sellerId : 1}">1</span>)
-                        </div>
-
-                        <div th:if="${dispute != null and dispute.sellerResponse != null and !dispute.sellerResponse.isEmpty()}">
-                            <p style="font-size: 14px; color: var(--color-text-secondary); line-height: 1.6;"
-                               th:text="${dispute.sellerResponse}">
-                                Phản hồi từ người bán...
-                            </p>
-                        </div>
-
-                        <div th:if="${dispute == null or dispute.sellerResponse == null or dispute.sellerResponse.isEmpty()}"
-                             style="padding: 16px; background-color: #fffbfa; border: 1px solid #fecaca; border-radius: var(--radius-md);">
-                            <div style="display: flex; align-items: center; gap: 8px; color: var(--color-danger); font-weight: 700; font-size: 14px;">
-                                <i class="fa-solid fa-triangle-exclamation"></i> Người bán chưa gửi giải trình
-                            </div>
-                            <div style="font-size: 13px; color: var(--color-text-muted); margin-top: 4px;">
-                                Hạn chót: <span th:text="${dispute != null and dispute.sellerResponseDeadline != null ? #temporals.format(dispute.sellerResponseDeadline, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : 'Đã quá hạn 24 giờ'}">24 giờ</span>.
-                                Nếu quá hạn, quy tắc nghiệp vụ cho phép Admin ưu tiên xử người mua thắng.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column: Financial Balance & Ruling Action -->
-                <div class="sidebar-column">
-                    <!-- Financial Balance Box -->
-                    <div class="review-card">
-                        <div class="review-card-title">
-                            <i class="fa-solid fa-vault" style="color: var(--color-success);"></i>
-                            Cán Cân Tài Chính Tranh Chấp
-                        </div>
-
-                        <div style="padding-bottom: 12px; border-bottom: 1px dashed var(--color-border); margin-bottom: 12px;">
-                            <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">Tiền Ký Quỹ Escrow (Người mua)</div>
-                            <div style="font-size: 20px; font-weight: 800; color: var(--color-primary);"
-                                 th:text="${escrow != null and escrow.amount != null ? #numbers.formatDecimal(escrow.amount, 0, 'POINT', 0, 'POINT') + ' ₫' : '250.000 ₫'}">
-                                250.000 ₫
-                            </div>
-                            <div style="font-size: 11px; color: var(--color-text-muted);">Đang đóng băng tại sàn</div>
-                        </div>
-
-                        <div>
-                            <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">Tiền Cọc Khóa (Người bán)</div>
-                            <div style="font-size: 20px; font-weight: 800; color: var(--color-warning);"
-                                 th:text="${deposit != null and deposit.depositAmount != null ? #numbers.formatDecimal(deposit.depositAmount, 0, 'POINT', 0, 'POINT') + ' ₫' : '125.000 ₫'}">
-                                125.000 ₫
-                            </div>
-                            <div style="font-size: 11px; color: var(--color-text-muted);">Sẵn sàng tịch thu bồi thường</div>
-                        </div>
-                    </div>
-
-                    <!-- Admin Ruling Decision Panel -->
-                    <div class="ruling-box">
-                        <div style="font-size: 15px; font-weight: 800; color: var(--color-brand); margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-gavel"></i> Phán Quyết Của Admin
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="resolutionNote">
-                                Ghi chú căn cứ phán quyết <span class="required">*</span>
-                            </label>
-                            <textarea id="resolutionNote" name="resolutionNote" rows="3" class="form-control"
-                                      placeholder="Nhập lý do phân xử chi tiết để gửi cho cả hai bên..." required></textarea>
-                            <span class="form-text">Cả người mua và người bán đều xem được giải thích này.</span>
-                        </div>
-
-                        <!-- 2 Separate POST Routes for Safe Financial Ruling -->
-                        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
-                            <!-- Form 1: Buyer Wins -->
-                            <form th:action="@{/admin/disputes/{id}/buyer-wins(id=${dispute != null ? dispute.id : 1})}" method="post"
-                                  onsubmit="return validateAndCopyNote(this, 'Bạn có chắc chắn muốn xử NGƯỜI MUA THẮNG?\n- Hoàn 100% tiền Escrow cho Buyer\n- Tịch thu tiền cọc của Seller để bồi thường\n- Trừ 15 điểm uy tín người bán');">
-                                <input type="hidden" name="resolutionNote" />
-                                <button type="submit" class="btn btn-danger" style="width: 100%;">
-                                    <i class="fa-solid fa-user-check"></i> Xử Người Mua Thắng
-                                </button>
-                            </form>
-
-                            <!-- Form 2: Seller Wins -->
-                            <form th:action="@{/admin/disputes/{id}/seller-wins(id=${dispute != null ? dispute.id : 1})}" method="post"
-                                  onsubmit="return validateAndCopyNote(this, 'Bạn có chắc chắn muốn xử NGƯỜI BÁN THẮNG?\n- Giải ngân 100% tiền bán cho Seller\n- Hoàn lại khoản tiền cọc 50% cho Seller\n- Cộng 2 điểm uy tín người bán');">
-                                <input type="hidden" name="resolutionNote" />
-                                <button type="submit" class="btn btn-success" style="width: 100%;">
-                                    <i class="fa-solid fa-user-shield"></i> Xử Người Bán Thắng
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+            <!-- Lightbox Modal for Evidence Zoom -->
+            <div id="lightboxModal" class="modal-lightbox" onclick="closeLightbox()">
+                <div class="modal-lightbox-content" onclick="event.stopPropagation()">
+                    <button class="modal-close-btn" onclick="closeLightbox()">&times;</button>
+                    <img id="lightboxImg" class="modal-lightbox-img" src="" alt="Phóng to bằng chứng" />
                 </div>
             </div>
 
             <script>
-                function validateAndCopyNote(form, confirmMsg) {
-                    var noteVal = document.getElementById('resolutionNote').value.trim();
+                function openLightbox(url) {
+                    if (!url) return;
+                    document.getElementById('lightboxImg').src = url;
+                    document.getElementById('lightboxModal').classList.add('active');
+                }
+
+                function closeLightbox() {
+                    document.getElementById('lightboxModal').classList.remove('active');
+                }
+
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') closeLightbox();
+                });
+
+                function handleRulingSubmit(form, decisionType) {
+                    var noteInput = document.getElementById('resolutionNoteInput');
+                    var noteVal = noteInput ? noteInput.value.trim() : '';
+
                     if (!noteVal) {
-                        alert('Vui lòng nhập ghi chú căn cứ phán quyết trước khi đưa ra quyết định.');
-                        document.getElementById('resolutionNote').focus();
+                        alert('Vui lòng nhập lý do và căn cứ phán quyết trước khi thực hiện phán quyết.');
+                        if (noteInput) noteInput.focus();
                         return false;
                     }
-                    if (!confirm(confirmMsg)) {
+
+                    var msg = decisionType === 'BUYER_WINS'
+                        ? 'XÁC NHẬN PHÁN QUYẾT: NGƯỜI MUA THẮNG\n\n' +
+                          '• Hoàn 100% tiền Escrow cho Người mua\n' +
+                          '• Tịch thu tiền cọc 50% của Người bán để bồi thường\n' +
+                          '• Trừ 15 điểm uy tín của Người bán\n' +
+                          '• Cộng 1 điểm uy tín cho Người mua\n\n' +
+                          'Bạn có chắc chắn muốn thi hành quyết định này?'
+                        : 'XÁC NHẬN PHÁN QUYẾT: NGƯỜI BÁN THẮNG\n\n' +
+                          '• Giải ngân 100% tiền bán vé cho Người bán\n' +
+                          '• Hoàn trả 100% tiền cọc 50% cho Người bán\n' +
+                          '• Trừ 15 điểm uy tín của Người mua do khiếu nại sai\n' +
+                          '• Cộng 1 điểm uy tín cho Người bán\n\n' +
+                          'Bạn có chắc chắn muốn thi hành quyết định này?';
+
+                    if (!confirm(msg)) {
                         return false;
                     }
+
                     form.elements['resolutionNote'].value = noteVal;
                     return true;
                 }

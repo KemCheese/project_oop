@@ -253,8 +253,10 @@ public class ReviewDisputeUseCase {
 
         Dispute savedDispute = disputeRepository.save(dispute);
 
-        // (4) Gọi ticketStateMachineService.transition(ticketId, TicketStatus.RESOLVED_SELLER_WINS)
-        ticketStateMachineService.transition(dispute.getTicketId(), TicketStatus.RESOLVED_SELLER_WINS);
+        // (4) Trạng thái vé đã được chuyển sang RESOLVED_SELLER_WINS tự động và đồng bộ
+        // bên trong releaseFundsUseCase.release(...) tại bước (2) (theo hợp đồng module payment).
+        // Không gọi lại ticketStateMachineService.transition ở đây để tránh lỗi IllegalTicketTransitionException
+        // do RESOLVED_SELLER_WINS là Terminal State.
 
         // (5) CUỐI CÙNG mới publish DisputeResolvedEvent với outcome = SELLER_WINS
         // KHÔNG gọi trực tiếp module reputation (nguyên tắc 2)

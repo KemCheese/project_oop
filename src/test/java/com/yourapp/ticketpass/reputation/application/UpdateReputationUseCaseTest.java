@@ -257,6 +257,33 @@ class UpdateReputationUseCaseTest {
         }
 
         @Test
+        @DisplayName("8b. onTransaction: khi lý do là DISPUTE_RESOLVED_SELLER_WINS -> chỉ tăng GMV/count cho người bán, không cộng điểm cho người mua")
+        void onTransaction_disputeResolvedSellerWins_onlyUpdatesSellerGmvWithoutBuyerBonus() {
+            Long sellerId = 1L;
+            Long buyerId = 2L;
+            UserReputationScore sellerScore = createSampleScore(sellerId, new BigDecimal("90.00"), 3, 3);
+            UserReputationScore buyerScore = createSampleScore(buyerId, new BigDecimal("80.00"), 5, 4);
+
+            when(reputationRepository.findByUserId(sellerId)).thenReturn(Optional.of(sellerScore));
+
+            TicketTransactionCompletedEvent event = new TicketTransactionCompletedEvent(
+                    10L, 20L, 30L, sellerId, buyerId,
+                    new BigDecimal("250000"),
+                    new BigDecimal("10000"), new BigDecimal("15000"), BigDecimal.ZERO,
+                    new BigDecimal("235000"), new BigDecimal("50000"),
+                    CompletionReason.DISPUTE_RESOLVED_SELLER_WINS,
+                    Instant.now()
+            );
+            updateReputationUseCase.onTicketTransactionCompleted(event);
+
+            assertThat(sellerScore.getTotalTransactions()).isEqualTo(4);
+            assertThat(sellerScore.getSuccessfulTransactions()).isEqualTo(4);
+            assertThat(sellerScore.getTotalGmv()).isEqualByComparingTo("250000.00");
+            assertThat(sellerScore.getScore()).isEqualByComparingTo("90.00");
+            verify(reputationRepository, never()).findByUserId(buyerId);
+        }
+
+        @Test
         @DisplayName("onTransaction: bỏ qua khi event là null")
         void onTransaction_nullEvent_ignored() {
             updateReputationUseCase.onTicketTransactionCompleted(null);

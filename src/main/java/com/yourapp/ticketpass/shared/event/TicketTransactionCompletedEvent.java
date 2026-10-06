@@ -70,4 +70,9 @@ public class TicketTransactionCompletedEvent {
 
     /** Thời điểm sự kiện xảy ra. */
     private final Instant occurredAt;
+
+    /** Alias getter tương thích với getReason() */
+    public CompletionReason getReason() {
+        return completionReason;
+    }
 }
