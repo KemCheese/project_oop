@@ -377,9 +377,249 @@
                         grid-template-columns: 1fr;
                     }
                 }
+
+                /* ==========================================================================
+                   RULING VERDICT MODAL & FLASH BANNER (Design Taste Frontend)
+                   ========================================================================== */
+                .tp-flash-banner {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 14px;
+                    padding: 16px 20px;
+                    border-radius: var(--radius-md, 10px);
+                    margin-bottom: 24px;
+                    position: relative;
+                    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+                    animation: tpSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                @keyframes tpSlideDown {
+                    from { opacity: 0; transform: translateY(-8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .tp-flash-success {
+                    background-color: #f0fdf4;
+                    border: 1px solid #bbf7d0;
+                    color: #166534;
+                }
+
+                .tp-flash-icon {
+                    font-size: 22px;
+                    line-height: 1;
+                    padding-top: 2px;
+                }
+
+                .tp-flash-content {
+                    flex: 1;
+                }
+
+                .tp-flash-title {
+                    font-size: 15px;
+                    font-weight: 700;
+                    margin-bottom: 3px;
+                }
+
+                .tp-flash-message {
+                    font-size: 13.5px;
+                    line-height: 1.5;
+                    opacity: 0.95;
+                }
+
+                .tp-flash-close {
+                    background: none;
+                    border: none;
+                    font-size: 20px;
+                    color: currentColor;
+                    opacity: 0.6;
+                    cursor: pointer;
+                    line-height: 1;
+                    padding: 0 4px;
+                    transition: opacity 0.15s ease;
+                }
+
+                .tp-flash-close:hover {
+                    opacity: 1;
+                }
+
+                /* Ruling Verdict Modal */
+                .modal-verdict-backdrop {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 10000;
+                    background: rgba(15, 23, 42, 0.72);
+                    backdrop-filter: blur(10px);
+                    -webkit-backdrop-filter: blur(10px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 16px;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                .modal-verdict-backdrop.active {
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+
+                .modal-verdict-dialog {
+                    background: #ffffff;
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg, 16px);
+                    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(15, 23, 42, 0.05);
+                    width: 100%;
+                    max-width: 580px;
+                    overflow: hidden;
+                    transform: scale(0.95) translateY(10px);
+                    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                .modal-verdict-backdrop.active .modal-verdict-dialog {
+                    transform: scale(1) translateY(0);
+                }
+
+                .modal-verdict-header {
+                    padding: 22px 24px 18px 24px;
+                    border-bottom: 1px solid #f1f5f9;
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 16px;
+                    position: relative;
+                }
+
+                .modal-verdict-header.buyer-header {
+                    background: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%);
+                }
+
+                .modal-verdict-header.seller-header {
+                    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+                }
+
+                .verdict-header-icon {
+                    width: 46px;
+                    height: 46px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 20px;
+                    flex-shrink: 0;
+                }
+
+                .verdict-header-icon.buyer {
+                    background-color: #fee2e2;
+                    color: var(--color-danger);
+                    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+                }
+
+                .verdict-header-icon.seller {
+                    background-color: #dcfce7;
+                    color: var(--color-success);
+                    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.1);
+                }
+
+                .modal-verdict-body {
+                    padding: 20px 24px;
+                }
+
+                .verdict-summary-box {
+                    background-color: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: var(--radius-md, 10px);
+                    padding: 16px;
+                    margin-bottom: 16px;
+                }
+
+                .verdict-summary-item {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 10px;
+                    margin-bottom: 10px;
+                    font-size: 13.5px;
+                    line-height: 1.45;
+                }
+
+                .verdict-summary-item:last-child {
+                    margin-bottom: 0;
+                }
+
+                .verdict-reason-preview {
+                    background-color: #ffffff;
+                    border: 1px solid #e2e8f0;
+                    border-left: 3px solid var(--color-brand);
+                    border-radius: var(--radius-sm, 6px);
+                    padding: 10px 14px;
+                    margin-top: 12px;
+                    font-size: 13px;
+                    color: var(--color-text-secondary);
+                    line-height: 1.5;
+                    font-style: italic;
+                    max-height: 90px;
+                    overflow-y: auto;
+                }
+
+                .verdict-warning-notice {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 12px;
+                    color: #b45309;
+                    background: #fffbeb;
+                    border: 1px solid #fde68a;
+                    padding: 10px 14px;
+                    border-radius: var(--radius-sm, 6px);
+                    line-height: 1.4;
+                }
+
+                .modal-verdict-footer {
+                    padding: 16px 24px 20px 24px;
+                    background-color: #f8fafc;
+                    border-top: 1px solid #e2e8f0;
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
+                }
+
+                /* Textarea Validation Shake & Error */
+                .input-shake {
+                    animation: tpShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+                    border-color: var(--color-danger) !important;
+                    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+                }
+
+                @keyframes tpShake {
+                    10%, 90% { transform: translate3d(-1px, 0, 0); }
+                    20%, 80% { transform: translate3d(2px, 0, 0); }
+                    30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+                    40%, 60% { transform: translate3d(3px, 0, 0); }
+                }
+
+                .note-inline-error {
+                    color: var(--color-danger);
+                    font-size: 12.5px;
+                    font-weight: 600;
+                    margin-top: 6px;
+                    display: none;
+                    align-items: center;
+                    gap: 6px;
+                }
             </style>
 
             <div class="arbitration-container">
+                <!-- Flash Notification Banner -->
+                <div th:if="${successMessage != null}" class="tp-flash-banner tp-flash-success" role="alert">
+                    <div class="tp-flash-icon">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div class="tp-flash-content">
+                        <div class="tp-flash-title">Phán quyết đã được thi hành</div>
+                        <div class="tp-flash-message" th:text="${successMessage}">Phán quyết thành công</div>
+                    </div>
+                    <button type="button" class="tp-flash-close" onclick="this.parentElement.remove()" aria-label="Đóng">&times;</button>
+                </div>
+
                 <!-- Navigation Breadcrumb -->
                 <div style="margin-bottom: 16px;">
                     <a th:href="@{/admin/disputes}" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 8px;">
@@ -630,8 +870,13 @@
                             Căn cứ và lý giải phán quyết chính thức <span class="required">*</span>
                         </label>
                         <textarea id="resolutionNoteInput" rows="3" class="form-control"
-                                  placeholder="Nhập chi tiết căn cứ đối chiếu chứng cứ để thông báo tới cả Người mua và Người bán..." required></textarea>
-                        <span class="form-text" style="font-size: 12px; color: var(--color-text-muted);">
+                                  placeholder="Nhập chi tiết căn cứ đối chiếu chứng cứ để thông báo tới cả Người mua và Người bán..." required
+                                  oninput="document.getElementById('noteErrorMsg').style.display='none'; this.classList.remove('input-shake');"></textarea>
+                        <div id="noteErrorMsg" class="note-inline-error">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            Vui lòng nhập chi tiết căn cứ và lý giải phán quyết (tối thiểu 5 ký tự) trước khi tiếp tục.
+                        </div>
+                        <span class="form-text" style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px; display: block;">
                             Văn bản này sẽ được lưu vào lịch sử đối soát và gửi trực tiếp qua thông báo cho hai bên.
                         </span>
                     </div>
@@ -655,10 +900,10 @@
                                     <li><i class="fa-solid fa-plus text-success"></i> Cộng 1 điểm uy tín cho Người mua</li>
                                 </ul>
                             </div>
-                            <form th:action="@{/admin/disputes/{id}/buyer-wins(id=${dispute.id})}" method="post"
-                                  onsubmit="return handleRulingSubmit(this, 'BUYER_WINS');">
+                            <form id="formBuyerWins" th:action="@{/admin/disputes/{id}/buyer-wins(id=${dispute.id})}" method="post">
                                 <input type="hidden" name="resolutionNote" />
-                                <button type="submit" class="btn btn-danger" style="width: 100%; padding: 12px; font-weight: 700;">
+                                <button type="button" class="btn btn-danger" style="width: 100%; padding: 12px; font-weight: 700;"
+                                        onclick="triggerRulingModal('BUYER_WINS')">
                                     <i class="fa-solid fa-user-check"></i> Xác nhận Người Mua Thắng
                                 </button>
                             </form>
@@ -680,10 +925,10 @@
                                     <li><i class="fa-solid fa-plus text-success"></i> Cộng 1 điểm uy tín cho Người bán</li>
                                 </ul>
                             </div>
-                            <form th:action="@{/admin/disputes/{id}/seller-wins(id=${dispute.id})}" method="post"
-                                  onsubmit="return handleRulingSubmit(this, 'SELLER_WINS');">
+                            <form id="formSellerWins" th:action="@{/admin/disputes/{id}/seller-wins(id=${dispute.id})}" method="post">
                                 <input type="hidden" name="resolutionNote" />
-                                <button type="submit" class="btn btn-success" style="width: 100%; padding: 12px; font-weight: 700;">
+                                <button type="button" class="btn btn-success" style="width: 100%; padding: 12px; font-weight: 700;"
+                                        onclick="triggerRulingModal('SELLER_WINS')">
                                     <i class="fa-solid fa-user-shield"></i> Xác nhận Người Bán Thắng
                                 </button>
                             </form>
@@ -718,6 +963,71 @@
                 </div>
             </div>
 
+            <!-- Interactive Ruling Verdict Modal (Design Taste Frontend) -->
+            <div id="rulingVerdictModal" class="modal-verdict-backdrop" onclick="closeRulingModal(event)">
+                <div class="modal-verdict-dialog" onclick="event.stopPropagation()">
+                    <!-- Dynamic Header -->
+                    <div id="verdictModalHeader" class="modal-verdict-header">
+                        <div id="verdictHeaderIcon" class="verdict-header-icon">
+                            <i id="verdictIconClass" class="fa-solid fa-gavel"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
+                                <h3 id="verdictModalTitle" style="font-size: 17px; font-weight: 800; margin: 0; color: var(--color-brand);">
+                                    Xác Nhận Thi Hành Phán Quyết
+                                </h3>
+                                <span id="verdictModalBadge" class="badge">CHỜ XÁC NHẬN</span>
+                            </div>
+                            <p id="verdictModalSubtitle" style="font-size: 13px; color: var(--color-text-secondary); margin: 0; line-height: 1.4;">
+                                Vui lòng kiểm tra lại toàn bộ quyền lợi và nghĩa vụ trước khi phát lệnh.
+                            </p>
+                        </div>
+                        <button type="button" class="tp-flash-close" onclick="closeRulingModal()" aria-label="Đóng">&times;</button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="modal-verdict-body">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">
+                            Tác động dòng tiền &amp; Điểm số sau thi hành
+                        </div>
+
+                        <!-- Summary Impacts List -->
+                        <div class="verdict-summary-box">
+                            <div id="verdictImpactList">
+                                <!-- Will be populated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Resolution Note Preview -->
+                        <div style="margin-top: 14px;">
+                            <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+                                Căn cứ phán quyết chính thức:
+                            </div>
+                            <div id="verdictReasonDisplay" class="verdict-reason-preview">
+                                <!-- Note content -->
+                            </div>
+                        </div>
+
+                        <!-- Disclaimer / Irreversible Notice -->
+                        <div class="verdict-warning-notice" style="margin-top: 14px;">
+                            <i class="fa-solid fa-circle-exclamation" style="font-size: 16px; flex-shrink: 0;"></i>
+                            <span>Phán quyết này là <strong>quyết định cuối cùng</strong> và kích hoạt giải ngân / hoàn tiền lập tức. Bạn không thể hoàn tác thao tác này.</span>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="modal-verdict-footer">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="closeRulingModal()" style="padding: 10px 18px; font-weight: 600;">
+                            Hủy bỏ / Xem lại
+                        </button>
+                        <button type="button" id="btnExecuteRuling" class="btn btn-sm" style="padding: 10px 22px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;" onclick="executeRulingFinal()">
+                            <i class="fa-solid fa-stamp"></i>
+                            <span id="btnExecuteText">Thi hành phán quyết</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Lightbox Modal for Evidence Zoom -->
             <div id="lightboxModal" class="modal-lightbox" onclick="closeLightbox()">
                 <div class="modal-lightbox-content" onclick="event.stopPropagation()">
@@ -737,41 +1047,116 @@
                     document.getElementById('lightboxModal').classList.remove('active');
                 }
 
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'Escape') closeLightbox();
-                });
+                var currentDecisionType = null;
 
-                function handleRulingSubmit(form, decisionType) {
+                function triggerRulingModal(decisionType) {
                     var noteInput = document.getElementById('resolutionNoteInput');
+                    var errorMsg = document.getElementById('noteErrorMsg');
                     var noteVal = noteInput ? noteInput.value.trim() : '';
 
-                    if (!noteVal) {
-                        alert('Vui lòng nhập lý do và căn cứ phán quyết trước khi thực hiện phán quyết.');
-                        if (noteInput) noteInput.focus();
-                        return false;
+                    if (!noteVal || noteVal.length < 5) {
+                        if (errorMsg) errorMsg.style.display = 'flex';
+                        if (noteInput) {
+                            noteInput.classList.remove('input-shake');
+                            void noteInput.offsetWidth; // trigger reflow
+                            noteInput.classList.add('input-shake');
+                            noteInput.focus();
+                        }
+                        return;
                     }
 
-                    var msg = decisionType === 'BUYER_WINS'
-                        ? 'XÁC NHẬN PHÁN QUYẾT: NGƯỜI MUA THẮNG\n\n' +
-                          '• Hoàn 100% tiền Escrow cho Người mua\n' +
-                          '• Tịch thu tiền cọc 50% của Người bán để bồi thường\n' +
-                          '• Trừ 15 điểm uy tín của Người bán\n' +
-                          '• Cộng 1 điểm uy tín cho Người mua\n\n' +
-                          'Bạn có chắc chắn muốn thi hành quyết định này?'
-                        : 'XÁC NHẬN PHÁN QUYẾT: NGƯỜI BÁN THẮNG\n\n' +
-                          '• Giải ngân 100% tiền bán vé cho Người bán\n' +
-                          '• Hoàn trả 100% tiền cọc 50% cho Người bán\n' +
-                          '• Trừ 15 điểm uy tín của Người mua do khiếu nại sai\n' +
-                          '• Cộng 1 điểm uy tín cho Người bán\n\n' +
-                          'Bạn có chắc chắn muốn thi hành quyết định này?';
+                    if (errorMsg) errorMsg.style.display = 'none';
+                    if (noteInput) noteInput.classList.remove('input-shake');
 
-                    if (!confirm(msg)) {
-                        return false;
+                    currentDecisionType = decisionType;
+                    var modal = document.getElementById('rulingVerdictModal');
+                    var header = document.getElementById('verdictModalHeader');
+                    var iconWrapper = document.getElementById('verdictHeaderIcon');
+                    var iconClass = document.getElementById('verdictIconClass');
+                    var title = document.getElementById('verdictModalTitle');
+                    var subtitle = document.getElementById('verdictModalSubtitle');
+                    var badge = document.getElementById('verdictModalBadge');
+                    var impactList = document.getElementById('verdictImpactList');
+                    var reasonDisplay = document.getElementById('verdictReasonDisplay');
+                    var execBtn = document.getElementById('btnExecuteRuling');
+                    var execText = document.getElementById('btnExecuteText');
+
+                    reasonDisplay.textContent = noteVal;
+                    execBtn.disabled = false;
+
+                    if (decisionType === 'BUYER_WINS') {
+                        header.className = 'modal-verdict-header buyer-header';
+                        iconWrapper.className = 'verdict-header-icon buyer';
+                        iconClass.className = 'fa-solid fa-gavel';
+                        title.textContent = 'Phán Quyết: Người Mua Thắng';
+                        subtitle.textContent = 'Hoàn 100% tiền Escrow cho Người mua và chế tài tịch thu cọc Người bán.';
+                        badge.className = 'badge badge-danger';
+                        badge.textContent = 'BUYER WINS';
+
+                        impactList.innerHTML =
+                            '<div class="verdict-summary-item"><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Hoàn trả 100% tiền Escrow:</strong> Tiền mua vé lập tức hoàn về cho Người mua.</div></div>' +
+                            '<div class="verdict-summary-item"><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Tịch thu khoản cọc 50%:</strong> Tịch thu tiền cọc của Người bán để bồi thường cho Người mua theo quy chế.</div></div>' +
+                            '<div class="verdict-summary-item"><i class="fa-solid fa-triangle-exclamation text-danger"></i> <div><strong>Xử phạt uy tín Người bán:</strong> Trừ 15 điểm uy tín của Người bán do vi phạm bàn giao vé.</div></div>' +
+                            '<div class="verdict-summary-item"><i class="fa-solid fa-plus text-success"></i> <div><strong>Ghi nhận thiện chí:</strong> Cộng 1 điểm uy tín cho Người mua.</div></div>';
+
+                        execBtn.className = 'btn btn-danger btn-sm';
+                        execText.textContent = 'Xác nhận Người Mua Thắng';
+                    } else {
+                        header.className = 'modal-verdict-header seller-header';
+                        iconWrapper.className = 'verdict-header-icon seller';
+                        iconClass.className = 'fa-solid fa-shield-halved';
+                        title.textContent = 'Phán Quyết: Người Bán Thắng';
+                        subtitle.textContent = 'Giải ngân toàn bộ doanh thu cho Người bán và hoàn trả khoản tiền cọc.';
+                        badge.className = 'badge badge-success';
+                        badge.textContent = 'SELLER WINS';
+
+                        impactList.innerHTML =
+                            '<div class="verdict-summary-item"><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Giải ngân 100% doanh thu:</strong> Chuyển trả tiền bán vé cho Người bán.</div></div>' +
+                            '<div class="verdict-summary-item"><i class="fa-solid fa-circle-check text-success"></i> <div><strong>Hoàn trả 100% tiền cọc 50%:</strong> Khoản cọc của Người bán được bảo toàn và mở khóa hoàn tất.</div></div>' +
+                            '<div class="verdict-summary-item"><i class="fa-solid fa-triangle-exclamation text-danger"></i> <div><strong>Xử phạt khiếu nại sai:</strong> Trừ 15 điểm uy tín của Người mua do khiếu nại không có cơ sở.</div></div>' +
+                            '<div class="verdict-summary-item"><i class="fa-solid fa-plus text-success"></i> <div><strong>Ghi nhận giao dịch thành công:</strong> Cộng 1 điểm uy tín cho Người bán.</div></div>';
+
+                        execBtn.className = 'btn btn-success btn-sm';
+                        execText.textContent = 'Xác nhận Người Bán Thắng';
                     }
 
-                    form.elements['resolutionNote'].value = noteVal;
-                    return true;
+                    modal.classList.add('active');
                 }
+
+                function closeRulingModal(e) {
+                    if (e && e.target && e.target.id !== 'rulingVerdictModal') return;
+                    var modal = document.getElementById('rulingVerdictModal');
+                    if (modal) modal.classList.remove('active');
+                }
+
+                function executeRulingFinal() {
+                    if (!currentDecisionType) return;
+
+                    var noteInput = document.getElementById('resolutionNoteInput');
+                    var noteVal = noteInput ? noteInput.value.trim() : '';
+                    var execBtn = document.getElementById('btnExecuteRuling');
+                    var execText = document.getElementById('btnExecuteText');
+
+                    execBtn.disabled = true;
+                    execText.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang thi hành phán quyết...';
+
+                    var targetForm = currentDecisionType === 'BUYER_WINS'
+                        ? document.getElementById('formBuyerWins')
+                        : document.getElementById('formSellerWins');
+
+                    if (targetForm) {
+                        targetForm.elements['resolutionNote'].value = noteVal;
+                        targetForm.submit();
+                    }
+                }
+
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        closeLightbox();
+                        var modal = document.getElementById('rulingVerdictModal');
+                        if (modal) modal.classList.remove('active');
+                    }
+                });
             </script>
         </content>
     </div>

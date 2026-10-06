@@ -399,7 +399,7 @@ Các quy chuẩn và cơ chế bảo vệ sau đây đã được Dev C hoàn th
 
 3. **Cam kết đối với Dev B (Module `payment`):**
    - Tầng Web hiển thị kế thừa trọn vẹn các thuộc tính Model do `PaymentController` cung cấp (`ref`, `type`, `amount`, `ticketId`, `escrow`, `deposit`, `error`).
-   - Khi Dev B mở rộng thêm tính năng hoàn tiền hoặc khấu thuế, các trường trong `EscrowSummaryResponse` sẽ tự động ăn khớp với thẻ biên nhận số mà không cần sửa đổi giao diện.
+   - Luồng xác nhận chuyển khoản thành công (`POST /payment/transfer/confirm`): Áp dụng chuẩn Post-Redirect-Get (PRG), tự động chuyển hướng trực tiếp sang `redirect:/tickets/{ticketId}` kèm Flash Attribute `successMessage`, giúp người dùng tiến ngay vào bước tiếp theo của vé mà không bị nghẽn ở màn hình trung gian. Màn hình `payment/result.html` được giữ làm fallback cho luồng báo lỗi hoặc thanh toán thất bại (`POST /payment/transfer/fail`).
 
 ---
 
@@ -424,4 +424,23 @@ Các quy chuẩn và cơ chế bảo vệ sau đây đã được Dev C hoàn th
      * `createDeposit(ticketId, sellerId, amount, status)`
      * `createDispute(ticketId, buyerId, sellerId, reason, status)`
    - **CẤM TUYỆT ĐỐI:** Không tự ý gọi `repository.deleteAll()` trên các bảng dùng chung (`users`, `tickets`, `user_reputation_scores`). Mọi thao tác dọn dẹp phải tuân thủ cơ chế Selective ID Tracking của Base class.
+
+---
+
+### 6.19. 🛡️ QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Trọng Tài Phán Quyết Tranh Chấp Admin (Arbitration Verdict Modal)
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (2026-10-06):** Chuẩn hóa toàn diện cơ chế phê duyệt phán quyết tranh chấp của Admin theo tiêu chuẩn `/design-taste-frontend`.
+
+1. **Xóa bỏ triệt để JavaScript Native Alert & Confirm:**
+   - Cấm sử dụng `alert(...)` và `confirm(...)` mặc định của trình duyệt tại các giao diện quản trị trọng tài (`admin/dispute/**`).
+   - Mọi hành động phán quyết (`BUYER_WINS`, `SELLER_WINS`) đều phải thông qua **Arbitration Ruling Verdict Modal** chuyên nghiệp:
+     * Nền mờ Glassmorphism `backdrop-filter: blur(10px)`.
+     * Hiển thị bảng đối soát tác động 2 chiều (Dòng tiền ký quỹ Escrow/cọc 50% vs Điểm uy tín sàn +1/-15).
+     * Trích dẫn văn bản căn cứ phán quyết do Admin nhập.
+     * Cảnh báo tính bất biến và không thể hoàn tác của phán quyết.
+     * Khóa nút và xoay spinner loading chống double-click khi phát lệnh thi hành.
+
+2. **Quy tắc Form Validation & Flash Notifications:**
+   - Bắt buộc nhập căn cứ phán quyết tối thiểu 5 ký tự; nếu thiếu sẽ kích hoạt hiệu ứng rung viền đỏ `input-shake` và thông báo inline, không bật popup trình duyệt.
+   - Sau khi Controller thi hành phán quyết và redirect về trang hồ sơ, truyền thông báo qua Spring Flash Attribute `successMessage` hiển thị thành Flash Notification Banner tinh tế trên đầu trang.
 

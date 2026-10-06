@@ -133,4 +133,48 @@ class DisputeReviewControllerTest {
         // Khẳng định 3: Không có raw ticket entity nào bị rò rỉ vào model
         assertThat(model.getAttribute("ticket")).isNull();
     }
+
+    @Test
+    @DisplayName("resolveBuyerWins - Admin phán quyết Buyer thắng thành công, trả về redirect kèm flash attribute")
+    void resolveBuyerWins_success() {
+        Long disputeId = 1L;
+        com.yourapp.ticketpass.dispute.web.dto.ReviewDisputeRequest request = new com.yourapp.ticketpass.dispute.web.dto.ReviewDisputeRequest();
+        request.setResolutionNote("Chấp thuận bằng chứng của người mua");
+
+        java.security.Principal principal = () -> "admin@ticketpass.vn";
+        com.yourapp.ticketpass.user.domain.User adminUser = new com.yourapp.ticketpass.user.domain.User();
+        adminUser.setId(99L);
+        when(userQueryService.findByEmail("admin@ticketpass.vn")).thenReturn(Optional.of(adminUser));
+
+        org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        String view = controller.resolveBuyerWins(disputeId, request, principal, redirectAttributes);
+
+        assertThat(view).isEqualTo("redirect:/admin/disputes/1");
+        assertThat(redirectAttributes.getFlashAttributes()).containsKey("successMessage");
+        org.mockito.Mockito.verify(reviewDisputeUseCase).resolveBuyerWins(1L, 99L, "Chấp thuận bằng chứng của người mua");
+    }
+
+    @Test
+    @DisplayName("resolveSellerWins - Admin phán quyết Seller thắng thành công, trả về redirect kèm flash attribute")
+    void resolveSellerWins_success() {
+        Long disputeId = 1L;
+        com.yourapp.ticketpass.dispute.web.dto.ReviewDisputeRequest request = new com.yourapp.ticketpass.dispute.web.dto.ReviewDisputeRequest();
+        request.setResolutionNote("Bằng chứng người bán hợp lệ");
+
+        java.security.Principal principal = () -> "admin@ticketpass.vn";
+        com.yourapp.ticketpass.user.domain.User adminUser = new com.yourapp.ticketpass.user.domain.User();
+        adminUser.setId(99L);
+        when(userQueryService.findByEmail("admin@ticketpass.vn")).thenReturn(Optional.of(adminUser));
+
+        org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        String view = controller.resolveSellerWins(disputeId, request, principal, redirectAttributes);
+
+        assertThat(view).isEqualTo("redirect:/admin/disputes/1");
+        assertThat(redirectAttributes.getFlashAttributes()).containsKey("successMessage");
+        org.mockito.Mockito.verify(reviewDisputeUseCase).resolveSellerWins(1L, 99L, "Bằng chứng người bán hợp lệ");
+    }
 }
