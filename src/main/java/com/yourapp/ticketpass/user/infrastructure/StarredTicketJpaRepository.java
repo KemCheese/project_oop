@@ -31,4 +31,7 @@ public interface StarredTicketJpaRepository extends JpaRepository<StarredTicket,
     List<Long> findTicketIdsByUserId(@Param("userId") Long userId);
 
     long countByUserId(Long userId);
+
+    @Query("SELECT s.userId FROM StarredTicket s WHERE s.ticketId = :ticketId")
+    List<Long> findUserIdsByTicketId(@Param("ticketId") Long ticketId);
 }

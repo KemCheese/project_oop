@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 import com.yourapp.ticketpass.payment.application.HoldFundsUseCase;
 import com.yourapp.ticketpass.payment.application.LockDepositUseCase;
 import com.yourapp.ticketpass.payment.domain.Deposit;
@@ -307,7 +309,7 @@ public class PaymentController {
      */
     @PostMapping("/transfer/confirm")
     public String confirmTransfer(@RequestParam String ref, @RequestParam String type,
-                                  Principal principal, Model model) {
+                                  Principal principal, RedirectAttributes redirectAttributes, Model model) {
         try {
             Long refId = Long.parseLong(ref);
 
@@ -318,27 +320,14 @@ public class PaymentController {
 
             if ("escrow".equals(type)) {
                 EscrowTransaction tx = holdFundsUseCase.confirmHeld(null, callbackParams);
-                EscrowSummaryResponse summary = new EscrowSummaryResponse();
-                summary.setId(tx.getId());
-                summary.setTicketId(tx.getTicketId());
-                summary.setStatus(tx.getStatus());
-                summary.setSalePrice(tx.getSalePrice());
-                summary.setBuyerCommission(tx.getBuyerCommission());
-                summary.setSellerCommission(tx.getSellerCommission());
-                summary.setTaxWithheld(tx.getTaxWithheld());
-                summary.setSellerNetPayout(tx.getSellerNetPayout());
-                summary.setHeldAt(tx.getHeldAt());
-                summary.setReleasedAt(tx.getReleasedAt());
-                model.addAttribute("escrow", summary);
-                model.addAttribute("ticketId", tx.getTicketId());
-                model.addAttribute("successMessage",
+                redirectAttributes.addFlashAttribute("successMessage",
                         "Thanh toán thành công! Hệ thống đã ghi nhận tiền ký quỹ Escrow và chuyển vé sang bước tiếp theo.");
+                return "redirect:/tickets/" + tx.getTicketId();
             } else if ("deposit".equals(type)) {
                 Deposit deposit = lockDepositUseCase.confirmLocked(null, callbackParams);
-                model.addAttribute("deposit", deposit);
-                model.addAttribute("ticketId", deposit.getTicketId());
-                model.addAttribute("successMessage",
+                redirectAttributes.addFlashAttribute("successMessage",
                         "Khóa cọc thành công! Hệ thống đã tự động chuyển giao vé và mở mã QR cho người mua kiểm tra.");
+                return "redirect:/tickets/" + deposit.getTicketId();
             } else {
                 model.addAttribute("error", "Loại giao dịch không hợp lệ: " + type);
             }

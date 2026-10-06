@@ -1,5 +1,8 @@
 package com.yourapp.ticketpass.ticket.application;
 
+import com.yourapp.ticketpass.shared.event.TicketDepositLockedEvent;
+import com.yourapp.ticketpass.shared.event.TicketEscrowPaidEvent;
+import com.yourapp.ticketpass.shared.event.TicketReceivedEvent;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
@@ -15,6 +18,8 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +55,9 @@ public class TransferTicketService {
     private final ValidateTicketService validateTicketService;
 
     private final FileStorageService fileStorageService;
+
+    @Autowired(required = false)
+    private ApplicationEventPublisher eventPublisher;
 
     /**
      * Tao mot listing moi tu du lieu nguoi ban nhap.
@@ -134,6 +142,17 @@ public class TransferTicketService {
 
         // Chuyen trang thai sang PAYMENT_ESCROWED qua state machine
         stateMachineService.transition(ticketId, TicketStatus.PAYMENT_ESCROWED);
+
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new TicketEscrowPaidEvent(
+                    ticket.getId(),
+                    ticket.getSellerId(),
+                    ticket.getBuyerId(),
+                    ticket.getTitle(),
+                    ticket.getSalePrice(),
+                    Instant.now()
+            ));
+        }
     }
 
     /**
@@ -157,6 +176,17 @@ public class TransferTicketService {
         // Khi nguoi ban hoan tat khoa coc 50%, he thong tu dong mo khoa va ban giao ma QR cho nguoi mua
         // bang cach chuyen tiep ngay sang TRANSFERRED ma khong bat nguoi ban phai bam nut thu cong.
         stateMachineService.transition(ticketId, TicketStatus.TRANSFERRED);
+
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new TicketDepositLockedEvent(
+                    ticket.getId(),
+                    ticket.getSellerId(),
+                    ticket.getBuyerId(),
+                    ticket.getTitle(),
+                    ticket.getSalePrice(),
+                    Instant.now()
+            ));
+        }
     }
 
     /**
@@ -212,6 +242,17 @@ public class TransferTicketService {
         // Chuyen trang thai sang AWAITING_USE qua state machine
         // (disputeWindowClosesAt duoc tinh tu dong trong TicketStateMachineService.transition)
         stateMachineService.transition(ticketId, TicketStatus.AWAITING_USE);
+
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new TicketReceivedEvent(
+                    ticket.getId(),
+                    ticket.getSellerId(),
+                    ticket.getBuyerId(),
+                    ticket.getTitle(),
+                    false,
+                    Instant.now()
+            ));
+        }
     }
 
     /**
@@ -229,6 +270,17 @@ public class TransferTicketService {
         }
 
         stateMachineService.transition(ticketId, TicketStatus.AWAITING_USE);
+
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new TicketReceivedEvent(
+                    ticket.getId(),
+                    ticket.getSellerId(),
+                    ticket.getBuyerId(),
+                    ticket.getTitle(),
+                    true,
+                    Instant.now()
+            ));
+        }
     }
 
     /**

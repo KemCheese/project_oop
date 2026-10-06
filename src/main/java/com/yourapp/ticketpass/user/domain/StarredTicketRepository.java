@@ -43,4 +43,9 @@ public interface StarredTicketRepository {
      * Đếm tổng số lượng vé mà user đã đánh sao.
      */
     long countByUserId(Long userId);
+
+    /**
+     * Lấy danh sách userId của tất cả người dùng đã đánh sao vé này.
+     */
+    List<Long> findUserIdsByTicketId(Long ticketId);
 }

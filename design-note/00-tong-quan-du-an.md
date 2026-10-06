@@ -38,6 +38,8 @@ Những chức năng được hiện thực đầy đủ và có thể demo:
 - **Hoàn tất tự động:** hết cửa sổ khiếu nại mà không có tranh chấp thì hệ thống tính hoa hồng, khấu thuế (mock), giải ngân cho người bán, hoàn cọc.
 - **Khiếu nại và phán quyết:** người mua nộp bằng chứng (ảnh, video), người bán phản hồi trong thời hạn, admin phán quyết, hệ thống thực thi hoàn tiền hoặc tịch thu cọc theo công thức đã chốt.
 - **Điểm uy tín:** tự động cộng/trừ điểm sau mỗi giao dịch hoặc tranh chấp, cập nhật bất đồng bộ qua domain event.
+- **Hệ thống thông báo giao dịch & Watchlist:** Nút chuông thông báo real-time/polling trên navbar, popover kính mờ, trang lịch sử thông báo; tự động gửi thông báo theo vòng đời vé (ký quỹ, cọc, khiếu nại, nhận vé, hoàn tiền, hết hạn vé và vé theo dõi có người mua) qua Domain Events.
+- **Đánh sao vé (User Watchlist):** Lưu danh sách vé quan tâm, xem tab vé theo dõi trong hồ sơ cá nhân, nhận cảnh báo tức thì khi vé được mua hoặc hết hạn.
 - **Giao diện web:** các trang Thymeleaf cho toàn bộ luồng trên, gồm cả trang quản trị để xử lý tranh chấp.
 
 ## 4. Phạm vi NGOÀI đồ án
@@ -50,7 +52,7 @@ Những phần dưới đây **cố tình không làm**. Đây là quyết đị
 - **Ứng dụng mobile:** chỉ có web responsive, không có app iOS/Android.
 - **Chat realtime giữa người mua và người bán:** trao đổi diễn ra qua kênh ngoài sàn; sàn chỉ ghi nhận bằng chứng khi có khiếu nại.
 - **Tìm kiếm nâng cao / Elasticsearch:** chỉ có lọc và tìm kiếm cơ bản bằng truy vấn JPA trên MySQL. Không có full-text search, gợi ý, xếp hạng theo độ liên quan.
-- **Thông báo đẩy, email marketing, hệ thống khuyến mãi.**
+- **Thông báo đẩy di động (Push notification native trên iOS/Android), email marketing, hệ thống khuyến mãi:** Sàn tập trung vào thông báo web in-app qua chuông navbar và trang `/notifications`.
 - **Xác thực vé tự động (OCR, hash QR, parse email forward):** đây là quyết định phạm vi có chủ ý — sàn tập trung vào mô hình marketplace với hai lớp bảo vệ kinh tế (cọc + escrow) thay vì xác thực kỹ thuật phức tạp.
 
 ## 5. Các vai trong hệ thống

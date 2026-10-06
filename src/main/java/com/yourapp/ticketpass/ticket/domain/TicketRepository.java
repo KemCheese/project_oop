@@ -125,6 +125,14 @@ public interface TicketRepository {
     List<Ticket> findOverdueDeliveryTickets(Instant before);
 
     /**
+     * Lay cac ve dang ban (trang thai LISTED) ma thoi diem su kien (eventStartAt) da qua han.
+     *
+     * @param now moc thoi gian hien tai
+     * @return danh sach ve LISTED da qua gio su kien can tu dong go
+     */
+    List<Ticket> findExpiredListedTickets(Instant now);
+
+    /**
      * Xoa mot ve theo id.
      *
      * @param id id cua ve can xoa

@@ -38,6 +38,11 @@ erDiagram
     
     disputes ||--o{ dispute_evidences : "has_evidence (dispute_id)"
     users ||--o{ dispute_evidences : "uploaded_by (uploaded_by_user_id)"
+    
+    users ||--o{ user_starred_tickets : "stars (user_id)"
+    tickets ||--o{ user_starred_tickets : "starred_in (ticket_id)"
+    
+    users ||--o{ notifications : "receives (user_id)"
 ```
 
 ## 3. Danh sách các bảng và Quyền sở hữu
@@ -98,3 +103,22 @@ Mỗi bảng thuộc về một module nhất định. Chỉ module sở hữu m
 - **Sở hữu:** Người B
 - **Vai trò:** Quản lý file bằng chứng tải lên (hình ảnh/video). Chỉ lưu đường dẫn `storage_key`, file thực tế do `FileStorageService` nắm giữ.
 - **Tham chiếu (ID thuần):** `dispute_id`, `uploaded_by_user_id`.
+
+### 3.9. Bảng `user_starred_tickets` (Flyway V3 - Watchlist cá nhân)
+- **Module:** `user`
+- **Sở hữu:** Người C
+- **Vai trò:** Lưu trữ danh sách vé quan tâm / theo dõi (Watchlist) của người dùng. Cho phép toggle sao nhanh trên Sàn vé hoặc trang chi tiết và quản lý tab theo dõi trong Hồ sơ cá nhân.
+- **Tham chiếu (ID thuần):** `user_id`, `ticket_id` (tuân thủ Nguyên tắc Scalability số 1: Zero Cross-Module JPA Relations, không tạo FK cứng sang bảng `tickets`).
+- **Index quan trọng:**
+  - `uk_user_starred_tickets (user_id, ticket_id)`: Ràng buộc duy nhất ngăn chặn duplicate bookmark.
+  - `idx_user_starred_tickets_user_id (user_id)`: Tối ưu truy vấn danh sách watchlist của một user.
+  - `idx_user_starred_tickets_ticket_id (ticket_id)`: Tối ưu truy vấn tìm danh sách watchers khi vé có biến động (mua hoặc hết hạn).
+
+### 3.10. Bảng `notifications` (Flyway V5 - Hệ thống thông báo giao dịch)
+- **Module:** `notification`
+- **Sở hữu:** Người C
+- **Vai trò:** Lưu trữ thông báo giao dịch thời gian thực cho người dùng (nạp escrow, khoá cọc, khiếu nại, giải ngân, hết hạn vé, vé theo dõi có người mua...).
+- **Tham chiếu (ID thuần):** `user_id` (người nhận thông báo), `target_url` (đường dẫn điều hướng khi click).
+- **Index quan trọng:**
+  - `idx_notifications_user_created (user_id, created_at DESC)`: Tối ưu phân trang và lấy danh sách thông báo mới nhất O(log N).
+  - `idx_notifications_user_unread (user_id, is_read)`: Tối ưu đếm số lượng thông báo chưa đọc (`unread-count`) phục vụ huy hiệu Navbar.

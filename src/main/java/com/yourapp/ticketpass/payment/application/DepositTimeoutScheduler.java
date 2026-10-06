@@ -1,6 +1,7 @@
 package com.yourapp.ticketpass.payment.application;
 
 import com.yourapp.ticketpass.reputation.application.UpdateReputationUseCase;
+import com.yourapp.ticketpass.shared.event.DepositTimeoutEvent;
 import com.yourapp.ticketpass.ticket.application.TicketStateMachineService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
@@ -10,7 +11,9 @@ import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -43,6 +46,9 @@ public class DepositTimeoutScheduler {
     private final RefundBuyerUseCase refundBuyerUseCase;
     private final TicketStateMachineService ticketStateMachineService;
     private final UpdateReputationUseCase updateReputationUseCase;
+
+    @Autowired(required = false)
+    private ApplicationEventPublisher eventPublisher;
 
     @Value("${app.deposit.timeout-minutes:30}")
     private long timeoutMinutes = 30;
@@ -78,6 +84,16 @@ public class DepositTimeoutScheduler {
 
                 // 3. Phạt trừ −15 điểm uy tín của Người bán
                 updateReputationUseCase.recordDepositTimeout(sellerId);
+
+                if (eventPublisher != null) {
+                    eventPublisher.publishEvent(new DepositTimeoutEvent(
+                            ticketId,
+                            sellerId,
+                            ticket.getBuyerId(),
+                            ticket.getTitle(),
+                            now
+                    ));
+                }
 
                 log.info("[DepositTimeoutScheduler] Đã xử lý thành công timeout nạp cọc cho vé #{}, sellerId={}", ticketId, sellerId);
             } catch (Exception e) {

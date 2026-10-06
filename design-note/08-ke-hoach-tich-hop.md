@@ -71,10 +71,10 @@ Dữ liệu chuẩn dùng cho kịch bản: **vé CONCERT, giá bán 2.000.000đ
 | 3 | Seller đăng vé loại **CONCERT**, giá bán **2.000.000đ**, upload đủ ảnh công khai và ảnh QR ẩn. | Ảnh được lưu qua `FileStorageService`, DB có bản ghi `tickets`. |
 | 4 | Hệ thống kiểm tra hợp lệ, bỏ qua xác thực kỹ thuật. | Vé được tạo. |
 | 5 | Vé lên sàn. | Trạng thái vé là **`LISTED`**, vé xuất hiện ở trang chủ và trang danh sách vé. |
-| 6 | Đăng nhập `buyer@test.com`, mở chi tiết vé, bấm mua và thanh toán qua MoMo Test Environment. | Chuyển hướng sang trang sandbox MoMo, thanh toán thành công, quay về `return-url`. Bản ghi `escrow_transactions` số tiền 2.000.000đ, trạng thái `HELD`. Vé sang **`PAYMENT_ESCROWED`**. |
-| 7 | Seller khoá cọc **1.000.000đ** (50% giá bán). | Bản ghi `deposits` số tiền 1.000.000đ, trạng thái `LOCKED`. Vé sang **`DEPOSIT_LOCKED`**. |
-| 8 | Seller xem `TransferInstruction` do `ConcertTicketAdapter` sinh ra, làm theo, rồi bấm "Đã chuyển vé". | Trang hiển thị đúng hướng dẫn dành cho vé concert (không phải hướng dẫn vé phim). Vé sang **`TRANSFERRED`**. |
-| 9 | Buyer bấm "Xác nhận đã nhận vé". | Vé sang **`AWAITING_USE`**. Trường `disputeWindowClosesAt` = thời điểm hiện tại **+ 24 giờ** (theo `app.dispute.window.concert-hours`). Giao diện hiển thị đồng hồ đếm ngược. |
+| 6 | Đăng nhập `buyer@test.com`, mở chi tiết vé, bấm mua và thanh toán qua MoMo Test Environment. | Chuyển hướng sang trang sandbox MoMo, thanh toán thành công, quay về `return-url`. Bản ghi `escrow_transactions` số tiền 2.000.000đ, trạng thái `HELD`. Vé sang **`PAYMENT_ESCROWED`**. Chuông thông báo của Seller hiện tin `ESCROW_PAID` (vào nạp cọc trong 15-30 phút); người theo dõi vé nhận `STARRED_TICKET_BOUGHT`. |
+| 7 | Seller khoá cọc **1.000.000đ** (50% giá bán). | Bản ghi `deposits` số tiền 1.000.000đ, trạng thái `LOCKED`. Vé sang **`DEPOSIT_LOCKED`** (và tự động chuyển tiếp `TRANSFERRED`). Chuông thông báo của Buyer hiện tin `DEPOSIT_LOCKED` (mã vé bí mật đã mở, mời vào nhận vé). |
+| 8 | Seller xem `TransferInstruction` do `ConcertTicketAdapter` sinh ra, làm theo, rồi bấm "Đã chuyển vé" (hoặc hệ thống đã tự động chuyển tiếp). | Trang hiển thị đúng hướng dẫn dành cho vé concert (không phải hướng dẫn vé phim). Vé ở **`TRANSFERRED`**. |
+| 9 | Buyer bấm "Xác nhận đã nhận vé". | Vé sang **`AWAITING_USE`**. Trường `disputeWindowClosesAt` = thời điểm hiện tại **+ 24 giờ** (theo `app.dispute.window.concert-hours`). Giao diện hiển thị đồng hồ đếm ngược. Chuông thông báo của cả Buyer và Seller hiện tin `TICKET_RECEIVED`. |
 
 Từ bước 9 tách làm hai nhánh. **Cả hai nhánh đều phải chạy trong buổi tích hợp** — chạy nhánh (a) trước, sau đó tạo lại một giao dịch mới từ bước 1 để chạy nhánh (b).
 
@@ -88,20 +88,20 @@ Từ bước 9 tách làm hai nhánh. **Cả hai nhánh đều phải chạy tro
 | a4 | Kiểm tra hoa hồng. | Tổng hoa hồng = **5% × 2.000.000đ = 100.000đ** (bậc `UNDER_5M`). Chia đôi: buyer chịu **50.000đ**, seller chịu **50.000đ**. |
 | a5 | Kiểm tra tiền về seller. | Escrow sang `RELEASED`. Seller nhận 2.000.000đ trừ phần hoa hồng của seller và phần thuế mock. |
 | a6 | Kiểm tra cọc. | Cọc **hoàn đủ 1.000.000đ** cho seller, `Deposit` sang trạng thái đã hoàn. Không bị trừ đồng nào. |
-| a7 | Kiểm tra điểm uy tín. | `TicketTransactionCompletedEvent` đã được publish và `UpdateReputationUseCase` đã xử lý: điểm uy tín seller **+2**. Buyer cũng được cộng theo quy tắc trong `04-quy-tac-nghiep-vu.md`. |
+| a7 | Kiểm tra điểm uy tín & thông báo. | `TicketTransactionCompletedEvent` đã được publish và `UpdateReputationUseCase` đã xử lý: điểm uy tín seller **+2**. Buyer cũng được cộng theo quy tắc trong `04-quy-tac-nghiep-vu.md`. Chuông thông báo của cả hai hiện tin `TRANSACTION_COMPLETED`. |
 | a8 | Reload trang hồ sơ seller. | Điểm uy tín mới hiển thị đúng trên giao diện (kiểm tra rằng `UserProfileResponse` đã ghép dữ liệu từ module `reputation`). |
 
 ### Nhánh (b) — Có tranh chấp, buyer thắng
 
 | Bước | Hành động | Kết quả mong đợi |
 |---|---|---|
-| b1 | Buyer mở khiếu nại trong cửa sổ 24 giờ, chọn lý do, upload ít nhất một ảnh bằng chứng. | Bản ghi `disputes` + `dispute_evidences`, ảnh lưu qua `FileStorageService`. Vé sang **`DISPUTE_UNDER_REVIEW`**. |
-| b2 | Seller đăng nhập, thấy thông báo khiếu nại, nộp phản hồi kèm bằng chứng phản biện. | Bản ghi bằng chứng phía seller được lưu, khiếu nại chuyển sang trạng thái chờ admin xử lý. |
-| b3 | Admin đăng nhập, vào trang quản trị tranh chấp, xem bằng chứng hai bên, phán quyết **buyer thắng**. | Khiếu nại đóng với kết quả buyer thắng. Vé sang **`RESOLVED_BUYER_WINS`**. |
+| b1 | Buyer mở khiếu nại trong cửa sổ 24 giờ, chọn lý do, upload ít nhất một ảnh bằng chứng. | Bản ghi `disputes` + `dispute_evidences`, ảnh lưu qua `FileStorageService`. Vé sang **`DISPUTE_UNDER_REVIEW`**. Chuông thông báo của Seller hiện tin `DISPUTE_FILED` (vào giải trình trong 24h). |
+| b2 | Seller đăng nhập, thấy thông báo khiếu nại, nộp phản hồi kèm bằng chứng phản biện. | Bản ghi bằng chứng phía seller được lưu, khiếu nại chuyển sang trạng thái chờ admin xử lý. Chuông thông báo của Buyer hiện tin `DISPUTE_RESPONDED`. |
+| b3 | Admin đăng nhập, vào trang quản trị tranh chấp, xem bằng chứng hai bên, phán quyết **buyer thắng**. | Khiếu nại đóng với kết quả buyer thắng. Vé sang **`RESOLVED_BUYER_WINS`**. Chuông thông báo của cả hai hiện tin `DISPUTE_RESOLVED` kèm chi tiết phán quyết. |
 | b4 | Kiểm tra hoàn tiền buyer. | Buyer được hoàn **đủ 2.000.000đ**, escrow sang `REFUNDED`. Không trừ hoa hồng của buyer trong trường hợp này. |
 | b5 | Kiểm tra tịch thu cọc. | Cọc 1.000.000đ bị tịch thu. `founder_cut` = **max(5.000đ, 7% × 1.000.000đ) = 70.000đ**. `buyer_compensation` = 1.000.000đ − 70.000đ = **930.000đ**. |
 | b6 | Kiểm tra tổng tiền buyer nhận. | Buyer nhận tổng **2.930.000đ** (2.000.000đ hoàn escrow + 930.000đ bồi thường từ cọc). |
-| b7 | Kiểm tra điểm uy tín. | `DisputeResolvedEvent` đã được publish và xử lý: điểm uy tín seller **−15**. |
+| b7 | Kiểm tra điểm uy tín. | `DisputeResolvedEvent` đã được publish và xử lý: điểm uy tín seller **−15**, buyer **+1**. |
 | b8 | Reload trang hồ sơ seller. | Điểm uy tín giảm đúng, hiển thị đúng trên giao diện. |
 
 ### Điểm cần soi kỹ khi chạy kịch bản

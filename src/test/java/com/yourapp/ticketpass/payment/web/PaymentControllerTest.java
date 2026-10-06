@@ -133,7 +133,7 @@ class PaymentControllerTest {
     }
 
     @Test
-    @DisplayName("confirmTransfer() - Xác nhận chuyển khoản ký quỹ thành công")
+    @DisplayName("confirmTransfer() - Xác nhận chuyển khoản ký quỹ thành công và chuyển hướng về trang vé")
     void confirmTransfer_escrow_success() {
         EscrowTransaction escrow = new EscrowTransaction();
         escrow.setId(10L);
@@ -143,18 +143,15 @@ class PaymentControllerTest {
 
         when(holdFundsUseCase.confirmHeld(isNull(), any())).thenReturn(escrow);
 
-        String view = controller.confirmTransfer("10", "escrow", principal, model);
+        org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+        String view = controller.confirmTransfer("10", "escrow", principal, redirectAttributes, model);
 
-        assertEquals("payment/result", view);
-        assertTrue(model.containsAttribute("escrow"));
-        EscrowSummaryResponse summary = (EscrowSummaryResponse) model.getAttribute("escrow");
-        assertNotNull(summary);
-        assertEquals(10L, summary.getId());
-        assertTrue(model.containsAttribute("successMessage"));
+        assertEquals("redirect:/tickets/100", view);
+        assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
     }
 
     @Test
-    @DisplayName("confirmTransfer() - Xác nhận chuyển khoản đóng cọc thành công")
+    @DisplayName("confirmTransfer() - Xác nhận chuyển khoản đóng cọc thành công và chuyển hướng về trang vé")
     void confirmTransfer_deposit_success() {
         Deposit deposit = new Deposit();
         deposit.setId(20L);
@@ -164,14 +161,11 @@ class PaymentControllerTest {
 
         when(lockDepositUseCase.confirmLocked(isNull(), any())).thenReturn(deposit);
 
-        String view = controller.confirmTransfer("20", "deposit", principal, model);
+        org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+        String view = controller.confirmTransfer("20", "deposit", principal, redirectAttributes, model);
 
-        assertEquals("payment/result", view);
-        assertTrue(model.containsAttribute("deposit"));
-        Deposit resultDeposit = (Deposit) model.getAttribute("deposit");
-        assertNotNull(resultDeposit);
-        assertEquals(20L, resultDeposit.getId());
-        assertTrue(model.containsAttribute("successMessage"));
+        assertEquals("redirect:/tickets/200", view);
+        assertTrue(redirectAttributes.getFlashAttributes().containsKey("successMessage"));
     }
 
     @Test

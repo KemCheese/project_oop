@@ -33,8 +33,8 @@ Cùng chín trạng thái đó, nhìn theo góc "ai đẩy vé vào đây và t�
 |---|---|---|
 | `LISTED` | Người bán (đăng vé hợp lệ) | `PAYMENT_ESCROWED`, `CANCELLED` |
 | `PAYMENT_ESCROWED` | Người mua (thanh toán thành công qua MoMo Test) | `DEPOSIT_LOCKED` |
-| `DEPOSIT_LOCKED` | Người bán (khoá cọc thành công qua MoMo Test) | `TRANSFERRED` |
-| `TRANSFERRED` | Người bán (bấm "Đã chuyển vé") | `AWAITING_USE` |
+| `DEPOSIT_LOCKED` | Người bán (khoá cọc thành công qua MoMo Test) | `TRANSFERRED` (Hệ thống tự động chuyển tiếp ngay khi cọc thành công) |
+| `TRANSFERRED` | Hệ thống tự động chuyển từ `DEPOSIT_LOCKED` (hoặc Người bán xác nhận) | `AWAITING_USE`, `TECHNICAL_ISSUE` |
 | `AWAITING_USE` | Người mua (bấm "Đã nhận vé") | `AUTO_COMPLETE`, `DISPUTE_UNDER_REVIEW` |
 | `AUTO_COMPLETE` | Hệ thống (`AutoCompleteScheduler`) | — (kết thúc) |
 | `DISPUTE_UNDER_REVIEW` | Người mua (mở khiếu nại trong cửa sổ) | `RESOLVED_BUYER_WINS`, `RESOLVED_SELLER_WINS` |
@@ -52,9 +52,9 @@ stateDiagram-v2
     [*] --> LISTED
 
     LISTED --> PAYMENT_ESCROWED: Buyer thanh toan 100 phan tram gia ban vao escrow
-    LISTED --> CANCELLED: Seller huy listing khi chua co nguoi thanh toan
+    LISTED --> CANCELLED: Seller huy listing hoac He thong tu dong go khi qua han su kien (BR-12)
     PAYMENT_ESCROWED --> DEPOSIT_LOCKED: Seller khoa coc 50 phan tram gia ban
-    DEPOSIT_LOCKED --> TRANSFERRED: Seller danh dau da chuyen ve
+    DEPOSIT_LOCKED --> TRANSFERRED: He thong tu dong chuyen ve va mo ma QR sau khi seller khoa coc
     TRANSFERRED --> AWAITING_USE: Buyer xac nhan da nhan ve va mo cua so khieu nai
 
     AWAITING_USE --> AUTO_COMPLETE: Het cua so khieu nai ma khong co tranh chap
@@ -108,8 +108,8 @@ Toàn bộ vòng đời **không có cạnh quay lui**: không trạng thái nà
 | `LISTED` | `CANCELLED` | Người bán tự huỷ khi chưa có người mua | `TransferTicketService` | Gỡ vé khỏi sàn |
 | `PAYMENT_ESCROWED` | `DEPOSIT_LOCKED` | Người bán khoá cọc thành công trong vòng 30 phút | `LockDepositUseCase` | Tạo `Deposit` với `DepositStatus.LOCKED`, số tiền bằng 50% giá bán theo BR-04 |
 | `PAYMENT_ESCROWED` | `CANCELLED` | Hệ thống tự động khi quá hạn 30 phút nạp cọc (UC-04b) | `DepositTimeoutScheduler` | Hoàn 100% tiền vé + phí sàn cho Buyer; gỡ vé khỏi sàn (cấm quay lại LISTED); trừ −15 điểm uy tín của Seller |
-| `DEPOSIT_LOCKED` | `TRANSFERRED` | Người bán bấm "Đã chuyển vé" sau khi thực hiện theo `TransferInstruction` | `TransferTicketService` | Ghi `transferredAt = now`; mở khoá ảnh QR ẩn cho Người mua; bắt đầu đếm timeout 30 phút nhận vé |
-| `TRANSFERRED` | `AWAITING_USE` | Người mua bấm "Đã nhận vé" hoặc Hệ thống tự động auto-confirm sau 30 phút (UC-06b) | `TicketController` / `DeliveryTimeoutScheduler` → `TicketStateMachineService` | Ghi `receivedAt = now`; tính `windowCloseAt` theo BR-09 Revised: `min(receivedAt + disputeWindow, eventStartAt + 30 phút)` |
+| `DEPOSIT_LOCKED` | `TRANSFERRED` | Hệ thống tự động (sau khi Người bán nạp cọc) hoặc Người bán bấm "Đã chuyển vé" | `TransferTicketService` | Ghi `transferredAt = now`; mở khoá ngay ảnh QR ẩn cho Người mua kiểm tra; bắt đầu đếm timeout 30 phút nhận vé |
+| `TRANSFERRED` | `AWAITING_USE` | Người mua bấm "Xác nhận vé hợp lệ & Sẵn sàng sử dụng" hoặc Hệ thống tự động auto-confirm sau 30 phút (UC-06b) | `TicketController` / `DeliveryTimeoutScheduler` → `TicketStateMachineService` | Ghi `receivedAt = now`; tính `windowCloseAt` theo BR-09 Revised: `min(receivedAt + disputeWindow, eventStartAt + 30 phút)` |
 | `TRANSFERRED` | `TECHNICAL_ISSUE` | Người mua bấm "Báo lỗi ảnh QR không xem được / hỏng" trong 30 phút (UC-06b) | `TicketController` → `TransferTicketService` | Đóng băng bộ đếm timeout, chuyển sang xem xét kỹ thuật để Admin/kỹ thuật hỗ trợ |
 | `TECHNICAL_ISSUE` | `TRANSFERRED` / `AWAITING_USE` / `CANCELLED` | Admin khắc phục ảnh xong / Buyer xác nhận / Huỷ nếu hỏng hoàn toàn | `TransferTicketService` / Admin | Xử lý theo kết quả khắc phục kỹ thuật |
 | `AWAITING_USE` | `AUTO_COMPLETE` | `AutoCompleteScheduler` chạy định kỳ, phát hiện `now > windowCloseAt` và không có tranh chấp mở | `AutoCompleteScheduler`, `CommissionCalculatorService`, `TaxWithholdingService`, `ReleaseFundsUseCase` | Tính hoa hồng, thuế, giải ngân cho Seller, hoàn cọc 100% |
@@ -295,6 +295,7 @@ Danh sách này dùng làm assertion trong integration test. Nếu một bất b
 Huỷ listing **không phải** là một trạng thái trong chín trạng thái trên, vì nó không thuộc vòng đời của một *giao dịch*:
 
 - Khi vé còn ở `LISTED` và chưa có người mua nào thanh toán, người bán được gỡ vé khỏi sàn tự do. Không có tiền nào liên quan, không ảnh hưởng điểm uy tín, vé đơn giản là không còn hiển thị.
+- **Tự động gỡ vé quá hạn sự kiện (BR-12):** Khi vé ở `LISTED` mà thời gian bắt đầu sự kiện đã đến (`eventStartAt <= now`), `TicketExpirationScheduler` tự động chuyển trạng thái sang `CANCELLED` và phát `TicketExpiredEvent` để thông báo cho người bán và người theo dõi.
 - Khi vé đã sang `PAYMENT_ESCROWED` trở đi, người bán **không có quyền huỷ đơn phương** — tiền của người mua đang bị giữ trong escrow. Nếu người bán bỏ ngang, con đường xử lý là người mua khiếu nại theo BR-09 và tuyến `DISPUTE_UNDER_REVIEW` → `RESOLVED_BUYER_WINS` giải quyết. Mức phạt uy tín −10 ở BR-11 áp cho trường hợp người bán chủ động xin huỷ và được admin chấp thuận trong quá trình xử lý tranh chấp; mức phạt này nhẹ hơn −15 của thua tranh chấp vì thừa nhận sớm giúp giải phóng tiền của người mua nhanh hơn.
 
 ## 11. Đọc tiếp

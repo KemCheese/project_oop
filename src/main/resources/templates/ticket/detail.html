@@ -416,7 +416,98 @@
                     50% { transform: scale(1.35) rotate(12deg); }
                     100% { transform: scale(1) rotate(0deg); }
                 }
+
+                /* Flash Alert Banner (Design Taste Frontend) */
+                .tp-flash-banner {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 14px;
+                    padding: 16px 20px;
+                    border-radius: var(--radius-md, 10px);
+                    margin-bottom: 24px;
+                    position: relative;
+                    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+                    animation: tpSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                @keyframes tpSlideDown {
+                    from { opacity: 0; transform: translateY(-8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .tp-flash-success {
+                    background-color: #f0fdf4;
+                    border: 1px solid #bbf7d0;
+                    color: #166534;
+                }
+
+                .tp-flash-danger {
+                    background-color: #fef2f2;
+                    border: 1px solid #fecaca;
+                    color: #991b1b;
+                }
+
+                .tp-flash-icon {
+                    font-size: 20px;
+                    line-height: 1;
+                    padding-top: 2px;
+                }
+
+                .tp-flash-content {
+                    flex: 1;
+                }
+
+                .tp-flash-title {
+                    font-size: 14px;
+                    font-weight: 700;
+                    margin-bottom: 2px;
+                }
+
+                .tp-flash-message {
+                    font-size: 13px;
+                    line-height: 1.5;
+                    opacity: 0.95;
+                }
+
+                .tp-flash-close {
+                    background: none;
+                    border: none;
+                    font-size: 20px;
+                    color: currentColor;
+                    opacity: 0.6;
+                    cursor: pointer;
+                    line-height: 1;
+                    padding: 0 4px;
+                    transition: opacity 0.15s ease;
+                }
+
+                .tp-flash-close:hover {
+                    opacity: 1;
+                }
             </style>
+
+            <!-- Flash Alert Notification Banner -->
+            <div th:if="${successMessage != null}" class="tp-flash-banner tp-flash-success" role="alert">
+                <div class="tp-flash-icon">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="tp-flash-content">
+                    <div class="tp-flash-title">Giao dịch thành công</div>
+                    <div class="tp-flash-message" th:text="${successMessage}">Thông báo thành công</div>
+                </div>
+                <button type="button" class="tp-flash-close" onclick="this.parentElement.remove()" aria-label="Đóng">&times;</button>
+            </div>
+
+            <div th:if="${errorMessage != null}" class="tp-flash-banner tp-flash-danger" role="alert">
+                <div class="tp-flash-icon">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="tp-flash-content">
+                    <div class="tp-flash-title">Lỗi xử lý</div>
+                    <div class="tp-flash-message" th:text="${errorMessage}">Thông báo lỗi</div>
+                </div>
+                <button type="button" class="tp-flash-close" onclick="this.parentElement.remove()" aria-label="Đóng">&times;</button>
+            </div>
 
             <!-- Breadcrumb Navigation -->
             <div class="breadcrumb">

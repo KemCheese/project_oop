@@ -79,12 +79,49 @@ Sử dụng `ApplicationEventPublisher` để phát Event. Nơi nhận Event dù
 
 ### 3.2. `DisputeResolvedEvent`
 - **Khi nào phát:** Module `dispute` (`ReviewDisputeUseCase` của Dev B) phát ra sau khi admin ra phán quyết khiếu nại và các lệnh hoàn tiền / tịch thu cọc đã xử lý xong.
-- **Ai lắng nghe:** Module `reputation` (`UpdateReputationUseCase` của Dev C) đăng ký lắng nghe ở phase `AFTER_COMMIT`.
+- **Ai lắng nghe:** Module `reputation` (`UpdateReputationUseCase` của Dev C) và Module `notification` (`NotificationEventListener` của Dev C) đăng ký lắng nghe ở phase `AFTER_COMMIT`.
 - **Hiệu quả cập nhật uy tín (Đã kích hoạt theo BR-11):**
   - `BUYER_WINS`: Người bán bị **-15 điểm** (chặn sàn tối thiểu `0.00`), tăng `disputesLost` + 1; Người mua được **+1 điểm** (chặn trần `100.00`), tăng `disputesWon` + 1.
   - `SELLER_WINS`: Người bán được **+1 điểm** (chặn trần `100.00`), tăng `disputesWon` + 1; Người mua bị **-15 điểm** (chặn sàn `0.00`), tăng `disputesLost` + 1.
   - `WITHDRAWN`: Không thay đổi điểm của bất kỳ bên nào, chỉ tăng `disputesOpenedAgainst` + 1 cho người bán.
-- **Ràng buộc đối với Dev B:** Phải truyền đầy đủ `sellerId`, `buyerId`, `outcome` để `UpdateReputationUseCase` phân bổ điểm chính xác.
+- **Ràng buộc đối với Dev B:** Phải truyền đầy đủ `sellerId`, `buyerId`, `outcome` để `UpdateReputationUseCase` phân bổ điểm và gửi thông báo kết quả cho cả 2 bên.
+
+### 3.3. `TicketEscrowPaidEvent`
+- **Khi nào phát:** Module `ticket`/`payment` phát ra khi Người mua nạp tiền ký quỹ (Escrow) thành công.
+- **Ai lắng nghe:** Module `notification` (`NotificationEventListener`).
+- **Hiệu quả thông báo:**
+  - Báo Người bán (Seller) vào đóng cọc 50% trong vòng 15-30 phút (`ESCROW_PAID`).
+  - Tìm tất cả người dùng đang theo dõi (đánh sao) vé này và thông báo: *"Vé mà bạn đang theo dõi vừa có người mua!"* (`STARRED_TICKET_BOUGHT`), tự động loại trừ Buyer và Seller.
+
+### 3.4. `TicketDepositLockedEvent`
+- **Khi nào phát:** Module `ticket`/`payment` phát ra khi Người bán đóng cọc 50% bảo đảm thành công.
+- **Ai lắng nghe:** Module `notification` (`NotificationEventListener`).
+- **Hiệu quả thông báo:** Báo Người mua (Buyer) mã vé bí mật đã mở, mời vào nhận và kiểm tra vé (`DEPOSIT_LOCKED`).
+
+### 3.5. `DisputeOpenedEvent`, `DisputeRespondedEvent`, `DisputeWithdrawnEvent`
+- **Khi nào phát:** Module `dispute` phát ra khi Người mua mở khiếu nại vé, Người bán gửi văn bản giải trình, hoặc Người mua chủ động rút đơn.
+- **Ai lắng nghe:** Module `notification` (`NotificationEventListener`).
+- **Hiệu quả thông báo:**
+  - `DisputeOpenedEvent`: Báo Người bán vào nộp giải trình trong 24 giờ (`DISPUTE_FILED`).
+  - `DisputeRespondedEvent`: Báo Người mua hồ sơ đang chờ Admin đối soát (`DISPUTE_RESPONDED`).
+  - `DisputeWithdrawnEvent`: Báo Người bán khiếu nại đã rút, giao dịch tiếp tục (`DISPUTE_WITHDRAWN`).
+
+### 3.6. `DepositTimeoutEvent`
+- **Khi nào phát:** Module `payment` (`DepositTimeoutScheduler`) phát ra khi Người bán quá hạn 30 phút không nộp cọc 50%.
+- **Ai lắng nghe:** Module `notification` (`NotificationEventListener`).
+- **Hiệu quả thông báo:** Báo Buyer tiền ký quỹ đã được hoàn lại an toàn; báo Seller vé bị hủy và bị trừ 15 điểm uy tín (`DEPOSIT_TIMEOUT`).
+
+### 3.7. `TicketReceivedEvent`
+- **Khi nào phát:** Module `ticket` (`TransferTicketService` / `DeliveryTimeoutScheduler`) phát ra khi Người mua bấm nhận vé thủ công hoặc hệ thống tự động xác nhận sau 30 phút.
+- **Ai lắng nghe:** Module `notification` (`NotificationEventListener`).
+- **Hiệu quả thông báo:** Báo cho cả Buyer và Seller biết cửa sổ khiếu nại chính thức được kích hoạt đếm ngược (`TICKET_RECEIVED`).
+
+### 3.8. `TicketExpiredEvent`
+- **Khi nào phát:** Module `ticket` (`TicketExpirationScheduler`) phát ra khi vé `LISTED` quá hạn thời gian sự kiện (`eventStartAt <= now`) và bị hệ thống tự động gỡ (chuyển sang `CANCELLED`).
+- **Ai lắng nghe:** Module `notification` (`NotificationEventListener`).
+- **Hiệu quả thông báo:**
+  - Báo Người bán (Seller) vé đã hết hạn và đã được tự động gỡ khỏi sàn (`TICKET_EXPIRED`).
+  - Báo tất cả người dùng đang theo dõi (đánh sao) vé này biết vé đã quá hạn không còn khả dụng (`STARRED_TICKET_EXPIRED`).
 
 ---
 
@@ -399,7 +436,7 @@ Các quy chuẩn và cơ chế bảo vệ sau đây đã được Dev C hoàn th
 
 3. **Cam kết đối với Dev B (Module `payment`):**
    - Tầng Web hiển thị kế thừa trọn vẹn các thuộc tính Model do `PaymentController` cung cấp (`ref`, `type`, `amount`, `ticketId`, `escrow`, `deposit`, `error`).
-   - Khi Dev B mở rộng thêm tính năng hoàn tiền hoặc khấu thuế, các trường trong `EscrowSummaryResponse` sẽ tự động ăn khớp với thẻ biên nhận số mà không cần sửa đổi giao diện.
+   - Luồng xác nhận chuyển khoản thành công (`POST /payment/transfer/confirm`): Áp dụng chuẩn Post-Redirect-Get (PRG), tự động chuyển hướng trực tiếp sang `redirect:/tickets/{ticketId}` kèm Flash Attribute `successMessage`, giúp người dùng tiến ngay vào bước tiếp theo của vé mà không bị nghẽn ở màn hình trung gian. Màn hình `payment/result.html` được giữ làm fallback cho luồng báo lỗi hoặc thanh toán thất bại (`POST /payment/transfer/fail`).
 
 ---
 
@@ -424,4 +461,57 @@ Các quy chuẩn và cơ chế bảo vệ sau đây đã được Dev C hoàn th
      * `createDeposit(ticketId, sellerId, amount, status)`
      * `createDispute(ticketId, buyerId, sellerId, reason, status)`
    - **CẤM TUYỆT ĐỐI:** Không tự ý gọi `repository.deleteAll()` trên các bảng dùng chung (`users`, `tickets`, `user_reputation_scores`). Mọi thao tác dọn dẹp phải tuân thủ cơ chế Selective ID Tracking của Base class.
+
+---
+
+### 6.19. 🛡️ QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Trọng Tài Phán Quyết Tranh Chấp Admin (Arbitration Verdict Modal)
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (2026-10-06):** Chuẩn hóa toàn diện cơ chế phê duyệt phán quyết tranh chấp của Admin theo tiêu chuẩn `/design-taste-frontend`.
+
+1. **Xóa bỏ triệt để JavaScript Native Alert & Confirm:**
+   - Cấm sử dụng `alert(...)` và `confirm(...)` mặc định của trình duyệt tại các giao diện quản trị trọng tài (`admin/dispute/**`).
+   - Mọi hành động phán quyết (`BUYER_WINS`, `SELLER_WINS`) đều phải thông qua **Arbitration Ruling Verdict Modal** chuyên nghiệp:
+     * Nền mờ Glassmorphism `backdrop-filter: blur(10px)`.
+     * Hiển thị bảng đối soát tác động 2 chiều (Dòng tiền ký quỹ Escrow/cọc 50% vs Điểm uy tín sàn +1/-15).
+     * Trích dẫn văn bản căn cứ phán quyết do Admin nhập.
+     * Cảnh báo tính bất biến và không thể hoàn tác của phán quyết.
+     * Khóa nút và xoay spinner loading chống double-click khi phát lệnh thi hành.
+
+2. **Quy tắc Form Validation & Flash Notifications:**
+   - Bắt buộc nhập căn cứ phán quyết tối thiểu 5 ký tự; nếu thiếu sẽ kích hoạt hiệu ứng rung viền đỏ `input-shake` và thông báo inline, không bật popup trình duyệt.
+   - Sau khi Controller thi hành phán quyết và redirect về trang hồ sơ, truyền thông báo qua Spring Flash Attribute `successMessage` hiển thị thành Flash Notification Banner tinh tế trên đầu trang.
+
+---
+
+### 6.20. 🛡️ QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Tự Động Hoá Bàn Giao Vé, Mở Khoá QR Độc Lập & Cơ Chế Smart Redirect (CWE-601)
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (2026-10-06):** Hệ thống sàn vé TicketPass đã chuẩn hóa toàn diện luồng bàn giao vé tự động sau khi nạp cọc, tháo gỡ mâu thuẫn hiển thị mã QR và thiết lập cơ chế chuyển hướng thông minh phòng vệ lỗ hổng Open Redirect.
+
+1. **Tự động hóa chuyển giao vé (`DEPOSIT_LOCKED -> TRANSFERRED`):**
+   - **Vị trí:** [`TransferTicketService.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/ticket/application/TransferTicketService.java#L80).
+   - **Cơ chế:** Khi Seller khóa cọc 50% thành công qua `markDepositLocked(ticketId, depositId)`, hệ thống lập tức tự động kích hoạt chuyển đổi trạng thái sang `TRANSFERRED` (`ticketStateMachineService.transition(ticketId, TicketStatus.TRANSFERRED)`).
+   - **Lý do:** Mã QR bí mật đã được Seller tải lên và lưu trữ an toàn trong sàn từ thời điểm đăng vé. Do đó, ngay khi đảm bảo được 2 chốt chặn kinh tế (100% Escrow của Buyer + 50% Cọc của Seller), sàn có đầy đủ thẩm quyền và điều kiện tự động bàn giao vé cho Buyer mà không cần Seller phải bấm thêm thao tác thủ công nào.
+   - **Tính Idempotent:** Phương thức `markTransferred(ticketId)` được thiết kế idempotent: nếu vé đã ở `TRANSFERRED`, hệ thống trả về kết quả thành công mà không ném lỗi `IllegalTicketTransitionException`.
+
+2. **Quy chuẩn hiển thị & kiểm tra mã QR đối với Người Mua:**
+   - **Vị trí:** [`detail.html`](file:///d:/lam%20viec/FORK/project_oop/src/main/resources/templates/ticket/detail.html).
+   - **Cơ chế:** Khối `qr-unlocked-box` (ảnh QR bí mật) được mở khóa hiển thị cho Người mua ngay từ trạng thái `TRANSFERRED` (cùng với `AWAITING_USE` và `COMPLETED`).
+   - **Thao tác Người mua:** Tại `TRANSFERRED`, Người mua trực tiếp quan sát ảnh QR và có 2 lựa chọn:
+     * Bấm "Xác nhận vé hợp lệ & Sẵn sàng sử dụng" -> Chuyển sang `AWAITING_USE` và kích hoạt đếm ngược Cửa sổ khiếu nại (BR-09).
+     * Bấm "Báo lỗi ảnh QR không xem được / hỏng" -> Chuyển sang `TECHNICAL_ISSUE` (UC-06b) để Admin/kỹ thuật can thiệp, đóng băng timeout.
+   - **Trải nghiệm hình ảnh:** Tích hợp Lightbox Modal overlay phóng to sắc nét (`openImageLightbox`) và nút tải ảnh trực tiếp về máy tính (`downloadImageDirect`) phục vụ lưu trữ check-in ngoại tuyến.
+
+3. **Cơ chế Smart Redirect & Phòng vệ Open Redirect (CWE-601):**
+   - **Vị trí:** [`SmartAuthenticationSuccessHandler.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/shared/security/SmartAuthenticationSuccessHandler.java), [`UserController.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/user/web/UserController.java).
+   - **Thứ tự ưu tiên phân giải URL đích:**
+     1. `SavedRequest` trong session (nếu người dùng bị Spring Security chặn khi truy cập trang yêu cầu đăng nhập).
+     2. Tham số query / form `redirect` (ví dụ `?redirect=/tickets/123`).
+     3. Thuộc tính session `REDIRECT_AFTER_AUTH` (được lưu từ header `Referer` an toàn khi người dùng bấm nút Đăng nhập từ trang công khai).
+     4. Giá trị dự phòng (Fallback): `/tickets` (Sàn vé niêm yết).
+   - **Quy chuẩn phòng thủ an toàn (Defense-in-Depth):**
+     * Chỉ chấp nhận URL nội bộ bắt đầu bằng dấu gạch chéo `/`.
+     * Cấm tuyệt đối URL chứa scheme ngoại vi (`://`), protocol-relative (`//` hoặc `/\`), chứa ký tự điều khiển/CRLF (`\r`, `\n`).
+     * Cấm chuyển hướng lặp vào các trang auth (`/login`, `/register`, `/logout`).
+   - **Quy ước dành cho Dev A và Dev B:** Khi tạo liên kết chuyển hướng người dùng đến trang đăng nhập/đăng ký từ bất kỳ view nào, hãy gắn kèm tham số `redirect` (ví dụ: `<a th:href="@{/login(redirect=${#httpServletRequest.requestURI})}">`) để bảo toàn vị trí người dùng.
+
 

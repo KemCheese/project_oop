@@ -10,7 +10,7 @@ Nhóm gồm ba người. Việc chia theo **module nghiệp vụ** thay vì chia
 |---|---|---|---|
 | A | ticket, web (giao diện toàn sàn) | Adapter, State, Strategy | Vòng đời vé, toàn bộ giao diện Thymeleaf, layout & styling CSS |
 | B | payment, dispute | Adapter, Strategy | Dòng tiền + xử lý tranh chấp |
-| C | user, reputation, shared (backend) | Observer, Adapter | Người dùng, uy tín, backend hạ tầng dùng chung, tích hợp hệ thống |
+| C | user, reputation, notification, shared (backend) | Observer, Adapter | Người dùng, uy tín, thông báo giao dịch, backend hạ tầng dùng chung, tích hợp hệ thống |
 
 ---
 
@@ -28,6 +28,8 @@ Nhóm gồm ba người. Việc chia theo **module nghiệp vụ** thay vì chia
 | **B** | `src/main/resources/templates/dispute/**` | View Thymeleaf của module dispute |
 | **C** | `src/main/java/com/yourapp/ticketpass/user/**` (ngoại trừ `HomeController.java`) | Toàn bộ backend module người dùng |
 | **C** | `src/main/java/com/yourapp/ticketpass/reputation/**` | Toàn bộ module uy tín |
+| **C** | `src/main/java/com/yourapp/ticketpass/notification/**` | Toàn bộ module thông báo giao dịch |
+| **C** | `src/main/resources/templates/notification/**` | View Thymeleaf của module notification |
 | **C** | `src/main/java/com/yourapp/ticketpass/shared/**` (`config`, `dto`, `event`, `exception`, `storage`, `util`) | Hạ tầng dùng chung |
 | **C** | `src/main/java/com/yourapp/ticketpass/TicketPassApplication.java` | Class khởi động |
 

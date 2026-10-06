@@ -101,6 +101,11 @@ public class TicketRepositoryImpl implements TicketRepository {
     }
 
     @Override
+    public List<Ticket> findExpiredListedTickets(Instant now) {
+        return ticketJpaRepository.findByStatusAndEventStartAtBefore(TicketStatus.LISTED, now);
+    }
+
+    @Override
     public void deleteById(Long id) {
         ticketJpaRepository.deleteById(id);
     }

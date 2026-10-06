@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.yourapp.ticketpass.dispute.application.ReviewDisputeUseCase;
 import com.yourapp.ticketpass.dispute.domain.Dispute;
@@ -180,9 +181,12 @@ public class DisputeReviewController {
      * @return chuyển hướng về trang hồ sơ khiếu nại
      */
     @PostMapping("/{id}/buyer-wins")
-    public String resolveBuyerWins(@PathVariable Long id, @Valid ReviewDisputeRequest request, Principal principal) {
+    public String resolveBuyerWins(@PathVariable Long id, @Valid ReviewDisputeRequest request,
+                                   Principal principal, RedirectAttributes redirectAttributes) {
         Long adminId = resolveAdminId(principal);
         reviewDisputeUseCase.resolveBuyerWins(id, adminId, request.getResolutionNote());
+        redirectAttributes.addFlashAttribute("successMessage",
+                "Phán quyết thành công! Đã xử NGƯỜI MUA THẮNG. 100% tiền Escrow đã được hoàn lại và cọc người bán đã bị xử lý theo hợp đồng.");
         return "redirect:/admin/disputes/" + id;
     }
 
@@ -195,9 +199,12 @@ public class DisputeReviewController {
      * @return chuyển hướng về trang hồ sơ khiếu nại
      */
     @PostMapping("/{id}/seller-wins")
-    public String resolveSellerWins(@PathVariable Long id, @Valid ReviewDisputeRequest request, Principal principal) {
+    public String resolveSellerWins(@PathVariable Long id, @Valid ReviewDisputeRequest request,
+                                    Principal principal, RedirectAttributes redirectAttributes) {
         Long adminId = resolveAdminId(principal);
         reviewDisputeUseCase.resolveSellerWins(id, adminId, request.getResolutionNote());
+        redirectAttributes.addFlashAttribute("successMessage",
+                "Phán quyết thành công! Đã xử NGƯỜI BÁN THẮNG. Tiền bán vé đã giải ngân và 100% tiền cọc đã được hoàn trả nguyên vẹn.");
         return "redirect:/admin/disputes/" + id;
     }
 
