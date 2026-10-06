@@ -338,7 +338,7 @@ public class PaymentController {
                 model.addAttribute("deposit", deposit);
                 model.addAttribute("ticketId", deposit.getTicketId());
                 model.addAttribute("successMessage",
-                        "Khóa cọc thành công! Hệ thống đã chuyển vé sang bước tiếp theo (bàn giao cho người mua).");
+                        "Khóa cọc thành công! Hệ thống đã tự động chuyển giao vé và mở mã QR cho người mua kiểm tra.");
             } else {
                 model.addAttribute("error", "Loại giao dịch không hợp lệ: " + type);
             }

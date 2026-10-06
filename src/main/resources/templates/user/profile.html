@@ -750,8 +750,12 @@
                     el.classList.add('active');
                 }
 
-                function getStatusCategory(status) {
-                    if (status === 'COMPLETED') return 'success';
+                function getStatusCategory(status, isSeller) {
+                    if (status === 'AUTO_COMPLETE' || status === 'COMPLETED') return 'success';
+                    if (status === 'RESOLVED_SELLER_WINS') {
+                        return isSeller ? 'success' : 'cancelled';
+                    }
+                    if (status === 'RESOLVED_BUYER_WINS') return 'cancelled';
                     if (status === 'CANCELLED') return 'cancelled';
                     return 'processing';
                 }
@@ -762,11 +766,14 @@
                     filters.querySelectorAll('button').forEach(b => b.classList.remove('active'));
                     el.classList.add('active');
 
+                    const isSoldTab = container.id === 'tab-orders-sold';
+
                     const tickets = container.querySelectorAll('.ticket-item');
                     let visibleCount = 0;
                     tickets.forEach(ticket => {
                         const status = ticket.getAttribute('data-status');
-                        const category = getStatusCategory(status);
+                        const ticketIsSeller = ticket.getAttribute('data-is-seller') === 'true' || isSoldTab;
+                        const category = ticket.getAttribute('data-category') || getStatusCategory(status, ticketIsSeller);
 
                         if (filterType === 'all' || category === filterType) {
                             ticket.style.display = 'flex';
@@ -788,22 +795,33 @@
                     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
                 }
 
-                function getStatusBadge(status) {
+                function getStatusBadge(status, isSeller) {
                     let text = 'Đang xử lý';
                     let bg = 'var(--color-info)';
                     if (status === 'LISTED') { text = 'Đang bán'; bg = 'var(--color-primary)'; }
-                    if (status === 'PAYMENT_ESCROWED') { text = 'Chờ khóa cọc'; bg = 'var(--color-warning)'; }
-                    if (status === 'DEPOSIT_LOCKED') { text = 'Đã khóa cọc'; bg = 'var(--color-success)'; }
-                    if (status === 'TRANSFERRED') { text = 'Đã chuyển vé'; bg = 'var(--color-success)'; }
-                    if (status === 'AWAITING_USE') { text = 'Chờ sự kiện'; bg = 'var(--color-warning)'; }
-                    if (status === 'COMPLETED') { text = 'Hoàn tất'; bg = 'var(--color-success)'; }
-                    if (status === 'CANCELLED') { text = 'Đã hủy'; bg = 'var(--color-text-muted)'; }
+                    else if (status === 'PAYMENT_ESCROWED') { text = 'Chờ khóa cọc'; bg = 'var(--color-warning)'; }
+                    else if (status === 'DEPOSIT_LOCKED') { text = 'Đã khóa cọc'; bg = 'var(--color-success)'; }
+                    else if (status === 'TRANSFERRED') { text = 'Đã chuyển vé'; bg = 'var(--color-success)'; }
+                    else if (status === 'AWAITING_USE') { text = 'Chờ sự kiện'; bg = 'var(--color-warning)'; }
+                    else if (status === 'DISPUTE_UNDER_REVIEW') { text = 'Đang tranh chấp'; bg = '#ef4444'; }
+                    else if (status === 'AUTO_COMPLETE' || status === 'COMPLETED') { text = 'Thành công'; bg = 'var(--color-success)'; }
+                    else if (status === 'RESOLVED_SELLER_WINS') {
+                        text = isSeller ? 'Bán thành công (Thắng khiếu nại)' : 'Đã hủy (Thua khiếu nại)';
+                        bg = isSeller ? 'var(--color-success)' : 'var(--color-text-muted)';
+                    }
+                    else if (status === 'RESOLVED_BUYER_WINS') {
+                        text = isSeller ? 'Đã hủy (Thua khiếu nại)' : 'Đã hủy (Hoàn tiền khiếu nại)';
+                        bg = 'var(--color-text-muted)';
+                    }
+                    else if (status === 'CANCELLED') { text = 'Đã hủy'; bg = 'var(--color-text-muted)'; }
+                    else if (status === 'TECHNICAL_ISSUE') { text = 'Lỗi kỹ thuật'; bg = '#ef4444'; }
 
                     return `<span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; color: white; background-color: ${bg};">${text}</span>`;
                 }
 
-                function renderTickets(tickets, containerId) {
+                function renderTickets(tickets, containerId, isSeller) {
                     const tabPane = document.getElementById(containerId);
+                    if (!tabPane) return;
                     const container = tabPane.querySelector('.ticket-list-container');
                     const emptyState = tabPane.querySelector('.empty-state');
 
@@ -813,8 +831,11 @@
                         emptyState.style.display = 'none';
                         tickets.forEach(ticket => {
                             const dateStr = ticket.eventStartAt ? new Date(ticket.eventStartAt).toLocaleString('vi-VN') : 'N/A';
+                            const ticketRoleIsSeller = (typeof isSeller === 'boolean') ? isSeller : (ticket.isSeller || false);
+                            const category = getStatusCategory(ticket.status, ticketRoleIsSeller);
+                            const badge = getStatusBadge(ticket.status, ticketRoleIsSeller);
                             const html = `
-                                <div class="ticket-item profile-card" data-status="${ticket.status}" style="display: flex; gap: 16px; align-items: center; padding: 16px; margin-bottom: 0;">
+                                <div class="ticket-item profile-card" data-status="${ticket.status}" data-is-seller="${ticketRoleIsSeller ? 'true' : 'false'}" data-category="${category}" style="display: flex; gap: 16px; align-items: center; padding: 16px; margin-bottom: 0;">
                                     <div style="width: 100px; height: 100px; flex-shrink: 0; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-border); background: var(--color-surface-hover);">
                                         ${ticket.thumbnailUrl ? `<img src="${ticket.thumbnailUrl}" style="width: 100%; height: 100%; object-fit: cover;" />` : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-ticket" style="font-size: 32px; color: #ccc;"></i></div>`}
                                     </div>
@@ -831,7 +852,7 @@
                                             </div>
                                         </div>
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; border-top: 1px dashed #f1f5f9; padding-top: 12px;">
-                                            <div>${getStatusBadge(ticket.status)}</div>
+                                            <div>${badge}</div>
                                             <a href="/tickets/${ticket.id}" class="btn btn-outline btn-sm">Chi tiết</a>
                                         </div>
                                     </div>
@@ -852,9 +873,11 @@
                             return res.json();
                         })
                         .then(data => {
-                            renderTickets(data.bought, 'tab-orders-bought');
-                            renderTickets(data.sold, 'tab-orders-sold');
-                            const allTickets = (data.bought || []).concat(data.sold || []).sort((a, b) => b.id - a.id);
+                            const boughtTickets = (data.bought || []).map(t => ({ ...t, isSeller: false }));
+                            const soldTickets = (data.sold || []).map(t => ({ ...t, isSeller: true }));
+                            renderTickets(boughtTickets, 'tab-orders-bought', false);
+                            renderTickets(soldTickets, 'tab-orders-sold', true);
+                            const allTickets = boughtTickets.concat(soldTickets).sort((a, b) => b.id - a.id);
                             renderTickets(allTickets, 'tab-orders-all');
                         })
                         .catch(err => {

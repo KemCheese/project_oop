@@ -62,6 +62,9 @@ class DisputeReviewControllerTest {
     @Mock
     private UserQueryService userQueryService;
 
+    @Mock
+    private com.yourapp.ticketpass.ticket.domain.TicketRepository ticketRepository;
+
     @InjectMocks
     private DisputeReviewController controller;
 

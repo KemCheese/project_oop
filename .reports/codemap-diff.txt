@@ -1,0 +1,18 @@
+Codemap Analysis Report
+==================================================
+Date: 2026-10-06
+Branch: ngocht
+Commit: d985aff
+Files Scanned: 105 Java source files across 6 modules
+
+Codemaps Generated in docs/CODEMAPS/:
+- docs/CODEMAPS/architecture.md: Hexagonal Modular Monolith diagram, 5 domain boundaries, 4 Scalability Rules.
+- docs/CODEMAPS/backend.md: 9 Controllers (@Controller, @RestController, @ControllerAdvice), API routing table, call chains.
+- docs/CODEMAPS/frontend.md: Thymeleaf templates tree, UI layout, AJAX actions (star toggle, MoMo gateway).
+- docs/CODEMAPS/data.md: Flyway migrations V1..V4, database tables, zero cross-module JPA rules.
+- docs/CODEMAPS/dependencies.md: MoMo sandbox, LocalFileStorageAdapter, Spring Boot 3 stack, shared packages.
+
+Diff Detection:
+- Previous codemaps: None (initial creation)
+- Codemap status: Freshly baseline created
+- Token budget: All codemaps adhere strictly to < 1000 tokens limit.

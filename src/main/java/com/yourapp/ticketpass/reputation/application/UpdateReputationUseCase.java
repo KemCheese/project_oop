@@ -2,6 +2,7 @@ package com.yourapp.ticketpass.reputation.application;
 
 import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
+import com.yourapp.ticketpass.shared.event.CompletionReason;
 import com.yourapp.ticketpass.shared.event.DisputeOutcome;
 import com.yourapp.ticketpass.shared.event.DisputeResolvedEvent;
 import com.yourapp.ticketpass.shared.event.TicketTransactionCompletedEvent;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -69,16 +71,34 @@ public class UpdateReputationUseCase {
      * @param event sự kiện do module payment publish sau khi giải ngân xong
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onTicketTransactionCompleted(TicketTransactionCompletedEvent event) {
         if (event == null) {
             log.warn("Received null TicketTransactionCompletedEvent, ignoring");
             return;
         }
 
-        log.info("Processing TicketTransactionCompletedEvent for ticketId={}, sellerId={}, buyerId={}",
-                event.getTicketId(), event.getSellerId(), event.getBuyerId());
+        log.info("Processing TicketTransactionCompletedEvent for ticketId={}, sellerId={}, buyerId={}, reason={}",
+                event.getTicketId(), event.getSellerId(), event.getBuyerId(), event.getCompletionReason());
 
         Instant occurredAt = event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now();
+
+        // Nếu là giao dịch kết thúc do phán quyết tranh chấp (DISPUTE_RESOLVED_SELLER_WINS),
+        // điểm uy tín thắng/thua đã được xử lý chuyên biệt tại onDisputeResolved.
+        // Tại đây chỉ ghi nhận doanh thu GMV và số giao dịch thành công cho người bán, không cộng điểm giao dịch thông thường cho buyer.
+        if (event.getCompletionReason() == CompletionReason.DISPUTE_RESOLVED_SELLER_WINS) {
+            if (event.getSellerId() != null) {
+                updateWithRetry(event.getSellerId(), rep -> {
+                    rep.setTotalTransactions(getOrDefault(rep.getTotalTransactions()) + 1);
+                    rep.setSuccessfulTransactions(getOrDefault(rep.getSuccessfulTransactions()) + 1);
+                    BigDecimal currentGmv = rep.getTotalGmv() != null ? rep.getTotalGmv() : BigDecimal.ZERO;
+                    BigDecimal salePrice = event.getSalePrice() != null ? event.getSalePrice() : BigDecimal.ZERO;
+                    rep.setTotalGmv(currentGmv.add(salePrice).setScale(2, RoundingMode.HALF_UP));
+                    rep.setLastTransactionAt(occurredAt);
+                });
+            }
+            return;
+        }
 
         // 1. Cập nhật uy tín người bán: +2 điểm, tăng transactions, cộng GMV, ghi nhận lastTransactionAt
         if (event.getSellerId() != null) {
@@ -110,6 +130,7 @@ public class UpdateReputationUseCase {
      * @param event sự kiện do module dispute publish sau khi admin ra quyết định
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onDisputeResolved(DisputeResolvedEvent event) {
         if (event == null || event.getOutcome() == null) {
             log.warn("Received null DisputeResolvedEvent or outcome, ignoring");

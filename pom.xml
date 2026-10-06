@@ -126,6 +126,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <jvmArguments>-Xmx512m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</jvmArguments>
                     <!-- Lombok chi can luc bien dich, khong dong goi vao file jar chay that -->
                     <excludes>
                         <exclude>

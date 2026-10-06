@@ -380,3 +380,48 @@ Các quy chuẩn và cơ chế bảo vệ sau đây đã được Dev C hoàn th
      - Cho phép mở khiếu nại khẩn cấp tại cổng trong vòng 30 phút sau giờ bắt đầu sự kiện.
      - **Điều kiện bằng chứng bắt buộc:** Nếu mở khiếu nại sau giờ sự kiện (`now > eventStartAt`), Buyer bắt buộc phải nộp **Video quay liên tục tại quầy soát vé** hoặc **Biên bản từ chối vào cổng (PDF)** có xác nhận của nhân viên tại địa điểm. Hệ thống từ chối các bằng chứng chỉ là ảnh chụp màn hình đơn thuần.
      - **Quy trình đối chất:** Đóng băng lập tức Escrow + Cọc (`DISPUTE_UNDER_REVIEW`); cấp cho Seller **24 giờ** để gửi giải trình và cung cấp bằng chứng nguồn gốc vé chính chủ.
+
+---
+
+### 6.17. 🛡️ QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Giao diện chuẩn VietQR Terminal & Digital Escrow Receipt
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (2026-10-05):** Hệ thống sàn vé TicketPass đã chuẩn hóa toàn diện UI/UX các màn hình thanh toán ký quỹ Escrow và khóa cọc bảo lãnh theo chuẩn `design-taste-frontend`.
+
+1. **Chuẩn hóa màn hình chuyển khoản (`payment/transfer.html`):**
+   - **VietQR Payment Terminal:** Cung cấp khung quét mã chuẩn Napas 247/VietQR với 4 góc ngắm định vị và đồng hồ đếm ngược 15:00.
+   - **Thẻ thông tin thụ hưởng:** Hiển thị ngân hàng, chủ tài khoản, số tài khoản, số tiền và nội dung chuyển khoản chuẩn với nút sao chép (copy) có phản hồi xúc giác tức thì.
+   - **Sandbox Developer Console:** Tách biệt rõ ràng khu vực thử nghiệm mô phỏng giao dịch dành cho demo đồ án, cung cấp 2 nút "Thanh toán thành công" (POST sang `/payment/transfer/confirm`) và "Thanh toán thất bại" (POST sang `/payment/transfer/fail`), bảo toàn 100% token CSRF của Spring Security.
+
+2. **Chuẩn hóa biên nhận ký quỹ điện tử (`payment/result.html`):**
+   - **Escrow Lifecycle Stepper:** Trực quan hóa 4 giai đoạn vòng đời ký quỹ (`1. Nạp Ký Quỹ -> 2. Khóa Cọc Bán -> 3. Giao Nhận Vé -> 4. Giải Ngân`).
+   - **Digital Escrow Receipt:** Hiển thị chi tiết mã giao dịch, mã vé, số tiền, và trạng thái khiên bảo mật cho cả luồng Buyer (`EscrowSummaryResponse`) và Seller (`Deposit`).
+   - **Màn hình báo lỗi đồng cảm:** Giải tỏa lo lắng cho người dùng ("Tiền của bạn chưa bị trừ"), cung cấp hướng dẫn và nút Thử lại ngay.
+
+3. **Cam kết đối với Dev B (Module `payment`):**
+   - Tầng Web hiển thị kế thừa trọn vẹn các thuộc tính Model do `PaymentController` cung cấp (`ref`, `type`, `amount`, `ticketId`, `escrow`, `deposit`, `error`).
+   - Khi Dev B mở rộng thêm tính năng hoàn tiền hoặc khấu thuế, các trường trong `EscrowSummaryResponse` sẽ tự động ăn khớp với thẻ biên nhận số mà không cần sửa đổi giao diện.
+
+---
+
+### 6.18. 🛡️ QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Khung Kiểm Thử Tích Hợp Toàn Sàn (`AbstractSystemIntegrationTest`)
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (2026-10-06):** Khung kiểm thử hệ thống duy nhất chuẩn mực tại package `com.yourapp.ticketpass.system`, thiết lập quy chuẩn viết Integration Test và bảo vệ dữ liệu khởi tạo dùng chung cho Dev A và Dev B.
+
+1. **Vị trí lớp cơ sở (Base Harness):**
+   - File: [`AbstractSystemIntegrationTest.java`](file:///d:/lam%20viec/FORK/project_oop/src/test/java/com/yourapp/ticketpass/system/base/AbstractSystemIntegrationTest.java).
+   - Cung cấp: `@SpringBootTest`, `@AutoConfigureMockMvc`, cấu hình MockMvc, Security context helpers, và tập hợp repositories JPA cần thiết cho test.
+
+2. **Cơ chế Selective ID Tracking (Bảo vệ dữ liệu khởi tạo):**
+   - **Vấn đề đã xử lý:** Việc gọi `deleteAll()` toàn bảng làm xóa mất 4 user và vé mẫu của `DataInitializer`, khiến sequence ID của H2 tự sinh nhảy vọt lên 1285+, gây hỏng các test phụ thuộc ID cố định (như `TicketSearchWebIntegrationTest` của Dev A).
+   - **Quy chuẩn:** Lớp cơ sở sử dụng các danh sách theo dõi `createdUserIds`, `createdTicketIds`, `createdEscrowIds`, `createdDepositIds`, `createdDisputeIds`. Tại `@AfterEach`, hệ thống chỉ xóa chính xác các bản ghi do bài test đó tạo ra, bảo toàn nguyên vẹn dữ liệu mẫu ban đầu.
+
+3. **Quy tắc bắt buộc đối với Dev A và Dev B khi viết Test Tích hợp:**
+   - **Kế thừa bắt buộc:** Mọi test tích hợp luồng (E2E/Flow) hoặc test chéo module nên kế thừa `AbstractSystemIntegrationTest`.
+   - **Sử dụng Helper Methods:** Tạo dữ liệu thử nghiệm thông qua các phương thức tiện ích có sẵn trong Base class:
+     * `createUser(email, role, status)`
+     * `createTicket(sellerId, title, price, status)`
+     * `createEscrow(ticketId, buyerId, amount, status)`
+     * `createDeposit(ticketId, sellerId, amount, status)`
+     * `createDispute(ticketId, buyerId, sellerId, reason, status)`
+   - **CẤM TUYỆT ĐỐI:** Không tự ý gọi `repository.deleteAll()` trên các bảng dùng chung (`users`, `tickets`, `user_reputation_scores`). Mọi thao tác dọn dẹp phải tuân thủ cơ chế Selective ID Tracking của Base class.
+

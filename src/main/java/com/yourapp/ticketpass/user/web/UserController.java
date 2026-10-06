@@ -27,6 +27,12 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import com.yourapp.ticketpass.shared.security.SmartAuthenticationSuccessHandler;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -97,20 +103,36 @@ public class UserController {
      * @return tên view {@code auth/login}
      */
     @GetMapping("/login")
-    public String loginForm(Model model) {
+    public String loginForm(@RequestParam(value = "redirect", required = false) String redirect,
+                            HttpServletRequest request,
+                            Model model) {
+        saveRedirectTarget(redirect, request, model);
         return "auth/login";
+    }
+
+    public String loginForm(Model model) {
+        return loginForm(null, null, model);
     }
 
     /**
      * Hiển thị form đăng ký.
      *
-     * @param model model của view
+     * @param redirect URL đích muốn quay lại sau khi đăng ký thành công
+     * @param request  yêu cầu HTTP chứa header Referer
+     * @param model    model của view
      * @return tên view {@code auth/register}
      */
     @GetMapping("/register")
-    public String registerForm(Model model) {
+    public String registerForm(@RequestParam(value = "redirect", required = false) String redirect,
+                               HttpServletRequest request,
+                               Model model) {
+        saveRedirectTarget(redirect, request, model);
         model.addAttribute("registerRequest", new RegisterRequest());
         return "auth/register";
+    }
+
+    public String registerForm(Model model) {
+        return registerForm(null, null, model);
     }
 
     /**
@@ -118,21 +140,22 @@ public class UserController {
      *
      * <p>
      * Bắt {@code BusinessRuleViolationException} từ {@code RegisterUserUseCase} và
-     * phân
-     * luồng lỗi vào đúng field tương ứng trên form (email trùng → field email, mật
-     * khẩu
-     * không khớp → field confirmPassword, lỗi khác → global error) để Thymeleaf
-     * hiển thị
-     * lỗi tại đúng ô input.
+     * phân luồng lỗi vào đúng field tương ứng trên form.
+     * Sau khi đăng ký thành công, bảo lưu tham số {@code redirect} để tự động quay lại
+     * đúng trang người dùng đang xem dở sau khi đăng nhập.
      * </p>
      *
      * @param request       dữ liệu đăng ký
      * @param bindingResult kết quả Bean Validation
-     * @return redirect sang trang đăng nhập khi thành công, hoặc trả lại form khi
-     *         có lỗi
+     * @param redirect      tham số URL chuyển hướng
+     * @param httpRequest   request HTTP để lấy session attribute
+     * @return redirect sang trang đăng nhập khi thành công, hoặc trả lại form khi có lỗi
      */
     @PostMapping("/register")
-    public String register(@Valid RegisterRequest request, BindingResult bindingResult) {
+    public String register(@Valid RegisterRequest request,
+                           BindingResult bindingResult,
+                           @RequestParam(value = "redirect", required = false) String redirect,
+                           HttpServletRequest httpRequest) {
         if (bindingResult.hasErrors()) {
             return "auth/register";
         }
@@ -151,7 +174,53 @@ public class UserController {
             return "auth/register";
         }
 
+        String target = redirect;
+        if ((target == null || target.isBlank()) && httpRequest != null) {
+            HttpSession session = httpRequest.getSession(false);
+            if (session != null) {
+                target = (String) session.getAttribute(SmartAuthenticationSuccessHandler.REDIRECT_ATTRIBUTE);
+            }
+        }
+
+        if (target != null && SmartAuthenticationSuccessHandler.isValidRedirect(target)) {
+            return "redirect:/login?registered&redirect=" + URLEncoder.encode(target, StandardCharsets.UTF_8);
+        }
+
         return "redirect:/login?registered";
+    }
+
+    public String register(RegisterRequest request, BindingResult bindingResult) {
+        return register(request, bindingResult, null, null);
+    }
+
+    private void saveRedirectTarget(String redirect, HttpServletRequest request, Model model) {
+        String target = redirect;
+        if ((target == null || target.isBlank()) && request != null) {
+            String referer = request.getHeader("Referer");
+            if (referer != null && !referer.isBlank()) {
+                try {
+                    URI uri = URI.create(referer);
+                    String path = uri.getPath();
+                    if (path != null && !path.isBlank()) {
+                        if (uri.getQuery() != null && !uri.getQuery().isBlank()) {
+                            path += "?" + uri.getQuery();
+                        }
+                        if (SmartAuthenticationSuccessHandler.isValidRedirect(path)) {
+                            target = path;
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        if (target != null && SmartAuthenticationSuccessHandler.isValidRedirect(target)) {
+            if (request != null) {
+                request.getSession(true).setAttribute(SmartAuthenticationSuccessHandler.REDIRECT_ATTRIBUTE, target);
+            }
+            if (model != null) {
+                model.addAttribute("redirect", target);
+            }
+        }
     }
 
     /**

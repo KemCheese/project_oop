@@ -109,4 +109,34 @@ class TransferTicketServiceTest {
         assertThrows(BusinessRuleViolationException.class, () ->
                 transferTicketService.reportTechnicalIssue(405L, 501L, "Lỗi ảnh"));
     }
+
+    @Test
+    @DisplayName("markDepositLocked: Tự động chuyển tiếp từ DEPOSIT_LOCKED sang TRANSFERRED để mở vé cho buyer")
+    void testMarkDepositLockedAutoTransitionsToTransferred() {
+        Ticket ticket = new Ticket();
+        ticket.setId(406L);
+        ticket.setStatus(TicketStatus.PAYMENT_ESCROWED);
+
+        when(ticketRepository.findById(406L)).thenReturn(Optional.of(ticket));
+
+        transferTicketService.markDepositLocked(406L, 50L);
+
+        verify(stateMachineService).transition(406L, TicketStatus.DEPOSIT_LOCKED);
+        verify(stateMachineService).transition(406L, TicketStatus.TRANSFERRED);
+    }
+
+    @Test
+    @DisplayName("markTransferred: Idempotent khi vé đã ở TRANSFERRED thì không báo lỗi")
+    void testMarkTransferredIdempotentWhenAlreadyTransferred() {
+        Ticket ticket = new Ticket();
+        ticket.setId(407L);
+        ticket.setSellerId(100L);
+        ticket.setStatus(TicketStatus.TRANSFERRED);
+
+        when(ticketRepository.findById(407L)).thenReturn(Optional.of(ticket));
+
+        transferTicketService.markTransferred(407L, 100L);
+
+        verify(stateMachineService, never()).transition(anyLong(), any());
+    }
 }

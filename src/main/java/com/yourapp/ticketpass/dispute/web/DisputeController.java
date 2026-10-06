@@ -32,6 +32,8 @@ import com.yourapp.ticketpass.user.domain.UserRole;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * Điểm vào HTTP cho người mua và người bán trong quy trình khiếu nại.
@@ -147,32 +149,64 @@ public class DisputeController {
      */
     @PostMapping
     public String fileDispute(@Valid FileDisputeRequest request,
+                              BindingResult bindingResult,
                               @RequestParam(required = false) MultipartFile[] evidences,
+                              RedirectAttributes redirectAttributes,
                               Principal principal) {
-        Long buyerId = resolveUserId(principal);
-        java.util.List<FileDisputeUseCase.DisputeEvidenceAttachment> attachments = new java.util.ArrayList<>();
-        if (evidences != null) {
-            for (MultipartFile file : evidences) {
-                if (file != null && !file.isEmpty()) {
-                    try {
-                        attachments.add(new FileDisputeUseCase.DisputeEvidenceAttachment(
-                                fileDisputeUseCase.inferEvidenceType(file.getContentType()),
-                                file.getOriginalFilename(),
-                                file.getContentType(),
-                                file.getSize(),
-                                file.getInputStream()
-                        ));
-                    } catch (java.io.IOException e) {
-                        throw new com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException(
-                                "Không thể đọc tệp bằng chứng: " + file.getOriginalFilename());
+        if (bindingResult != null && bindingResult.hasErrors()) {
+            String errorMsg = bindingResult.getAllErrors().get(0).getDefaultMessage();
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", errorMsg);
+            }
+            return "redirect:/disputes/new?ticketId=" + request.getTicketId();
+        }
+
+        try {
+            Long buyerId = resolveUserId(principal);
+            java.util.List<FileDisputeUseCase.DisputeEvidenceAttachment> attachments = new java.util.ArrayList<>();
+            if (evidences != null) {
+                for (MultipartFile file : evidences) {
+                    if (file != null && !file.isEmpty()) {
+                        try {
+                            attachments.add(new FileDisputeUseCase.DisputeEvidenceAttachment(
+                                    fileDisputeUseCase.inferEvidenceType(file.getContentType()),
+                                    file.getOriginalFilename(),
+                                    file.getContentType(),
+                                    file.getSize(),
+                                    file.getInputStream()
+                            ));
+                        } catch (java.io.IOException e) {
+                            if (redirectAttributes != null) {
+                                redirectAttributes.addFlashAttribute("errorMessage", "Không thể đọc tệp bằng chứng: " + file.getOriginalFilename());
+                            }
+                            return "redirect:/disputes/new?ticketId=" + request.getTicketId();
+                        }
                     }
                 }
             }
-        }
 
-        var dispute = fileDisputeUseCase.fileDispute(request.getTicketId(), buyerId,
-                request.getReason(), request.getDescription(), attachments);
-        return "redirect:/disputes/" + dispute.getId();
+            var dispute = fileDisputeUseCase.fileDispute(request.getTicketId(), buyerId,
+                    request.getReason(), request.getDescription(), attachments);
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("successMessage", "Khiếu nại đã được gửi thành công.");
+            }
+            return "redirect:/disputes/" + dispute.getId();
+        } catch (com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException e) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            }
+            return "redirect:/disputes/new?ticketId=" + request.getTicketId();
+        } catch (Exception e) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Lỗi xử lý khiếu nại: " + e.getMessage());
+            }
+            return "redirect:/disputes/new?ticketId=" + request.getTicketId();
+        }
+    }
+
+    /** Overload phục vụ gọi nội bộ hoặc kiểm thử đơn vị. */
+    public String fileDispute(FileDisputeRequest request, MultipartFile[] evidences, Principal principal) {
+        return fileDispute(request, new org.springframework.validation.BeanPropertyBindingResult(request, "request"), evidences, new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap(), principal);
     }
 
     private Long resolveUserId(Principal principal) {
@@ -237,10 +271,40 @@ public class DisputeController {
      * @return chuyển hướng về trang chi tiết khiếu nại
      */
     @PostMapping("/{id}/respond")
-    public String respond(@PathVariable Long id, @Valid RespondToDisputeRequest request, Principal principal) {
-        Long sellerId = resolveUserId(principal);
-        respondToDisputeUseCase.submitSellerResponse(id, sellerId, request.getResponse());
+    public String respond(@PathVariable Long id,
+                          @Valid RespondToDisputeRequest request,
+                          BindingResult bindingResult,
+                          RedirectAttributes redirectAttributes,
+                          Principal principal) {
+        if (bindingResult != null && bindingResult.hasErrors()) {
+            String errorMsg = bindingResult.getAllErrors().get(0).getDefaultMessage();
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", errorMsg);
+            }
+            return "redirect:/disputes/" + id;
+        }
+
+        try {
+            Long sellerId = resolveUserId(principal);
+            respondToDisputeUseCase.submitSellerResponse(id, sellerId, request.getResponse());
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("successMessage", "Đã gửi bản giải trình thành công.");
+            }
+        } catch (com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException e) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            }
+        } catch (Exception e) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Lỗi xử lý giải trình: " + e.getMessage());
+            }
+        }
         return "redirect:/disputes/" + id;
+    }
+
+    /** Overload phục vụ gọi nội bộ hoặc kiểm thử đơn vị. */
+    public String respond(Long id, RespondToDisputeRequest request, Principal principal) {
+        return respond(id, request, new org.springframework.validation.BeanPropertyBindingResult(request, "request"), new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap(), principal);
     }
 
     /**
@@ -254,10 +318,29 @@ public class DisputeController {
     @PostMapping("/{id}/withdraw")
     public String withdraw(@PathVariable Long id,
                            @RequestParam(required = false, defaultValue = "Người mua tự nguyện rút khiếu nại") String reason,
+                           RedirectAttributes redirectAttributes,
                            Principal principal) {
-        Long buyerId = resolveUserId(principal);
-        respondToDisputeUseCase.withdrawDispute(id, buyerId, reason);
+        try {
+            Long buyerId = resolveUserId(principal);
+            respondToDisputeUseCase.withdrawDispute(id, buyerId, reason);
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("successMessage", "Đã rút khiếu nại thành công.");
+            }
+        } catch (com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException e) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            }
+        } catch (Exception e) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi rút khiếu nại: " + e.getMessage());
+            }
+        }
         return "redirect:/disputes/" + id;
+    }
+
+    /** Overload phục vụ gọi nội bộ hoặc kiểm thử đơn vị. */
+    public String withdraw(Long id, String reason, Principal principal) {
+        return withdraw(id, reason, new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap(), principal);
     }
 
     /**

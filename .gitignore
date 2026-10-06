@@ -39,3 +39,4 @@ cloudflared.exe
 .gitignore
 ./cloudflared.exe
 .claude/
+data/

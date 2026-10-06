@@ -229,6 +229,65 @@ class DisputeControllerTest {
     }
 
     @Test
+    @DisplayName("respond - Khi có ngoại lệ nghiệp vụ, chuyển hướng về /disputes/{id} kèm flash errorMessage")
+    void respond_whenBusinessRuleFails_redirectsWithErrorMessage() {
+        Long disputeId = 55L;
+        User seller = new User();
+        seller.setId(3L);
+        seller.setEmail("seller@example.com");
+
+        Principal principal = () -> "seller@example.com";
+        when(userRepository.findByEmail("seller@example.com")).thenReturn(Optional.of(seller));
+
+        RespondToDisputeRequest req = new RespondToDisputeRequest();
+        req.setResponse("Giải trình");
+
+        org.mockito.Mockito.doThrow(new BusinessRuleViolationException("Bạn đã gửi giải trình trước đó"))
+                .when(respondToDisputeUseCase).submitSellerResponse(disputeId, 3L, "Giải trình");
+
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        String view = controller.respond(disputeId, req,
+                new org.springframework.validation.BeanPropertyBindingResult(req, "request"),
+                redirectAttributes, principal);
+
+        assertThat(view).isEqualTo("redirect:/disputes/55");
+        assertThat(redirectAttributes.getFlashAttributes()).containsKey("errorMessage");
+        assertThat(redirectAttributes.getFlashAttributes().get("errorMessage")).isEqualTo("Bạn đã gửi giải trình trước đó");
+    }
+
+    @Test
+    @DisplayName("fileDispute - Khi có ngoại lệ nghiệp vụ, chuyển hướng về /disputes/new kèm flash errorMessage")
+    void fileDispute_whenBusinessRuleFails_redirectsWithErrorMessage() {
+        User buyer = new User();
+        buyer.setId(2L);
+        buyer.setEmail("buyer@example.com");
+
+        Principal principal = () -> "buyer@example.com";
+        when(userRepository.findByEmail("buyer@example.com")).thenReturn(Optional.of(buyer));
+
+        FileDisputeRequest req = new FileDisputeRequest();
+        req.setTicketId(100L);
+        req.setReason(DisputeReason.TICKET_INVALID);
+        req.setDescription("Mô tả khiếu nại");
+
+        when(fileDisputeUseCase.fileDispute(eq(100L), eq(2L), eq(DisputeReason.TICKET_INVALID), eq("Mô tả khiếu nại"), any()))
+                .thenThrow(new BusinessRuleViolationException("Hết hạn khiếu nại"));
+
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        String view = controller.fileDispute(req,
+                new org.springframework.validation.BeanPropertyBindingResult(req, "request"),
+                null, redirectAttributes, principal);
+
+        assertThat(view).isEqualTo("redirect:/disputes/new?ticketId=100");
+        assertThat(redirectAttributes.getFlashAttributes()).containsKey("errorMessage");
+        assertThat(redirectAttributes.getFlashAttributes().get("errorMessage")).isEqualTo("Hết hạn khiếu nại");
+    }
+
+    @Test
     @DisplayName("withdraw - Người mua rút khiếu nại thành công và redirect về /disputes/{id}")
     void withdraw_whenBuyerWithdraws_redirectsToDetail() {
         Long disputeId = 55L;

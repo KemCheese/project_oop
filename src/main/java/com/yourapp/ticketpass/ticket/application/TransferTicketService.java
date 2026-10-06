@@ -152,19 +152,30 @@ public class TransferTicketService {
 
         // Chuyen trang thai sang DEPOSIT_LOCKED qua state machine
         stateMachineService.transition(ticketId, TicketStatus.DEPOSIT_LOCKED);
+
+        // Tren san marketplace, ma QR bi mat da duoc nguoi ban upload san tu luc dang ve.
+        // Khi nguoi ban hoan tat khoa coc 50%, he thong tu dong mo khoa va ban giao ma QR cho nguoi mua
+        // bang cach chuyen tiep ngay sang TRANSFERRED ma khong bat nguoi ban phai bam nut thu cong.
+        stateMachineService.transition(ticketId, TicketStatus.TRANSFERRED);
     }
 
     /**
      * Nguoi ban danh dau da chuyen ve cho nguoi mua.
      *
-     * <p>Sau khi seller thuc hien theo TransferInstruction (mo khoa QR an cho buyer),
-     * bam nut "Da chuyen ve" de bao cho san biet. State machine se tu gan transferredAt.</p>
+     * <p>Phuong thuc giu tinh idempotent: neu ve da o TRANSFERRED thi bo qua khong bao loi.</p>
      *
      * @param ticketId id cua ve
      * @param sellerId id nguoi ban thuc hien thao tac
      */
     @Transactional
     public void markTransferred(Long ticketId, Long sellerId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
+
+        if (ticket.getStatus() == TicketStatus.TRANSFERRED) {
+            return; // Idempotent
+        }
+
         // Kiem tra quyen chuyen ve (phai la chu ve, status phai la DEPOSIT_LOCKED, phai co QR)
         ValidationResult result = validateTicketService.validateForTransfer(ticketId, sellerId);
         if (!result.isValid()) {

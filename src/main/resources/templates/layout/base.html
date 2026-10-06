@@ -1283,19 +1283,8 @@
             // Expose hàm ra window để các nút hay template có thể gọi trực tiếp
             window.triggerCinematicTransition = triggerCinematicTransition;
 
-            // Kích hoạt khi submit tìm kiếm (cần reload dữ liệu mới)
-            const searchForm = document.getElementById('navSearchForm');
-            if (searchForm) {
-                searchForm.addEventListener('submit', function (e) {
-                    const input = this.querySelector('input[name="keyword"]');
-                    if (input && input.value.trim().length > 0) {
-                        e.preventDefault();
-                        triggerCinematicTransition(() => {
-                            searchForm.submit();
-                        });
-                    }
-                });
-            }
+            // Tìm kiếm vé: submit tự nhiên tức thì, không ép delay slogan để tối ưu trải nghiệm người dùng
+            // (Đã loại bỏ delay 2s theo yêu cầu nghiệp vụ)
 
             // Bắt sự kiện click vào các liên kết có gắn data-transition="true" (như nút Khám phá vé)
             document.addEventListener('click', function (e) {

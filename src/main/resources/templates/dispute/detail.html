@@ -2,21 +2,23 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <title>Hồ sơ tranh chấp - TicketPass</title>
+    <title>Tiến trình xử lý tranh chấp vé - TicketPass</title>
 </head>
 
 <body>
-    <div th:replace="~{layout/base :: layout('Hồ sơ tranh chấp - TicketPass', ~{::content})}">
+    <div th:replace="~{layout/base :: layout('Tiến trình xử lý tranh chấp vé - TicketPass', ~{::content})}">
         <content>
             <style>
-                .dispute-layout {
-                    display: grid;
-                    grid-template-columns: 1fr 340px;
-                    gap: 30px;
-                    align-items: start;
+                /* ==========================================================================
+                   USER DISPUTE TRACKING & RESOLUTION STYLES
+                   ========================================================================== */
+                .dispute-wrapper {
+                    max-width: 1200px;
+                    margin: 0 auto;
                 }
 
-                .card-section {
+                /* Header & Status Section */
+                .dispute-hero-header {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
                     border-radius: var(--radius-lg);
@@ -25,314 +27,764 @@
                     box-shadow: var(--shadow-card);
                 }
 
-                .card-section-title {
-                    font-size: 16px;
+                .dispute-title-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 16px;
+                }
+
+                /* Resolution Outcome Banner */
+                .outcome-banner {
+                    border-radius: var(--radius-lg);
+                    padding: 24px;
+                    margin-bottom: 24px;
+                    box-shadow: var(--shadow-card);
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 20px;
+                }
+
+                .outcome-banner.buyer-won {
+                    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                    border: 2px solid #86efac;
+                }
+
+                .outcome-banner.seller-won {
+                    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                    border: 2px solid #93c5fd;
+                }
+
+                .outcome-banner.withdrawn {
+                    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                    border: 2px solid #cbd5e1;
+                }
+
+                .outcome-icon {
+                    width: 52px;
+                    height: 52px;
+                    border-radius: var(--radius-full);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 24px;
+                    flex-shrink: 0;
+                }
+
+                .outcome-banner.buyer-won .outcome-icon {
+                    background-color: #22c55e;
+                    color: #ffffff;
+                }
+
+                .outcome-banner.seller-won .outcome-icon {
+                    background-color: #3b82f6;
+                    color: #ffffff;
+                }
+
+                .outcome-banner.withdrawn .outcome-icon {
+                    background-color: #64748b;
+                    color: #ffffff;
+                }
+
+                /* 4-Step Animated Pipeline */
+                .pipeline-container {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 20px;
+                    margin-bottom: 24px;
+                    box-shadow: var(--shadow-card);
+                }
+
+                .pipeline-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 12px;
+                    position: relative;
+                }
+
+                .pipeline-step {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    padding: 12px;
+                    border-radius: var(--radius-md);
+                    border: 1px solid var(--color-border);
+                    background-color: #fafbfc;
+                    transition: all var(--transition-base);
+                }
+
+                .pipeline-step.completed {
+                    border-color: #86efac;
+                    background-color: #f0fdf4;
+                }
+
+                .pipeline-step.active {
+                    border-color: var(--color-primary);
+                    background-color: var(--color-primary-surface);
+                    box-shadow: 0 0 0 2px var(--color-primary-border);
+                }
+
+                .pipeline-step-icon {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: var(--radius-full);
+                    background-color: #e2e8f0;
+                    color: var(--color-text-muted);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 14px;
+                    margin-bottom: 8px;
+                }
+
+                .pipeline-step.completed .pipeline-step-icon {
+                    background-color: var(--color-success);
+                    color: #ffffff;
+                }
+
+                .pipeline-step.active .pipeline-step-icon {
+                    background-color: var(--color-primary);
+                    color: #ffffff;
+                }
+
+                .pipeline-step-title {
+                    font-size: 13px;
                     font-weight: 700;
-                    color: var(--color-brand);
-                    margin-bottom: 16px;
+                    color: var(--color-text-main);
+                }
+
+                .pipeline-step-sub {
+                    font-size: 11px;
+                    color: var(--color-text-muted);
+                    margin-top: 2px;
+                }
+
+                /* Live Countdown Digital Clock */
+                .countdown-card {
+                    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                    color: #ffffff;
+                    border-radius: var(--radius-md);
+                    padding: 18px 24px;
+                    margin-bottom: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 16px;
+                }
+
+                .countdown-digits {
                     display: flex;
                     align-items: center;
                     gap: 8px;
-                    border-bottom: 1px solid #f1f5f9;
-                    padding-bottom: 10px;
+                    font-family: 'JetBrains Mono', 'Courier New', monospace;
                 }
 
-                /* Step Progress Tracker */
-                .step-tracker {
+                .digit-box {
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    border-radius: var(--radius-sm);
+                    padding: 6px 12px;
+                    font-size: 20px;
+                    font-weight: 800;
+                    letter-spacing: 0.05em;
+                }
+
+                /* Layout Dual Column */
+                .dispute-body-layout {
                     display: grid;
-                    grid-template-columns: repeat(4, 1fr);
-                    gap: 8px;
-                    margin-bottom: 28px;
+                    grid-template-columns: 1fr 340px;
+                    gap: 24px;
+                    align-items: start;
                 }
 
-                .step-item {
+                .section-card {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 24px;
+                    margin-bottom: 24px;
+                    box-shadow: var(--shadow-card);
+                }
+
+                .section-card-title {
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--color-brand);
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px solid var(--color-border);
+                    margin-bottom: 18px;
+                }
+
+                .content-bubble {
+                    background-color: #f8fafc;
+                    border: 1px solid #e2e8f0;
                     border-radius: var(--radius-md);
-                    padding: 12px;
-                    text-align: center;
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: var(--color-text-muted);
+                    padding: 16px;
+                    font-size: 14px;
+                    line-height: 1.65;
+                    color: var(--color-text-main);
                 }
 
-                .step-item.active {
-                    border-color: var(--color-primary);
-                    background-color: var(--color-primary-surface);
-                    color: var(--color-primary);
-                }
-
-                .step-item.completed {
-                    border-color: #86efac;
-                    background-color: #f0fdf4;
-                    color: var(--color-success);
-                }
-
-                .evidence-grid {
+                /* Evidence Gallery */
+                .evidence-list-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
                     gap: 12px;
                     margin-top: 12px;
                 }
 
-                .evidence-thumb {
+                .evidence-thumbnail {
                     border: 1px solid var(--color-border);
                     border-radius: var(--radius-md);
                     overflow: hidden;
                     height: 110px;
                     background-color: #f1f5f9;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                    cursor: pointer;
+                    position: relative;
+                    transition: transform var(--transition-base), box-shadow var(--transition-base);
                 }
 
-                .evidence-img {
+                .evidence-thumbnail:hover {
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow-hover);
+                }
+
+                .evidence-thumbnail img {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
                 }
 
-                @media (max-width: 900px) {
-                    .dispute-layout {
+                .evidence-zoom-tag {
+                    position: absolute;
+                    bottom: 6px;
+                    right: 6px;
+                    background: rgba(15, 23, 42, 0.75);
+                    color: #ffffff;
+                    font-size: 10px;
+                    padding: 2px 6px;
+                    border-radius: var(--radius-sm);
+                }
+
+                /* Financial Stake Overview */
+                .stake-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px 0;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+
+                .stake-row:last-child {
+                    border-bottom: none;
+                }
+
+                /* Modal Lightbox */
+                .modal-lightbox {
+                    display: none;
+                    position: fixed;
+                    z-index: 1050;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background-color: rgba(15, 23, 42, 0.85);
+                    backdrop-filter: blur(6px);
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                }
+
+                .modal-lightbox.active {
+                    display: flex;
+                }
+
+                .modal-lightbox-content {
+                    max-width: 90vw;
+                    max-height: 85vh;
+                    border-radius: var(--radius-lg);
+                    overflow: hidden;
+                    background-color: #000;
+                    position: relative;
+                }
+
+                .modal-lightbox-img {
+                    max-width: 100%;
+                    max-height: 80vh;
+                    display: block;
+                    object-fit: contain;
+                }
+
+                .modal-close-btn {
+                    position: absolute;
+                    top: 14px;
+                    right: 14px;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: var(--radius-full);
+                    background: rgba(15, 23, 42, 0.7);
+                    color: #fff;
+                    border: none;
+                    font-size: 18px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                @media (max-width: 992px) {
+                    .dispute-body-layout {
                         grid-template-columns: 1fr;
                     }
 
-                    .step-tracker {
+                    .pipeline-grid {
                         grid-template-columns: repeat(2, 1fr);
                     }
                 }
             </style>
 
-            <!-- Header & Status -->
-            <div style="margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-                            <span class="badge badge-danger">
-                                <i class="fa-solid fa-triangle-exclamation"></i> Hồ sơ tranh chấp
-                            </span>
-                            <span style="font-size: 14px; font-weight: 700; color: var(--color-text-muted);">
-                                Mã hồ sơ: #<span th:text="${dispute != null ? dispute.id : '101'}">101</span>
-                            </span>
-                        </div>
-                        <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand);">
-                            Tiến Trình Xử Lý Tranh Chấp Vé
-                        </h1>
-                    </div>
-
-                    <!-- Status Tag -->
-                    <div>
-                        <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'OPEN'}" class="badge badge-warning">
-                            Mới tiếp nhận
-                        </span>
-                        <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'AWAITING_SELLER_RESPONSE'}" class="badge badge-warning">
-                            Chờ người bán giải trình
-                        </span>
-                        <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'SELLER_RESPONDED'}" class="badge badge-info">
-                            Người bán đã phản hồi
-                        </span>
-                        <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'UNDER_REVIEW'}" class="badge badge-warning">
-                            Admin đang đối soát
-                        </span>
-                        <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'RESOLVED_BUYER_WINS'}" class="badge badge-success">
-                            Đã xử: Người mua thắng
-                        </span>
-                        <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'RESOLVED_SELLER_WINS'}" class="badge badge-success">
-                            Đã xử: Người bán thắng
-                        </span>
-                        <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'WITHDRAWN'}" class="badge badge-neutral">
-                            Người mua đã rút khiếu nại
-                        </span>
-                        <span th:if="${dispute == null}" class="badge badge-warning">
-                            Chờ người bán giải trình
-                        </span>
-                    </div>
+            <div class="dispute-wrapper">
+                <!-- Navigation Top -->
+                <div style="margin-bottom: 16px;">
+                    <a th:href="@{/tickets}" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-arrow-left"></i> Quay lại danh sách vé
+                    </a>
                 </div>
-            </div>
 
-            <!-- Step Progress Tracker -->
-            <div class="step-tracker">
-                <div class="step-item completed">
-                    1. Mở khiếu nại
+                <!-- Flash Alerts -->
+                <div th:if="${errorMessage != null}" class="alert alert-danger" style="margin-bottom: 20px; padding: 14px 18px; border-radius: var(--radius-md); background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span th:text="${errorMessage}"></span>
                 </div>
-                <div class="step-item"
-                     th:classappend="${dispute != null and dispute.sellerResponse != null ? 'completed' : 'active'}">
-                    2. Người bán giải trình
+                <div th:if="${successMessage != null}" class="alert alert-success" style="margin-bottom: 20px; padding: 14px 18px; border-radius: var(--radius-md); background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span th:text="${successMessage}"></span>
                 </div>
-                <div class="step-item"
-                     th:classappend="${dispute != null and dispute.status != null and (dispute.status.name() == 'UNDER_REVIEW' or dispute.status.name() == 'RESOLVED_BUYER_WINS' or dispute.status.name() == 'RESOLVED_SELLER_WINS') ? 'active' : ''}">
-                    3. Admin phân xử
-                </div>
-                <div class="step-item"
-                     th:classappend="${dispute != null and (dispute.status != null and (dispute.status.name() == 'RESOLVED_BUYER_WINS' or dispute.status.name() == 'RESOLVED_SELLER_WINS' or dispute.status.name() == 'WITHDRAWN')) ? 'completed' : ''}">
-                    4. Thi hành giải ngân/hoàn tiền
-                </div>
-            </div>
 
-            <div class="dispute-layout">
-                <!-- Left Column: Details & Evidence -->
-                <div class="main-column">
-                    <!-- Khối 1: Bằng chứng và mô tả từ người mua -->
-                    <div class="card-section">
-                        <div class="card-section-title">
-                            <i class="fa-solid fa-user-tag" style="color: var(--color-primary);"></i>
-                            Nội Dung Khiếu Nại Của Người Mua
-                        </div>
-
-                        <div style="margin-bottom: 16px;">
-                            <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">
-                                Lý do khiếu nại
-                            </div>
-                            <div style="font-size: 15px; font-weight: 700; color: var(--color-danger); margin-top: 2px;"
-                                 th:text="${dispute != null and dispute.reason != null ? dispute.reason.name() : 'TICKET_INVALID (Vé không quét được / Đã bị check-in)'}">
-                                TICKET_INVALID (Vé không quét được / Đã bị check-in)
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 16px;">
-                            <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">
-                                Mô tả diễn biến sự việc
-                            </div>
-                            <p style="font-size: 14px; color: var(--color-text-secondary); line-height: 1.6; margin-top: 4px;"
-                               th:text="${dispute != null and dispute.description != null ? dispute.description : 'Tôi đến quầy soát vé rạp vào lúc 19:15 nhưng nhân viên thông báo mã vé này đã được check-in vào lúc 18:40 trước đó. Tôi đã bị từ chối vào rạp xem phim.'}">
-                                Tôi đến quầy soát vé rạp vào lúc 19:15 nhưng nhân viên thông báo mã vé này đã được check-in vào lúc 18:40 trước đó. Tôi đã bị từ chối vào rạp xem phim.
-                            </p>
-                        </div>
-
-                        <!-- Evidences uploaded -->
+                <!-- Header Case Summary -->
+                <div class="dispute-hero-header">
+                    <div class="dispute-title-row">
                         <div>
-                            <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">
-                                Tệp bằng chứng đã đính kèm
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <span class="badge badge-danger">
+                                    <i class="fa-solid fa-scale-balanced"></i> Hồ sơ khiếu nại sàn vé
+                                </span>
+                                <span style="font-size: 13px; font-weight: 700; color: var(--color-text-muted);">
+                                    Mã hồ sơ: #<span th:text="${dispute != null ? dispute.id : '101'}">101</span>
+                                </span>
                             </div>
-                            <div class="evidence-grid">
-                                <th:block th:if="${buyerEvidences != null and !#lists.isEmpty(buyerEvidences)}">
-                                    <div th:each="ev : ${buyerEvidences}" class="evidence-thumb">
-                                        <a th:href="${ev.fileUrl}" target="_blank" style="width: 100%; height: 100%;">
-                                            <img th:src="${ev.fileUrl}" alt="Bằng chứng" class="evidence-img" />
-                                        </a>
-                                    </div>
-                                </th:block>
-                                <th:block th:if="${buyerEvidences == null or #lists.isEmpty(buyerEvidences)}">
-                                    <div class="evidence-thumb">
-                                        <i class="fa-solid fa-image fa-2x" style="color: #cbd5e1;"></i>
-                                    </div>
-                                    <div class="evidence-thumb">
-                                        <i class="fa-solid fa-file-video fa-2x" style="color: #cbd5e1;"></i>
-                                    </div>
-                                </th:block>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Khối 2: Giải trình phản hồi từ người bán -->
-                    <div class="card-section">
-                        <div class="card-section-title">
-                            <i class="fa-solid fa-reply-all" style="color: var(--color-info);"></i>
-                            Phần Giải Trình Của Người Bán
+                            <h1 style="font-size: 24px; font-weight: 800; color: var(--color-brand); margin: 0;">
+                                Tiến Trình Giải Quyết Tranh Chấp
+                            </h1>
                         </div>
 
-                        <!-- When Seller has already responded -->
-                        <div th:if="${dispute != null and dispute.sellerResponse != null and !dispute.sellerResponse.isEmpty()}">
-                            <p style="font-size: 14px; color: var(--color-text-secondary); line-height: 1.6;"
-                               th:text="${dispute.sellerResponse}">
-                                Phản hồi từ người bán...
-                            </p>
-                        </div>
-
-                        <!-- When Seller has NOT responded yet -->
-                        <div th:if="${dispute == null or dispute.sellerResponse == null or dispute.sellerResponse.isEmpty()}">
-                            <!-- If viewing as Seller: Show Response Form -->
-                            <div th:if="${isSeller}">
-                                <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 12px;">
-                                    Bạn có 24 giờ kể từ khi mở khiếu nại để giải trình. Hãy cung cấp bằng chứng rõ ràng nếu vé của bạn hợp lệ.
-                                </p>
-                                <form th:action="@{/disputes/{id}/respond(id=${dispute != null ? dispute.id : 101})}" method="post">
-                                    <div class="form-group">
-                                        <textarea name="response" rows="4" class="form-control" required
-                                                  placeholder="Nhập nội dung giải trình và bằng chứng của bạn..."></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fa-solid fa-paper-plane"></i> Gửi giải trình phản biện
-                                    </button>
-                                </form>
-                            </div>
-
-                            <!-- If viewing as Buyer/Guest: Show Deadline Waiting Notice -->
-                            <div th:unless="${isSeller}" style="padding: 16px; background-color: #fafbfc; border-radius: var(--radius-md); text-align: center;">
-                                <i class="fa-regular fa-clock fa-2x" style="color: var(--color-warning); margin-bottom: 8px;"></i>
-                                <div style="font-size: 14px; font-weight: 600; color: var(--color-brand);">
-                                    Đang chờ phản hồi từ người bán
-                                </div>
-                                <div style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px;">
-                                    Thời hạn phản hồi: 24 giờ. Nếu quá hạn, hệ thống tự động chuyển hồ sơ cho Admin xử lý thắng cho người mua.
-                                </div>
-                            </div>
+                        <!-- Current Status Badge -->
+                        <div>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'OPEN'}" class="badge badge-warning" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-bell"></i> Mới tiếp nhận
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'AWAITING_SELLER_RESPONSE'}" class="badge badge-warning" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-regular fa-clock"></i> Chờ người bán giải trình
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'SELLER_RESPONDED'}" class="badge badge-info" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-reply-all"></i> Người bán đã phản hồi
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'UNDER_REVIEW'}" class="badge badge-warning" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-magnifying-glass"></i> Admin đang phân xử
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'RESOLVED_BUYER_WINS'}" class="badge badge-success" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-circle-check"></i> Đã xử: Người mua thắng
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'RESOLVED_SELLER_WINS'}" class="badge badge-success" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-circle-check"></i> Đã xử: Người bán thắng
+                            </span>
+                            <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'WITHDRAWN'}" class="badge badge-neutral" style="font-size: 13px; padding: 6px 14px;">
+                                <i class="fa-solid fa-handshake"></i> Người mua đã rút khiếu nại
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column: Financial & Actions -->
-                <div class="sidebar-column">
-                    <!-- Financial Summary Box -->
-                    <div class="card-section">
-                        <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 12px;">
-                            Bảo Vệ Tài Chính
-                        </div>
-
-                        <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
-                            <div style="font-size: 12px; color: var(--color-text-muted);">Số tiền Escrow đang phong tỏa</div>
-                            <div style="font-size: 20px; font-weight: 800; color: var(--color-primary);"
-                                 th:text="${dispute != null and dispute.totalDeposit != null ? #numbers.formatDecimal(dispute.totalDeposit.multiply(new java.math.BigDecimal(2)), 0, 'POINT', 0, 'POINT') + ' ₫' : '250.000 ₫'}">
-                                250.000 ₫
-                            </div>
-                            <div style="font-size: 11px; color: var(--color-success); margin-top: 2px;">
-                                <i class="fa-solid fa-shield"></i> Hoàn 100% nếu bạn thắng
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 14px;">
-                            <div style="font-size: 12px; color: var(--color-text-muted);">Cọc người bán đang khóa</div>
-                            <div style="font-size: 18px; font-weight: 700; color: var(--color-warning);"
-                                 th:text="${dispute != null and dispute.totalDeposit != null ? #numbers.formatDecimal(dispute.totalDeposit, 0, 'POINT', 0, 'POINT') + ' ₫' : '125.000 ₫'}">
-                                125.000 ₫
-                            </div>
-                            <div style="font-size: 11px; color: var(--color-danger); margin-top: 2px;">
-                                <i class="fa-solid fa-lock"></i> Tịch thu bồi thường nếu gian lận
-                            </div>
-                        </div>
+                <!-- Outcome Grand Banner (Khi đã hoàn tất) -->
+                <div th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'RESOLVED_BUYER_WINS'}" class="outcome-banner buyer-won">
+                    <div class="outcome-icon">
+                        <i class="fa-solid fa-award"></i>
                     </div>
-
-                    <!-- Buyer Action: Withdraw Dispute -->
-                    <div th:if="${isBuyer != null and isBuyer and dispute != null and dispute.status != null and dispute.status.name() != 'RESOLVED_BUYER_WINS' and dispute.status.name() != 'RESOLVED_SELLER_WINS' and dispute.status.name() != 'WITHDRAWN'}" class="card-section">
-                        <div style="font-size: 13px; font-weight: 700; color: var(--color-brand); margin-bottom: 8px;">
-                            Thỏa Thuận Xong?
-                        </div>
-                        <p style="font-size: 12px; color: var(--color-text-muted); line-height: 1.5; margin-bottom: 14px;">
-                            Nếu người bán đã hỗ trợ đổi vé hoặc hai bên đã giải quyết ổn thỏa ngoài sàn, bạn có thể tự nguyện rút khiếu nại. Tiền sẽ được giải ngân cho người bán.
+                    <div>
+                        <h2 style="font-size: 18px; font-weight: 800; color: #166534; margin: 0 0 6px 0;">
+                            Phán Quyết Chính Thức: Người Mua Đã Được Xử Thắng
+                        </h2>
+                        <p style="font-size: 14px; color: #15803d; line-height: 1.6; margin: 0 0 10px 0;">
+                            Ban Quản Trị đã hoàn tất đối soát và xác nhận khiếu nại của Người mua là chính xác.
+                            Toàn bộ 100% số tiền Escrow đã được hoàn lại cho Người mua. Đồng thời khoản tiền cọc 50% của Người bán bị tịch thu để bồi thường thiệt hại.
                         </p>
-                        <form th:action="@{/disputes/{id}/withdraw(id=${dispute != null ? dispute.id : 101})}" method="post">
-                            <div class="form-group" style="margin-bottom: 10px;">
-                                <input type="text" name="reason" class="form-control" style="font-size: 13px;"
-                                       placeholder="Lý do rút khiếu nại (ví dụ: đã nhận lại vé mới)" />
+                        <div style="display: flex; gap: 16px; font-size: 13px; font-weight: 700; color: #166534;">
+                            <span><i class="fa-solid fa-rotate-left"></i> Hoàn tiền: 100% Escrow</span>
+                            <span><i class="fa-solid fa-shield"></i> Người bán: -15 điểm uy tín</span>
+                            <span><i class="fa-solid fa-user-plus"></i> Người mua: +1 điểm uy tín</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'RESOLVED_SELLER_WINS'}" class="outcome-banner seller-won">
+                    <div class="outcome-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 18px; font-weight: 800; color: #1e40af; margin: 0 0 6px 0;">
+                            Phán Quyết Chính Thức: Người Bán Đã Được Xử Thắng
+                        </h2>
+                        <p style="font-size: 14px; color: #1d4ed8; line-height: 1.6; margin: 0 0 10px 0;">
+                            Ban Quản Trị đã xác nhận bằng chứng vé từ Người bán là hợp lệ hoặc khiếu nại của Người mua không đủ căn cứ.
+                            Toàn bộ số tiền bán vé đã được giải ngân cho Người bán, cùng với khoản tiền cọc 50% được hoàn trả nguyên vẹn.
+                        </p>
+                        <div style="display: flex; gap: 16px; font-size: 13px; font-weight: 700; color: #1e40af;">
+                            <span><i class="fa-solid fa-money-bill-transfer"></i> Giải ngân tiền bán vé</span>
+                            <span><i class="fa-solid fa-rotate-left"></i> Hoàn trả 100% cọc cho Seller</span>
+                            <span><i class="fa-solid fa-user-minus"></i> Người mua: -15 điểm uy tín</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'WITHDRAWN'}" class="outcome-banner withdrawn">
+                    <div class="outcome-icon">
+                        <i class="fa-solid fa-handshake"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 18px; font-weight: 800; color: var(--color-brand); margin: 0 0 6px 0;">
+                            Khiếu Nại Đã Được Rút Tự Nguyện
+                        </h2>
+                        <p style="font-size: 14px; color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
+                            Người mua đã chủ động rút đơn khiếu nại sau khi hai bên đạt được thỏa thuận ổn thỏa ngoài sàn.
+                            Giao dịch được hoàn tất tự động và số tiền bán vé đã được giải ngân bình thường cho Người bán.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 4-Step Animated Pipeline -->
+                <div class="pipeline-container">
+                    <div class="pipeline-grid">
+                        <!-- Step 1: Open Dispute -->
+                        <div class="pipeline-step completed">
+                            <div class="pipeline-step-icon">
+                                <i class="fa-solid fa-file-circle-check"></i>
                             </div>
-                            <button type="submit" class="btn btn-outline btn-sm" style="width: 100%;"
-                                    onclick="return confirm('Bạn có chắc chắn muốn rút khiếu nại này không? Sau khi rút, giao dịch sẽ được hoàn tất và giải ngân cho người bán.');">
-                                <i class="fa-solid fa-handshake"></i> Rút khiếu nại
-                            </button>
-                        </form>
+                            <div class="pipeline-step-title">1. Mở khiếu nại</div>
+                            <div class="pipeline-step-sub"
+                                 th:text="${dispute != null and dispute.filedAt != null ? #temporals.format(dispute.filedAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : 'Đã nộp'}">
+                                Đã hoàn tất
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Seller Response -->
+                        <div class="pipeline-step"
+                             th:classappend="${dispute != null and dispute.sellerResponse != null and !dispute.sellerResponse.isEmpty() ? 'completed' : (dispute != null and (dispute.status.name() == 'OPEN' or dispute.status.name() == 'AWAITING_SELLER_RESPONSE') ? 'active' : '')}">
+                            <div class="pipeline-step-icon">
+                                <i class="fa-solid fa-comments"></i>
+                            </div>
+                            <div class="pipeline-step-title">2. Người bán giải trình</div>
+                            <div class="pipeline-step-sub"
+                                 th:text="${dispute != null and dispute.sellerResponse != null and !dispute.sellerResponse.isEmpty() ? 'Đã phản hồi' : 'Thời hạn 24 giờ'}">
+                                Thời hạn 24 giờ
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Admin Review -->
+                        <div class="pipeline-step"
+                             th:classappend="${dispute != null and dispute.status != null and dispute.status.name() == 'UNDER_REVIEW' ? 'active' : (dispute != null and (dispute.status.name() == 'RESOLVED_BUYER_WINS' or dispute.status.name() == 'RESOLVED_SELLER_WINS' or dispute.status.name() == 'WITHDRAWN') ? 'completed' : '')}">
+                            <div class="pipeline-step-icon">
+                                <i class="fa-solid fa-scale-balanced"></i>
+                            </div>
+                            <div class="pipeline-step-title">3. Admin đối soát</div>
+                            <div class="pipeline-step-sub">Trọng tài thẩm định</div>
+                        </div>
+
+                        <!-- Step 4: Resolution Execution -->
+                        <div class="pipeline-step"
+                             th:classappend="${dispute != null and (dispute.status.name() == 'RESOLVED_BUYER_WINS' or dispute.status.name() == 'RESOLVED_SELLER_WINS' or dispute.status.name() == 'WITHDRAWN') ? 'completed' : ''}">
+                            <div class="pipeline-step-icon">
+                                <i class="fa-solid fa-vault"></i>
+                            </div>
+                            <div class="pipeline-step-title">4. Quyết toán tài chính</div>
+                            <div class="pipeline-step-sub">Giải ngân / Hoàn tiền</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 24h Live Countdown Clock (Khi đang chờ Seller giải trình) -->
+                <div th:if="${dispute != null and (dispute.sellerResponse == null or dispute.sellerResponse.isEmpty()) and (dispute.status.name() == 'OPEN' or dispute.status.name() == 'AWAITING_SELLER_RESPONSE')}"
+                     class="countdown-card"
+                     th:attr="data-deadline=${dispute.sellerResponseDeadline != null ? dispute.sellerResponseDeadline.toString() : ''}">
+                    <div>
+                        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-regular fa-clock" style="color: #fbbf24;"></i> Hạn Chót Người Bán Phản Hồi Giải Trình
+                        </div>
+                        <div style="font-size: 13px; color: #cbd5e1; margin-top: 4px;">
+                            Nếu hết thời gian đếm ngược mà không có phản hồi, Admin sẽ xử Người Mua Thắng.
+                        </div>
                     </div>
 
-                    <!-- Navigation Link -->
-                    <div style="display: flex; flex-direction: column; gap: 8px; text-align: center;">
-                        <a th:if="${dispute != null and dispute.ticketId != null}" th:href="@{/tickets/{id}(id=${dispute.ticketId})}" class="btn btn-outline btn-sm">
-                            <i class="fa-solid fa-ticket"></i> Xem chi tiết vé gốc
-                        </a>
-                        <a th:href="@{/tickets}" class="btn btn-outline btn-sm">
-                            <i class="fa-solid fa-arrow-left"></i> Quay lại sàn vé
-                        </a>
+                    <div class="countdown-digits" id="countdownClock">
+                        <div class="digit-box" id="hoursBox">24</div>
+                        <span style="font-weight: 800; font-size: 18px;">:</span>
+                        <div class="digit-box" id="minutesBox">00</div>
+                        <span style="font-weight: 800; font-size: 18px;">:</span>
+                        <div class="digit-box" id="secondsBox">00</div>
+                    </div>
+                </div>
+
+                <!-- Dual Column Layout: Content + Action Sidebar -->
+                <div class="dispute-body-layout">
+                    <!-- Left Column: Claim & Response Details -->
+                    <div class="main-column">
+                        <!-- Card 1: Khiếu nại từ người mua -->
+                        <div class="section-card">
+                            <div class="section-card-title">
+                                <i class="fa-solid fa-user-tag" style="color: var(--color-primary);"></i>
+                                Nội Dung Khiếu Nại Của Người Mua
+                            </div>
+
+                            <div style="margin-bottom: 16px;">
+                                <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 4px;">
+                                    Lý do khiếu nại
+                                </div>
+                                <div style="font-size: 15px; font-weight: 800; color: var(--color-danger);"
+                                     th:text="${dispute != null and dispute.reason != null ? dispute.reason.name() : 'TICKET_INVALID'}">
+                                    TICKET_INVALID
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 16px;">
+                                <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 4px;">
+                                    Mô tả chi tiết sự việc
+                                </div>
+                                <div class="content-bubble"
+                                     th:text="${dispute != null and dispute.description != null ? dispute.description : 'Mã vé báo đã được sử dụng trước lúc check-in tại quầy.'}">
+                                    Mô tả diễn biến...
+                                </div>
+                            </div>
+
+                            <!-- Buyer Evidences List -->
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                                    Bằng chứng đã đính kèm
+                                </div>
+
+                                <div class="evidence-list-grid">
+                                    <th:block th:if="${buyerEvidences != null and !#lists.isEmpty(buyerEvidences)}">
+                                        <div th:each="ev : ${buyerEvidences}" class="evidence-thumbnail"
+                                             th:onclick="openLightbox([[${ev.fileUrl}]])">
+                                            <img th:src="${ev.fileUrl}" alt="Bằng chứng khiếu nại" />
+                                            <span class="evidence-zoom-tag">
+                                                <i class="fa-solid fa-magnifying-glass-plus"></i> Xem
+                                            </span>
+                                        </div>
+                                    </th:block>
+
+                                    <th:block th:if="${buyerEvidences == null or #lists.isEmpty(buyerEvidences)}">
+                                        <div class="evidence-thumbnail" style="display: flex; align-items: center; justify-content: center; color: #94a3b8; cursor: default;">
+                                            <i class="fa-regular fa-image fa-2x"></i>
+                                        </div>
+                                    </th:block>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Giải trình từ người bán -->
+                        <div class="section-card">
+                            <div class="section-card-title">
+                                <i class="fa-solid fa-reply-all" style="color: var(--color-info);"></i>
+                                Phần Giải Trình Của Người Bán
+                            </div>
+
+                            <!-- Case A: Seller has already submitted response -->
+                            <div th:if="${dispute != null and dispute.sellerResponse != null and !dispute.sellerResponse.isEmpty()}">
+                                <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                                    Nội dung giải trình đã gửi
+                                </div>
+                                <div class="content-bubble" style="border-left: 3px solid var(--color-info);"
+                                     th:text="${dispute.sellerResponse}">
+                                    Nội dung giải trình...
+                                </div>
+                            </div>
+
+                            <!-- Case B: Seller hasn't responded yet -->
+                            <div th:if="${dispute == null or dispute.sellerResponse == null or dispute.sellerResponse.isEmpty()}">
+                                <!-- If viewing user IS Seller: Show submission form -->
+                                <div th:if="${isSeller}">
+                                    <div class="alert alert-warning" style="margin-bottom: 16px; font-size: 13px; line-height: 1.6;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                        <strong>Cơ hội giải trình duy nhất:</strong> Bạn có 24 giờ kể từ khi mở khiếu nại để giải thích rõ ràng và chứng minh vé của bạn là hợp lệ trước khi Ban Quản Trị ra quyết định.
+                                    </div>
+
+                                    <form th:action="@{/disputes/{id}/respond(id=${dispute != null ? dispute.id : 101})}" method="post">
+                                        <div class="form-group" style="margin-bottom: 16px;">
+                                            <label class="form-label" for="sellerResponseInput">
+                                                Nội dung giải trình phản biện <span class="required">*</span>
+                                            </label>
+                                            <textarea id="sellerResponseInput" name="response" rows="4" class="form-control" required
+                                                      placeholder="Cung cấp các thông tin đối chiếu: Lịch sử mua vé gốc, thời điểm bạn gửi mã, hoặc lý do nghi ngờ người mua gian lận..."></textarea>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary" style="font-weight: 700;">
+                                            <i class="fa-solid fa-paper-plane"></i> Gửi văn bản giải trình
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <!-- If viewing user is NOT Seller: Show waiting state -->
+                                <div th:unless="${isSeller}" style="padding: 20px; background-color: #fafbfc; border: 1px dashed #cbd5e1; border-radius: var(--radius-md); text-align: center;">
+                                    <i class="fa-regular fa-clock fa-2x" style="color: var(--color-warning); margin-bottom: 8px;"></i>
+                                    <div style="font-size: 14px; font-weight: 700; color: var(--color-brand);">
+                                        Đang chờ người bán phản hồi giải trình
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--color-text-muted); margin-top: 4px; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+                                        Người bán có tối đa 24 giờ để đưa ra bằng chứng đối ứng. Nếu quá thời hạn này mà không có phản hồi, Ban Quản Trị sẽ xử Người Mua Thắng và hoàn lại 100% tiền.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Financial Protection & User Actions -->
+                    <div class="sidebar-column">
+                        <!-- Financial Safeguard Card -->
+                        <div class="section-card">
+                            <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-shield-halved" style="color: var(--color-success);"></i> Cơ Chế Bảo Vệ Tài Chính
+                            </div>
+
+                            <div class="stake-row">
+                                <div>
+                                    <div style="font-size: 12px; color: var(--color-text-muted);">Tiền ký quỹ Escrow</div>
+                                    <div style="font-size: 11px; color: var(--color-success);">Đang phong tỏa tại sàn</div>
+                                </div>
+                                <div style="font-size: 18px; font-weight: 800; color: var(--color-primary);"
+                                     th:text="${dispute != null and dispute.totalDeposit != null ? #numbers.formatDecimal(dispute.totalDeposit.multiply(new java.math.BigDecimal(2)), 0, 'POINT', 0, 'POINT') + ' ₫' : '250.000 ₫'}">
+                                    250.000 ₫
+                                </div>
+                            </div>
+
+                            <div class="stake-row">
+                                <div>
+                                    <div style="font-size: 12px; color: var(--color-text-muted);">Cọc người bán bảo đảm</div>
+                                    <div style="font-size: 11px; color: var(--color-warning);">Khóa cọc 50%</div>
+                                </div>
+                                <div style="font-size: 16px; font-weight: 700; color: var(--color-warning);"
+                                     th:text="${dispute != null and dispute.totalDeposit != null ? #numbers.formatDecimal(dispute.totalDeposit, 0, 'POINT', 0, 'POINT') + ' ₫' : '125.000 ₫'}">
+                                    125.000 ₫
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--color-border); font-size: 12px; color: var(--color-text-muted); line-height: 1.5;">
+                                <i class="fa-solid fa-lock" style="color: var(--color-primary);"></i>
+                                Tiền thanh toán của bạn hoàn toàn an toàn và không chuyển cho người bán cho tới khi tranh chấp được giải quyết xong.
+                            </div>
+                        </div>
+
+                        <!-- Buyer Withdraw Dispute Option (Khi hai bên tự thương lượng được) -->
+                        <div th:if="${isBuyer != null and isBuyer and dispute != null and dispute.status != null and dispute.status.name() != 'RESOLVED_BUYER_WINS' and dispute.status.name() != 'RESOLVED_SELLER_WINS' and dispute.status.name() != 'WITHDRAWN'}"
+                             class="section-card">
+                            <div style="font-size: 14px; font-weight: 700; color: var(--color-brand); margin-bottom: 6px;">
+                                Đã Thỏa Thuận Xong?
+                            </div>
+                            <p style="font-size: 12px; color: var(--color-text-muted); line-height: 1.5; margin-bottom: 12px;">
+                                Nếu người bán đã đổi vé mới hoặc hỗ trợ đền bù thỏa đáng, bạn có thể tự nguyện rút khiếu nại. Sàn sẽ giải ngân tiền vé cho người bán.
+                            </p>
+
+                            <form th:action="@{/disputes/{id}/withdraw(id=${dispute.id})}" method="post"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn rút khiếu nại này không?\n\nSau khi rút, giao dịch sẽ hoàn tất và tiền vé sẽ được giải ngân cho người bán.');">
+                                <div class="form-group" style="margin-bottom: 10px;">
+                                    <input type="text" name="reason" class="form-control" style="font-size: 13px;"
+                                           placeholder="Lý do rút khiếu nại (tùy chọn)" />
+                                </div>
+                                <button type="submit" class="btn btn-outline btn-sm" style="width: 100%;">
+                                    <i class="fa-solid fa-handshake"></i> Rút khiếu nại
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Ticket Navigation -->
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <a th:if="${dispute != null and dispute.ticketId != null}" th:href="@{/tickets/{id}(id=${dispute.ticketId})}"
+                               class="btn btn-outline btn-sm" style="width: 100%; text-align: center;">
+                                <i class="fa-solid fa-ticket"></i> Xem chi tiết vé gốc
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Lightbox Modal -->
+            <div id="lightboxModal" class="modal-lightbox" onclick="closeLightbox()">
+                <div class="modal-lightbox-content" onclick="event.stopPropagation()">
+                    <button class="modal-close-btn" onclick="closeLightbox()">&times;</button>
+                    <img id="lightboxImg" class="modal-lightbox-img" src="" alt="Xem phóng to ảnh" />
+                </div>
+            </div>
+
+            <script>
+                function openLightbox(url) {
+                    if (!url) return;
+                    document.getElementById('lightboxImg').src = url;
+                    document.getElementById('lightboxModal').classList.add('active');
+                }
+
+                function closeLightbox() {
+                    document.getElementById('lightboxModal').classList.remove('active');
+                }
+
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') closeLightbox();
+                });
+
+                // Digital Countdown Timer for 24h Seller Response
+                (function initCountdown() {
+                    var countdownCard = document.querySelector('.countdown-card');
+                    if (!countdownCard) return;
+
+                    var deadlineStr = countdownCard.getAttribute('data-deadline');
+                    if (!deadlineStr) return;
+
+                    var targetTime = new Date(deadlineStr).getTime();
+                    if (isNaN(targetTime)) return;
+
+                    function updateClock() {
+                        var now = new Date().getTime();
+                        var remaining = targetTime - now;
+
+                        if (remaining <= 0) {
+                            var clockEl = document.getElementById('countdownClock');
+                            if (clockEl) {
+                                clockEl.innerHTML = '<span style="color: #f87171; font-weight: 800; font-size: 14px;">ĐÃ QUÁ HẠN 24H</span>';
+                            }
+                            return;
+                        }
+
+                        var hours = Math.floor(remaining / (1000 * 60 * 60));
+                        var minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                        var seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+                        var hEl = document.getElementById('hoursBox');
+                        var mEl = document.getElementById('minutesBox');
+                        var sEl = document.getElementById('secondsBox');
+
+                        if (hEl) hEl.textContent = String(hours).padStart(2, '0');
+                        if (mEl) mEl.textContent = String(minutes).padStart(2, '0');
+                        if (sEl) sEl.textContent = String(seconds).padStart(2, '0');
+                    }
+
+                    updateClock();
+                    setInterval(updateClock, 1000);
+                })();
+            </script>
         </content>
     </div>
 </body>
