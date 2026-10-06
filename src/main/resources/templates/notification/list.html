@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Thông báo của tôi - TicketPass</title>
+</head>
+
+<body>
+    <div th:replace="~{layout/base :: layout('Thông báo của tôi - TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .notif-page-container {
+                    max-width: 860px;
+                    margin: 0 auto;
+                    padding: 24px 16px 48px;
+                }
+
+                .notif-page-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 24px;
+                    flex-wrap: wrap;
+                    gap: 16px;
+                }
+
+                .notif-page-title-box h1 {
+                    font-size: 24px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    margin: 0 0 6px 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .notif-page-subtitle {
+                    font-size: 13px;
+                    color: var(--color-text-secondary);
+                    margin: 0;
+                }
+
+                .notif-page-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .notif-page-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    box-shadow: var(--shadow-card);
+                    overflow: hidden;
+                }
+
+                .notif-page-stats-bar {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 14px 20px;
+                    background-color: #fafbfc;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+
+                .notif-stats-text {
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--color-brand);
+                }
+
+                .notif-stats-unread {
+                    color: var(--color-primary);
+                    background-color: var(--color-primary-surface);
+                    padding: 2px 8px;
+                    border-radius: var(--radius-full);
+                    border: 1px solid var(--color-primary-border);
+                    font-size: 11px;
+                    font-weight: 700;
+                    margin-left: 6px;
+                }
+
+                .btn-mark-all-page {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    color: var(--color-text-main);
+                    padding: 6px 14px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    border-radius: var(--radius-md);
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    transition: all var(--transition-base);
+                }
+
+                .btn-mark-all-page:hover {
+                    border-color: var(--color-primary);
+                    color: var(--color-primary);
+                    background-color: var(--color-primary-surface);
+                }
+
+                .notif-full-item {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 16px;
+                    padding: 18px 20px;
+                    border-bottom: 1px solid #f1f5f9;
+                    text-decoration: none;
+                    color: inherit;
+                    transition: background-color var(--transition-base);
+                }
+
+                .notif-full-item:last-child {
+                    border-bottom: none;
+                }
+
+                .notif-full-item:hover {
+                    background-color: #f8fafc;
+                }
+
+                .notif-full-item.unread {
+                    background-color: #fff9f9;
+                }
+
+                .notif-full-item.unread:hover {
+                    background-color: #fff1f1;
+                }
+
+                .notif-full-icon {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
+                    flex-shrink: 0;
+                }
+
+                .notif-full-icon.escrow,
+                .notif-full-icon.deposit {
+                    background-color: #fff7ed;
+                    color: #ea580c;
+                }
+
+                .notif-full-icon.ticket,
+                .notif-full-icon.success {
+                    background-color: #f0fdf4;
+                    color: #16a34a;
+                }
+
+                .notif-full-icon.dispute,
+                .notif-full-icon.danger {
+                    background-color: #fef2f2;
+                    color: #dc2626;
+                }
+
+                .notif-full-icon.system {
+                    background-color: #f1f5f9;
+                    color: #475569;
+                }
+
+                .notif-full-content {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .notif-full-title {
+                    font-size: 15px;
+                    font-weight: 700;
+                    color: var(--color-brand);
+                    margin-bottom: 4px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+
+                .notif-full-text {
+                    font-size: 13px;
+                    color: var(--color-text-secondary);
+                    line-height: 1.5;
+                    margin-bottom: 6px;
+                }
+
+                .notif-full-time {
+                    font-size: 12px;
+                    color: var(--color-text-muted);
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .notif-full-arrow {
+                    color: #cbd5e1;
+                    font-size: 14px;
+                    transition: transform var(--transition-base), color var(--transition-base);
+                    align-self: center;
+                    margin-left: 8px;
+                }
+
+                .notif-full-item:hover .notif-full-arrow {
+                    color: var(--color-primary);
+                    transform: translateX(3px);
+                }
+
+                .notif-page-empty {
+                    padding: 64px 20px;
+                    text-align: center;
+                    color: var(--color-text-muted);
+                }
+
+                .notif-page-empty-icon {
+                    font-size: 48px;
+                    color: #cbd5e1;
+                    margin-bottom: 16px;
+                }
+
+                .notif-page-empty h3 {
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--color-brand);
+                    margin: 0 0 6px 0;
+                }
+
+                .notif-pagination {
+                    display: flex;
+                    justify-content: center;
+                    gap: 8px;
+                    padding: 16px 20px;
+                    background-color: #fafbfc;
+                    border-top: 1px solid #f1f5f9;
+                }
+
+                .notif-page-btn {
+                    padding: 6px 12px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-sm);
+                    color: var(--color-brand);
+                    text-decoration: none;
+                    background-color: var(--color-surface);
+                    transition: all var(--transition-base);
+                }
+
+                .notif-page-btn:hover {
+                    border-color: var(--color-primary);
+                    color: var(--color-primary);
+                }
+
+                .notif-page-btn.active {
+                    background-color: var(--color-brand);
+                    color: #ffffff;
+                    border-color: var(--color-brand);
+                }
+            </style>
+
+            <div class="notif-page-container">
+                <div class="notif-page-header">
+                    <div class="notif-page-title-box">
+                        <h1><i class="fa-solid fa-bell text-primary" style="color: var(--color-primary);"></i> Thông báo của tôi</h1>
+                        <p class="notif-page-subtitle">Cập nhật trạng thái giao dịch, nạp cọc, bàn giao vé và xử lý khiếu nại</p>
+                    </div>
+                    <div class="notif-page-actions">
+                        <button type="button" class="btn-mark-all-page" id="btnPageMarkAll">
+                            <i class="fa-solid fa-check-double"></i> Đã đọc tất cả
+                        </button>
+                    </div>
+                </div>
+
+                <div class="notif-page-card">
+                    <div class="notif-page-stats-bar">
+                        <div class="notif-stats-text">
+                            Tổng số <strong th:text="${totalCount}">0</strong> thông báo
+                            <span class="notif-stats-unread" th:if="${unreadCount > 0}" th:text="${unreadCount + ' chưa đọc'}"></span>
+                        </div>
+                    </div>
+
+                    <div class="notif-full-list" th:if="${notifications != null and !notifications.isEmpty()}">
+                        <th:block th:each="n : ${notifications}">
+                            <a th:href="${n.targetUrl != null and !n.targetUrl.isEmpty()} ? ${n.targetUrl} : '#'"
+                               class="notif-full-item"
+                               th:classappend="${!n.read} ? 'unread' : ''"
+                               th:data-id="${n.id}">
+                                
+                                <div class="notif-full-icon"
+                                     th:classappend="${n.type == 'ESCROW_PAID' or n.type == 'DEPOSIT_LOCKED' or n.type == 'STARRED_TICKET_BOUGHT'} ? 'escrow' : (${n.type == 'TICKET_RECEIVED' or n.type == 'TRANSACTION_COMPLETED'} ? 'success' : (${n.type == 'DISPUTE_FILED' or n.type == 'DISPUTE_RESOLVED' or n.type == 'DEPOSIT_TIMEOUT' or n.type == 'TICKET_EXPIRED'} ? 'danger' : 'system'))">
+                                    <i th:if="${n.type == 'ESCROW_PAID'}" class="fa-solid fa-wallet"></i>
+                                    <i th:if="${n.type == 'DEPOSIT_LOCKED'}" class="fa-solid fa-lock"></i>
+                                    <i th:if="${n.type == 'TICKET_RECEIVED'}" class="fa-solid fa-ticket"></i>
+                                    <i th:if="${n.type == 'DISPUTE_FILED'}" class="fa-solid fa-shield-halved"></i>
+                                    <i th:if="${n.type == 'DISPUTE_RESPONDED'}" class="fa-solid fa-comments"></i>
+                                    <i th:if="${n.type == 'DISPUTE_RESOLVED'}" class="fa-solid fa-scale-balanced"></i>
+                                    <i th:if="${n.type == 'DEPOSIT_TIMEOUT'}" class="fa-solid fa-triangle-exclamation"></i>
+                                    <i th:if="${n.type == 'DISPUTE_WITHDRAWN'}" class="fa-solid fa-rotate-left"></i>
+                                    <i th:if="${n.type == 'TRANSACTION_COMPLETED'}" class="fa-solid fa-circle-check"></i>
+                                    <i th:if="${n.type == 'TICKET_EXPIRED'}" class="fa-solid fa-calendar-xmark"></i>
+                                    <i th:if="${n.type == 'STARRED_TICKET_BOUGHT'}" class="fa-solid fa-star"></i>
+                                    <i th:if="${n.type == 'STARRED_TICKET_EXPIRED'}" class="fa-solid fa-clock-rotate-left"></i>
+                                    <i th:if="${n.type == 'SYSTEM'}" class="fa-solid fa-bell"></i>
+                                </div>
+
+                                <div class="notif-full-content">
+                                    <div class="notif-full-title">
+                                        <span th:text="${n.title}">Tiêu đề thông báo</span>
+                                        <span class="notif-unread-dot" th:if="${!n.read}"></span>
+                                    </div>
+                                    <div class="notif-full-text" th:text="${n.content}">Nội dung chi tiết thông báo</div>
+                                    <div class="notif-full-time">
+                                        <i class="fa-regular fa-clock"></i> <span th:text="${n.timeAgo}">Vừa xong</span>
+                                    </div>
+                                </div>
+
+                                <i class="fa-solid fa-chevron-right notif-full-arrow"></i>
+                            </a>
+                        </th:block>
+                    </div>
+
+                    <div class="notif-page-empty" th:if="${notifications == null or notifications.isEmpty()}">
+                        <i class="fa-regular fa-bell-slash notif-page-empty-icon"></i>
+                        <h3>Bạn chưa có thông báo nào</h3>
+                        <p>Các cập nhật về giao dịch mua bán vé sẽ xuất hiện tại đây.</p>
+                    </div>
+
+                    <!-- Phân trang -->
+                    <div class="notif-pagination" th:if="${totalPages > 1}">
+                        <a th:href="@{/notifications(page=${p - 1})}"
+                           th:each="p : ${#numbers.sequence(1, totalPages)}"
+                           th:text="${p}"
+                           class="notif-page-btn"
+                           th:classappend="${currentPage + 1 == p} ? 'active' : ''">1</a>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const btnMarkAll = document.getElementById('btnPageMarkAll');
+                    if (btnMarkAll) {
+                        btnMarkAll.addEventListener('click', function () {
+                            fetch('/api/notifications/read-all', {
+                                method: 'POST',
+                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            })
+                            .then(res => res.ok ? res.json() : null)
+                            .then(data => {
+                                if (data && data.success) {
+                                    window.location.reload();
+                                }
+                            });
+                        });
+                    }
+
+                    // Tự động đánh dấu đã đọc khi bấm vào item trên trang
+                    document.querySelectorAll('.notif-full-item').forEach(item => {
+                        item.addEventListener('click', function (e) {
+                            const notifId = this.getAttribute('data-id');
+                            if (notifId) {
+                                fetch('/api/notifications/' + notifId + '/read', {
+                                    method: 'POST',
+                                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                                });
+                            }
+                        });
+                    });
+                });
+            </script>
+        </content>
+    </div>
+</body>
+
+</html>

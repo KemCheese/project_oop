@@ -62,22 +62,29 @@ com.yourapp.ticketpass
  │    ├── application     UpdateReputationUseCase (lắng nghe domain event)
  │    ├── infrastructure  ReputationJpaRepository, ReputationRepositoryImpl
  │    └── web             ReputationController, dto/
+ ├── notification
+ │    ├── domain          Notification, NotificationType, NotificationRepository (interface)
+ │    ├── application     NotificationService, NotificationEventListener (lắng nghe domain event)
+ │    ├── infrastructure  NotificationJpaRepository, NotificationRepositoryImpl
+ │    └── web             NotificationController, NotificationApiController, dto/
  ├── user
- │    ├── domain          User, UserRole, UserStatus, UserRepository (interface)
- │    ├── application     RegisterUserUseCase, UserProfileService, UserQueryService
- │    ├── infrastructure  UserJpaRepository, UserRepositoryImpl, UserDetailsServiceImpl
- │    └── web             UserController, HomeController, dto/
+ │    ├── domain          User, UserRole, UserStatus, StarredTicket, UserRepository (interface), StarredTicketRepository (interface)
+ │    ├── application     RegisterUserUseCase, UserProfileService, UserQueryService, StarredTicketUseCase
+ │    ├── infrastructure  UserJpaRepository, UserRepositoryImpl, StarredTicketJpaRepository, StarredTicketRepositoryImpl, UserDetailsServiceImpl
+ │    └── web             UserController, StarredTicketApiController, HomeController, dto/
  └── shared
       ├── storage/        FileStorageService (interface), StoredFileRef, FileStorageException,
       │                   adapter/LocalFileStorageAdapter
-      ├── event/          TicketTransactionCompletedEvent, CompletionReason,
-      │                   DisputeResolvedEvent, DisputeOutcome
+      ├── event/          TicketTransactionCompletedEvent, CompletionReason, DisputeResolvedEvent,
+      │                   DisputeOutcome, TicketEscrowPaidEvent, TicketDepositLockedEvent,
+      │                   DisputeOpenedEvent, DisputeRespondedEvent, DisputeWithdrawnEvent,
+      │                   DepositTimeoutEvent, TicketReceivedEvent, TicketExpiredEvent
       ├── dto/            CommissionBreakdown, TaxWithholding, ForfeitBreakdown
       ├── config/         SecurityConfig, OcrConfig, PaymentGatewayConfig, CommissionConfig, TaxConfig
       └── exception/      GlobalExceptionHandler, BusinessRuleViolationException, ResourceNotFoundException
 ```
 
-Bảy module nghiệp vụ (`ticket`, `verification`, `payment`, `dispute`, `reputation`, `user`) cộng với một module hạ tầng dùng chung (`shared`). Không có package "utils" toàn cục chứa mọi thứ: mỗi helper phải thuộc về một module có ý nghĩa nghiệp vụ, riêng `shared` chỉ chứa những thứ **thực sự** được ít nhất hai module dùng chung.
+Tám module nghiệp vụ (`ticket`, `verification`, `payment`, `dispute`, `reputation`, `user`, `notification`) cộng với một module hạ tầng dùng chung (`shared`). Không có package "utils" toàn cục chứa mọi thứ: mỗi helper phải thuộc về một module có ý nghĩa nghiệp vụ, riêng `shared` chỉ chứa những thứ **thực sự** được ít nhất hai module dùng chung.
 
 ## 3. Chiều phụ thuộc giữa các layer
 
@@ -149,6 +156,7 @@ flowchart TD
     payment["payment"]
     dispute["dispute"]
     reputation["reputation"]
+    notification["notification"]
     user["user"]
     shared["shared"]
 
@@ -159,14 +167,20 @@ flowchart TD
     ticket -.->|"TicketTransactionCompletedEvent"| reputation
     dispute -.->|"DisputeResolvedEvent"| reputation
 
+    ticket -.->|"Escrow, Deposit, Received, Expired Events"| notification
+    payment -.->|"DepositTimeoutEvent"| notification
+    dispute -.->|"Dispute Filed/Responded/Resolved Events"| notification
+
+    notification -->|"StarredTicketRepository"| user
     ticket --> shared
     payment --> shared
     dispute --> shared
     reputation --> shared
+    notification --> shared
     user --> shared
 
     classDef evt fill:#fff4e5,stroke:#e8710a,stroke-width:2px
-    class reputation evt
+    class reputation,notification evt
 ```
 
 Diễn giải sơ đồ:
@@ -174,6 +188,7 @@ Diễn giải sơ đồ:
 - `ticket` gọi trực tiếp các use case tiền của `payment`, vì phải biết ngay tiền đã vào escrow hay chưa. (Module `verification` truoc day duoc goi de xac thuc, nay da bi deprecated).
 - `dispute` gọi trực tiếp `payment` để hoàn tiền và tịch thu cọc, và gọi `ticket` (qua `TicketStateMachineService`) để đổi trạng thái vé sau phán quyết.
 - `reputation` **chỉ nghe event**, không ai gọi nó trực tiếp. Nhờ vậy, nếu module uy tín lỗi thì giao dịch tiền vẫn hoàn tất đúng.
+- `notification` **lắng nghe domain event** từ `ticket`, `payment`, `dispute` sau commit để gửi thông báo; tra cứu watchers qua interface `StarredTicketRepository` của module `user`. Không làm ảnh hưởng hay rollback transaction gốc.
 - `user` không gọi module nào. Các module khác chỉ tham chiếu người dùng bằng `Long userId`; khi cần hiển thị tên thì tầng `web` truy vấn `UserQueryService`.
 - `shared` là điểm phụ thuộc chung của tất cả và **không được phụ thuộc vào module nghiệp vụ nào**. Nếu `shared` import `ticket.domain.Ticket` thì sẽ tạo phụ thuộc vòng.
 
@@ -183,21 +198,23 @@ Không có mũi tên nào tạo thành vòng. Đây là điều kiện để m�
 
 Ký hiệu: **OK** được phép import; **EVT** chỉ được nhận thông tin qua domain event, không import trực tiếp; **KO** không được import.
 
-| Module gọi \ Module bị gọi | ticket | verification | payment | dispute | reputation | user | shared |
-|---|---|---|---|---|---|---|---|
-| **ticket** | — | OK | OK (chỉ use case tiền) | KO | EVT | KO | OK |
-| **verification** | KO | — | KO | KO | EVT | KO | OK |
-| **payment** | KO | KO | — | KO | KO | KO | OK |
-| **dispute** | OK (chỉ `TicketStateMachineService` và `TicketRepository`) | KO | OK (chỉ use case tiền) | — | EVT | KO | OK |
-| **reputation** | KO | KO | KO | KO | — | KO | OK |
-| **user** | KO | KO | KO | KO | KO | — | OK |
-| **shared** | KO | KO | KO | KO | KO | KO | — |
+| Module gọi \ Module bị gọi | ticket | verification | payment | dispute | reputation | notification | user | shared |
+|---|---|---|---|---|---|---|---|---|
+| **ticket** | — | OK | OK (chỉ use case tiền) | KO | EVT | KO | KO | OK |
+| **verification** | KO | — | KO | KO | EVT | KO | KO | OK |
+| **payment** | KO | KO | — | KO | KO | KO | KO | OK |
+| **dispute** | OK (chỉ `TicketStateMachineService` và `TicketRepository`) | KO | OK (chỉ use case tiền) | — | EVT | KO | KO | OK |
+| **reputation** | KO | KO | KO | KO | — | KO | KO | OK |
+| **notification** | KO | KO | KO | KO | KO | — | OK (chỉ `StarredTicketRepository`) | OK |
+| **user** | KO | KO | KO | KO | KO | KO | — | OK |
+| **shared** | KO | KO | KO | KO | KO | KO | KO | — |
 
 Giải thích các ô dễ gây tranh luận:
 
 - **`payment` không import module nào.** Đây là quy tắc cứng nhất. `payment` chỉ nhận vào ID cùng số tiền, và trả ra `PaymentResult` cùng các breakdown trong `shared.dto`. Nhờ đó module tiền kiểm thử được hoàn toàn độc lập và không bao giờ là nguyên nhân của phụ thuộc vòng.
 - **Module `verification` đã bị deprecated.** Các quy tắc về import của nó được bỏ qua.
 - **`dispute` được import `ticket` một cách hạn chế**, chỉ hai thứ: `TicketStateMachineService` để đổi trạng thái sau phán quyết, và `TicketRepository` để đọc loại vé cùng `eventStartAt` phục vụ tính cửa sổ khiếu nại. Không được import entity `Ticket` vào entity `Dispute`.
+- **`notification` chỉ import interface `StarredTicketRepository`** từ `user.domain` để tra cứu danh sách watchers cần báo tin; không import entity hay repository JPA của `user` hay `ticket`.
 - **`shared` không import gì.** Nếu một class trong `shared` cần biết về `Ticket` thì class đó không thuộc `shared`.
 
 Ma trận này không được kiểm tra tự động bằng ArchUnit trong phạm vi đồ án; việc tuân thủ dựa vào code review giữa ba thành viên. Đây là lựa chọn phạm vi có ý thức, và cách khắc phục được ghi ở mục nợ kỹ thuật.

@@ -71,6 +71,13 @@ public interface TicketJpaRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByStatusAndTransferredAtBefore(TicketStatus status, Instant before);
 
     /**
+     * @param status trang thai can quet (LISTED)
+     * @param before moc thoi gian so sanh voi eventStartAt
+     * @return danh sach ve can tu dong go do qua han su kien
+     */
+    List<Ticket> findByStatusAndEventStartAtBefore(TicketStatus status, Instant before);
+
+    /**
      * Tim kiem ve dang rao ban theo trang thai, loai ve va tu khoa (ten su kien hoac tieu de).
      *
      * @param status trang thai can loc (thuong la LISTED)

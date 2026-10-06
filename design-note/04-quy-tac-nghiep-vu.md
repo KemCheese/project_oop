@@ -27,6 +27,8 @@ Danh mục quy tắc:
 | BR-09 | Cửa sổ khiếu nại theo loại vé |
 | BR-10 | Tịch thu cọc khi người bán thua tranh chấp |
 | BR-11 | Điểm uy tín người dùng |
+| BR-12 | Tự động gỡ vé quá hạn sự kiện |
+| BR-13 | Thông báo sự kiện giao dịch và theo dõi vé |
 
 ---
 
@@ -374,6 +376,42 @@ Kiểm tra tính đúng đắn: ở mọi dòng, `founder_cut + buyer_compensati
 
 ---
 
+## BR-12 — Tự động gỡ vé quá hạn sự kiện (Autonomous Ticket Expiration)
+
+**Phát biểu.** Bất kỳ vé nào đang ở trạng thái `LISTED` trên sàn mà thời gian bắt đầu sự kiện đã đến hoặc trôi qua (`eventStartAt <= now`) sẽ bị hệ thống tự động gỡ bỏ khỏi sàn, chuyển trạng thái sang `CANCELLED`.
+
+**Lý do.** 
+- Vé sau giờ sự kiện không còn giá trị chuyển nhượng hay tham dự sự kiện.
+- Nếu để người mua bấm mua vé đã qua giờ, giao dịch sẽ biến thành tranh chấp chắc chắn phát sinh, gây khóa tiền oan cho người mua và phiền toái xử lý đối soát.
+- Hệ thống cần cơ chế tự vận hành (autonomous) quét định kỳ không phụ thuộc vào hành vi người dùng truy cập.
+
+**Nơi hiện thực.** `TicketExpirationScheduler` trong `ticket.application`, cấu hình `@Scheduled(cron = "${app.scheduler.ticket-expiration-cron:0 */1 * * * *}")`. Quá trình quét gọi `ticketRepository.findExpiredListedTickets(now)`, chuyển trạng thái qua `ticketStateMachineService.transition(ticketId, TicketStatus.CANCELLED)` và phát sự kiện `TicketExpiredEvent`.
+
+---
+
+## BR-13 — Thông báo sự kiện giao dịch và theo dõi vé (Notification & Watchlist)
+
+**Phát biểu.** Hệ thống tự động phát thông báo in-app cho người dùng tương ứng khi phát sinh các sự kiện vòng đời vé và theo dõi:
+
+| Sự kiện kích hoạt | Người nhận thông báo | Loại thông báo (`NotificationType`) | Ý nghĩa nghiệp vụ |
+|---|---|---|---|
+| Người mua nạp ký quỹ | Người bán | `ESCROW_PAID` | Nhắc người bán vào nạp cọc 50% trong 15-30 phút |
+| Người mua nạp ký quỹ | Người theo dõi (Watchers) | `STARRED_TICKET_BOUGHT` | Báo người theo dõi vé đã có người mua (loại trừ Buyer & Seller) |
+| Người bán khoá cọc 50% | Người mua | `DEPOSIT_LOCKED` | Báo mã vé bí mật đã mở, mời vào nhận vé trong 30 phút |
+| Người mua mở khiếu nại | Người bán | `DISPUTE_FILED` | Nhắc người bán nộp giải trình và bằng chứng trong 24 giờ |
+| Người bán nộp giải trình | Người mua | `DISPUTE_RESPONDED` | Báo hồ sơ đang chờ Admin xem xét đối soát |
+| Người mua rút khiếu nại | Người bán | `DISPUTE_WITHDRAWN` | Báo khiếu nại đã huỷ, giao dịch tiếp tục |
+| Admin ra phán quyết | Người mua & Người bán | `DISPUTE_RESOLVED` | Báo kết quả phán quyết, số tiền hoàn/bồi thường và biến động điểm |
+| Quá hạn nạp cọc 30 phút | Người mua & Người bán | `DEPOSIT_TIMEOUT` | Báo tiền hoàn về cho Buyer và vé bị huỷ, phạt điểm Seller |
+| Xác nhận nhận vé | Người mua & Người bán | `TICKET_RECEIVED` | Báo bắt đầu đếm ngược cửa sổ khiếu nại BR-09 |
+| Vé hết hạn bị auto gỡ | Người bán | `TICKET_EXPIRED` | Báo vé quá giờ sự kiện đã được gỡ an toàn khỏi sàn |
+| Vé hết hạn bị auto gỡ | Người theo dõi (Watchers) | `STARRED_TICKET_EXPIRED` | Báo vé đã quan tâm nay đã hết hạn (loại trừ Seller) |
+| Giải ngân hoàn tất | Người mua & Người bán | `TRANSACTION_COMPLETED` | Báo giao dịch thành công (+2 điểm uy tín) |
+
+**Nơi hiện thực.** `NotificationEventListener` trong `notification.application`, lắng nghe các sự kiện qua `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`. Đảm bảo thông báo là side-effect an toàn sau commit, không ảnh hưởng đến tính toàn vẹn của transaction tiền và vé.
+
+---
+
 ## Ví dụ tính toán trọn vẹn một giao dịch
 
 Ba kịch bản dưới đây ghép tất cả quy tắc lại, dùng để viết integration test. Ở cả ba, tổng tiền vào hệ thống luôn bằng tổng tiền ra — đây là bất biến phải kiểm tra trong test.
@@ -490,6 +528,9 @@ app.reputation.on-transaction-completed=2
 app.reputation.on-dispute-won=1
 app.reputation.on-dispute-lost=-15
 app.reputation.on-listing-cancelled-after-payment=-10
+
+# BR-12 - Tu dong go ve het han su kien
+app.scheduler.ticket-expiration-cron=0 */1 * * * *
 ```
 
 Lưu ý `app.forfeit.founder-percent=7` và `app.forfeit.minimum-fee=5000` trùng số với bậc hoa hồng 7% và phí tối thiểu 5.000đ, nhưng là **hai cấu hình độc lập**: một cái là phí xử lý tranh chấp (BR-10), cái kia là hoa hồng giao dịch (BR-05, BR-06). Chúng có thể cần điều chỉnh riêng, nên không được dùng chung một khoá.

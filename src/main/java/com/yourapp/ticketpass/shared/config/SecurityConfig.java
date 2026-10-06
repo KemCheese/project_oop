@@ -84,9 +84,9 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin())
                 )
-                // Miễn CSRF cho H2 Console (dev tool)
+                // Miễn CSRF cho H2 Console và API notifications (xác thực qua session)
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/h2-console/**")
+                        .ignoringRequestMatchers("/h2-console/**", "/api/notifications/**")
                 )
                 // Ép nạp sớm CSRF Token và khởi tạo Session trước khi Thymeleaf render HTML lớn vượt buffer Tomcat
                 .addFilterAfter(new CsrfDeferredTokenInitFilter(), CsrfFilter.class);

@@ -50,4 +50,12 @@ public class StarredTicketRepositoryImpl implements StarredTicketRepository {
     public long countByUserId(Long userId) {
         return jpaRepository.countByUserId(userId);
     }
+
+    @Override
+    public List<Long> findUserIdsByTicketId(Long ticketId) {
+        if (ticketId == null) {
+            return java.util.Collections.emptyList();
+        }
+        return jpaRepository.findUserIdsByTicketId(ticketId);
+    }
 }

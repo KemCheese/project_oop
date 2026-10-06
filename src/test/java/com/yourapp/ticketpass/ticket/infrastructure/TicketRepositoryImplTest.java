@@ -74,4 +74,19 @@ class TicketRepositoryImplTest {
         assertThat(suggestions.get(0).getEventName()).isEqualTo("Dune");
         verify(ticketJpaRepository).findTopSuggestions(TicketStatus.LISTED, "Dune", org.springframework.data.domain.PageRequest.of(0, 5));
     }
+
+    @Test
+    @DisplayName("findExpiredListedTickets ủy quyền sang ticketJpaRepository với trạng thái LISTED")
+    void testFindExpiredListedTicketsDelegation() {
+        java.time.Instant now = java.time.Instant.now();
+        Ticket t = new Ticket();
+        t.setId(99L);
+        when(ticketJpaRepository.findByStatusAndEventStartAtBefore(TicketStatus.LISTED, now))
+                .thenReturn(List.of(t));
+
+        List<Ticket> results = repository.findExpiredListedTickets(now);
+
+        assertThat(results).containsExactly(t);
+        verify(ticketJpaRepository).findByStatusAndEventStartAtBefore(TicketStatus.LISTED, now);
+    }
 }

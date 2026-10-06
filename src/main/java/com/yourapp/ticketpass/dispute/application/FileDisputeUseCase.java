@@ -21,6 +21,7 @@ import com.yourapp.ticketpass.dispute.domain.DisputeReason;
 import com.yourapp.ticketpass.dispute.domain.DisputeRepository;
 import com.yourapp.ticketpass.dispute.domain.DisputeStatus;
 import com.yourapp.ticketpass.dispute.domain.DisputeWindowPolicy;
+import com.yourapp.ticketpass.shared.event.DisputeOpenedEvent;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
@@ -34,6 +35,8 @@ import com.yourapp.ticketpass.ticket.domain.TicketType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * Use case người mua mở khiếu nại và đính kèm bằng chứng.
@@ -90,6 +93,9 @@ public class FileDisputeUseCase {
 
     /** Máy trạng thái vé — nơi duy nhất được phép đổi trạng thái vé. */
     private final TicketStateMachineService ticketStateMachineService;
+
+    @Autowired(required = false)
+    private ApplicationEventPublisher eventPublisher;
 
     /** Bảng tra cứu nhanh chính sách theo loại vé, khởi tạo tại {@code @PostConstruct}. */
     private Map<TicketType, DisputeWindowPolicy> policyMap;
@@ -284,6 +290,18 @@ public class FileDisputeUseCase {
         dispute = disputeRepository.save(dispute);
         log.info("[FileDispute] Mở khiếu nại id={} thành công cho vé #{}, buyerId={}, sellerId={}, isGateDispute={}, deadline={}",
                 dispute.getId(), ticketId, buyerId, dispute.getSellerId(), isGateDispute, sellerResponseDeadline);
+
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new DisputeOpenedEvent(
+                    dispute.getId(),
+                    ticketId,
+                    dispute.getSellerId(),
+                    buyerId,
+                    ticket.getTitle(),
+                    reason.name(),
+                    now
+            ));
+        }
 
         // (7) Đính kèm các tệp bằng chứng nếu có
         if (evidences != null && !evidences.isEmpty()) {

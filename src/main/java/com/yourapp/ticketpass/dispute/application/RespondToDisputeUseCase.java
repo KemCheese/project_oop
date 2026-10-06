@@ -11,11 +11,16 @@ import com.yourapp.ticketpass.dispute.domain.DisputeEvidenceRepository;
 import com.yourapp.ticketpass.dispute.domain.DisputeRepository;
 import com.yourapp.ticketpass.dispute.domain.DisputeStatus;
 import com.yourapp.ticketpass.shared.event.DisputeOutcome;
+import com.yourapp.ticketpass.shared.event.DisputeRespondedEvent;
+import com.yourapp.ticketpass.shared.event.DisputeWithdrawnEvent;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
 import com.yourapp.ticketpass.ticket.application.TicketStateMachineService;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +61,9 @@ public class RespondToDisputeUseCase {
 
     /** Máy trạng thái vé — nơi duy nhất được phép đổi trạng thái vé. */
     private final TicketStateMachineService ticketStateMachineService;
+
+    @Autowired(required = false)
+    private ApplicationEventPublisher eventPublisher;
 
     /**
      * Người bán gửi giải trình cho một khiếu nại.
@@ -112,6 +120,17 @@ public class RespondToDisputeUseCase {
 
         Dispute savedDispute = disputeRepository.save(dispute);
         log.info("Người bán (ID: {}) đã gửi giải trình thành công cho khiếu nại (ID: {})", sellerId, disputeId);
+
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new DisputeRespondedEvent(
+                    disputeId,
+                    dispute.getTicketId(),
+                    sellerId,
+                    dispute.getBuyerId(),
+                    "Vé #" + dispute.getTicketId(),
+                    now
+            ));
+        }
         return savedDispute;
     }
 
@@ -165,5 +184,16 @@ public class RespondToDisputeUseCase {
         ticketStateMachineService.transition(dispute.getTicketId(), TicketStatus.AWAITING_USE);
         log.info("Người mua (ID: {}) đã rút khiếu nại (ID: {}). Vé (ID: {}) đã được chuyển về AWAITING_USE.",
                 buyerId, disputeId, dispute.getTicketId());
+
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new DisputeWithdrawnEvent(
+                    disputeId,
+                    dispute.getTicketId(),
+                    dispute.getSellerId(),
+                    buyerId,
+                    "Vé #" + dispute.getTicketId(),
+                    now
+            ));
+        }
     }
 }
