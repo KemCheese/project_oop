@@ -49,17 +49,15 @@ public class BusDisputeWindowPolicy implements DisputeWindowPolicy {
     public static final Duration GATE_DISPUTE_BUFFER = Duration.ofMinutes(30);
 
     /**
-     * Trả về thời điểm sớm hơn giữa {@code transferredAt + 3h} và {@code eventStartAt + 30 phút}
-     * (theo quy chuẩn BR-09 Revised: mở rộng vùng đệm 30 phút tại cổng sự kiện).
+     * Cửa sổ khiếu nại đóng sau thời gian bắt đầu sự kiện 1 ngày (eventStartAt + 1 day).
+     * Nếu không có eventStartAt, fallback theo transferredAt + window.
      */
     @Override
     public Instant computeWindowClose(Instant transferredAt, Instant eventStartAt) {
-        Instant windowEnd = transferredAt.plus(window);
-        if (eventStartAt == null) {
-            return windowEnd;
+        if (eventStartAt != null) {
+            return eventStartAt.plus(Duration.ofDays(1));
         }
-        Instant gateDeadline = eventStartAt.plus(GATE_DISPUTE_BUFFER);
-        return windowEnd.isBefore(gateDeadline) ? windowEnd : gateDeadline;
+        return transferredAt != null ? transferredAt.plus(window) : Instant.now().plus(window);
     }
 
     /**

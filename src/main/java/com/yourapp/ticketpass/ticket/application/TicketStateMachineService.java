@@ -176,16 +176,18 @@ public class TicketStateMachineService {
     }
 
     /**
-     * Tinh thoi diem dong cua so khieu nai cho mot ve theo BR-09 Revised (Gate Dispute).
+     * Tinh thoi diem dong cua so khieu nai cho mot ve: sau thoi gian bat dau su kien 1 ngay (eventStartAt + 1 day).
      *
-     * <p>Theo BR-09 Revised: cua so khieu nai = receivedAt (hoac transferredAt) + disputeWindowAfterTransfer(),
-     * nhung duoc noi them dung 30 phut vung dem sau gio bat dau su kien (eventStartAt + 30 phut)
-     * de phuc vu co che khieu nai tai cong soat ve. Lay moc som hon trong hai gia tri.</p>
+     * <p>Neu ve khong co eventStartAt, fallback ve receivedAt (hoac transferredAt) + disputeWindowAfterTransfer().</p>
      *
      * @param ticket ve can tinh
-     * @return moc thoi gian nguoi mua het quyen mo tranh chap
+     * @return moc thoi gian nguoi mua het quyen mo tranh chap (sau thoi gian bat dau 1 ngay)
      */
     public Instant computeDisputeWindowClose(Ticket ticket) {
+        if (ticket.getEventStartAt() != null) {
+            return ticket.getEventStartAt().plus(Duration.ofDays(1));
+        }
+
         TicketAdapter adapter = resolveAdapter(ticket.getTicketType());
         Duration disputeWindow = adapter.disputeWindowAfterTransfer();
 
@@ -193,16 +195,6 @@ public class TicketStateMachineService {
                 ? ticket.getReceivedAt()
                 : (ticket.getTransferredAt() != null ? ticket.getTransferredAt() : Instant.now());
 
-        Instant windowByTransfer = baseTime.plus(disputeWindow);
-
-        // BR-09 Revised: cua so khieu nai dong tai min(receivedAt + disputeWindow, eventStartAt + 30 phut)
-        if (ticket.getEventStartAt() != null) {
-            Instant gateDisputeDeadline = ticket.getEventStartAt().plus(Duration.ofMinutes(30));
-            if (gateDisputeDeadline.isBefore(windowByTransfer)) {
-                return gateDisputeDeadline;
-            }
-        }
-
-        return windowByTransfer;
+        return baseTime.plus(disputeWindow);
     }
 }
