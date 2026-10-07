@@ -41,3 +41,5 @@ cloudflared.exe
 .claude/
 data/
 .reports/
+docs/prompts/
+docs/adr/
