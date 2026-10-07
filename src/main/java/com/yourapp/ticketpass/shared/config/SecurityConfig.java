@@ -66,6 +66,8 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         // Khu vực quản trị
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+                        // Ví điện tử và thanh toán ví: bắt buộc đăng nhập
+                        .requestMatchers("/wallet/**", "/payment/wallet/**").authenticated()
                         // Còn lại bắt buộc đăng nhập
                         .anyRequest().authenticated()
                 )

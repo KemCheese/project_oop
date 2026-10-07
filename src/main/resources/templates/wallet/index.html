@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Ví Điện Tử Cá Nhân - TicketPass</title>
+</head>
+
+<body>
+    <div th:replace="~{layout/base :: layout('Ví Điện Tử Cá Nhân - TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .wallet-container {
+                    max-width: 1040px;
+                    margin: 28px auto 60px auto;
+                    padding: 0 20px;
+                }
+
+                /* Alert Banners */
+                .wallet-alert {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 14px 18px;
+                    border-radius: var(--radius-md);
+                    margin-bottom: 24px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                    animation: slideDown 0.25s ease-out;
+                }
+
+                .wallet-alert-success {
+                    background-color: #ecfdf5;
+                    color: #065f46;
+                    border: 1px solid #a7f3d0;
+                }
+
+                .wallet-alert-error {
+                    background-color: #fef2f2;
+                    color: #991b1b;
+                    border: 1px solid #fecaca;
+                }
+
+                @keyframes slideDown {
+                    from { opacity: 0; transform: translateY(-8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                /* Page Header */
+                .wallet-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 28px;
+                    flex-wrap: wrap;
+                    gap: 16px;
+                }
+
+                .wallet-title-group h1 {
+                    font-size: 28px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    letter-spacing: -0.02em;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .wallet-title-group p {
+                    font-size: 14px;
+                    color: var(--color-text-secondary);
+                    margin-top: 4px;
+                }
+
+                /* Layout Grid */
+                .wallet-grid {
+                    display: grid;
+                    grid-template-columns: 400px 1fr;
+                    gap: 28px;
+                    margin-bottom: 36px;
+                }
+
+                @media (max-width: 900px) {
+                    .wallet-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+
+                /* Titanium Metallic Glassmorphism Card */
+                .virtual-card-wrapper {
+                    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    border-radius: 20px;
+                    padding: 28px;
+                    color: #ffffff;
+                    box-shadow: 0 20px 35px -10px rgba(15, 23, 42, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                    position: relative;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    min-height: 230px;
+                }
+
+                .virtual-card-wrapper::before {
+                    content: '';
+                    position: absolute;
+                    top: -60px;
+                    right: -60px;
+                    width: 180px;
+                    height: 180px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, rgba(231, 26, 15, 0.25) 0%, rgba(231, 26, 15, 0) 70%);
+                    filter: blur(20px);
+                    pointer-events: none;
+                }
+
+                .card-top {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+
+                .card-brand {
+                    font-size: 16px;
+                    font-weight: 800;
+                    letter-spacing: 0.5px;
+                    color: #ffffff;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .card-chip {
+                    width: 38px;
+                    height: 28px;
+                    background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #aa7c11 100%);
+                    border-radius: 5px;
+                    box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+                    position: relative;
+                }
+
+                .card-chip::after {
+                    content: '';
+                    position: absolute;
+                    top: 50%;
+                    left: 0;
+                    right: 0;
+                    height: 1px;
+                    background: rgba(0,0,0,0.25);
+                }
+
+                .card-balance-section {
+                    margin: 18px 0;
+                }
+
+                .card-balance-label {
+                    font-size: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    color: #94a3b8;
+                    font-weight: 600;
+                    margin-bottom: 4px;
+                }
+
+                .card-balance-value {
+                    font-size: 32px;
+                    font-weight: 800;
+                    color: #ffffff;
+                    letter-spacing: -0.02em;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                }
+
+                .card-bottom {
+                    display: flex;
+                    align-items: flex-end;
+                    justify-content: space-between;
+                    font-size: 13px;
+                }
+
+                .card-account-num {
+                    font-family: 'Courier New', Courier, monospace;
+                    letter-spacing: 2px;
+                    font-weight: 700;
+                    color: #cbd5e1;
+                }
+
+                .card-status-pill {
+                    background: rgba(16, 185, 129, 0.2);
+                    color: #34d399;
+                    border: 1px solid rgba(16, 185, 129, 0.4);
+                    padding: 3px 10px;
+                    border-radius: var(--radius-full);
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+
+                /* Quick Top-Up Box */
+                .topup-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 24px;
+                    box-shadow: var(--shadow-card);
+                }
+
+                .topup-card-title {
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--color-brand);
+                    margin-bottom: 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .chip-group {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 10px;
+                    margin-bottom: 16px;
+                }
+
+                .chip-btn {
+                    background-color: var(--color-bg);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    padding: 10px 12px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--color-text-main);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: all var(--transition-base);
+                }
+
+                .chip-btn:hover {
+                    border-color: var(--color-primary);
+                    background-color: #fff1f0;
+                    color: var(--color-primary);
+                }
+
+                .chip-btn:active {
+                    transform: scale(0.98);
+                }
+
+                .custom-amount-input {
+                    width: 100%;
+                    padding: 12px 14px;
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    font-size: 15px;
+                    font-weight: 600;
+                    background-color: var(--color-surface);
+                    color: var(--color-text-main);
+                    margin-bottom: 14px;
+                    transition: border-color var(--transition-base);
+                }
+
+                .custom-amount-input:focus {
+                    outline: none;
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 3px rgba(231, 26, 15, 0.1);
+                }
+
+                .btn-topup-submit {
+                    width: 100%;
+                    background-color: var(--color-primary);
+                    color: #ffffff;
+                    border: none;
+                    border-radius: var(--radius-md);
+                    padding: 12px 18px;
+                    font-size: 14px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    box-shadow: 0 4px 10px rgba(231, 26, 15, 0.2);
+                    transition: all var(--transition-base);
+                }
+
+                .btn-topup-submit:hover {
+                    background-color: #c41306;
+                    box-shadow: 0 6px 14px rgba(231, 26, 15, 0.3);
+                }
+
+                .btn-topup-submit:active {
+                    transform: translateY(1px);
+                }
+
+                /* Financial Stats Bar */
+                .stats-bar {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 16px;
+                    margin-bottom: 32px;
+                }
+
+                @media (max-width: 640px) {
+                    .stats-bar {
+                        grid-template-columns: 1fr;
+                    }
+                }
+
+                .stat-box {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    padding: 18px;
+                    box-shadow: var(--shadow-sm);
+                }
+
+                .stat-box-label {
+                    font-size: 12px;
+                    color: var(--color-text-secondary);
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    margin-bottom: 6px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .stat-box-val {
+                    font-size: 20px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                }
+
+                .stat-income { color: var(--color-success); }
+                .stat-expense { color: #dc2626; }
+
+                /* Transaction Statement Table */
+                .ledger-section {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    box-shadow: var(--shadow-card);
+                    overflow: hidden;
+                }
+
+                .ledger-header {
+                    padding: 20px 24px;
+                    border-bottom: 1px solid var(--color-border);
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                }
+
+                .ledger-title {
+                    font-size: 17px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .ledger-table-wrap {
+                    overflow-x: auto;
+                }
+
+                .ledger-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 13px;
+                    text-align: left;
+                }
+
+                .ledger-table th {
+                    background-color: #f8fafc;
+                    color: #475569;
+                    font-weight: 700;
+                    padding: 12px 18px;
+                    border-bottom: 1px solid var(--color-border);
+                    white-space: nowrap;
+                }
+
+                .ledger-table td {
+                    padding: 14px 18px;
+                    border-bottom: 1px solid #f1f5f9;
+                    vertical-align: middle;
+                }
+
+                .ledger-table tr:hover td {
+                    background-color: #f8fafc;
+                }
+
+                .badge-tx-type {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 3px 8px;
+                    border-radius: var(--radius-sm);
+                    font-size: 12px;
+                    font-weight: 600;
+                }
+
+                .badge-credit {
+                    background-color: #ecfdf5;
+                    color: #059669;
+                    border: 1px solid #a7f3d0;
+                }
+
+                .badge-debit {
+                    background-color: #fef2f2;
+                    color: #dc2626;
+                    border: 1px solid #fecaca;
+                }
+
+                .amount-col {
+                    font-weight: 800;
+                    font-size: 14px;
+                    white-space: nowrap;
+                }
+
+                .amount-credit { color: #059669; }
+                .amount-debit { color: #dc2626; }
+
+                .empty-ledger {
+                    text-align: center;
+                    padding: 48px 20px;
+                    color: var(--color-text-secondary);
+                }
+
+                .empty-ledger i {
+                    font-size: 42px;
+                    color: #cbd5e1;
+                    margin-bottom: 14px;
+                }
+            </style>
+
+            <div class="wallet-container">
+                <!-- Alerts -->
+                <div th:if="${successMessage}" class="wallet-alert wallet-alert-success">
+                    <i class="fa-solid fa-circle-check" style="font-size: 18px;"></i>
+                    <span th:text="${successMessage}">Thao tác thành công.</span>
+                </div>
+                <div th:if="${errorMessage}" class="wallet-alert wallet-alert-error">
+                    <i class="fa-solid fa-circle-exclamation" style="font-size: 18px;"></i>
+                    <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+                </div>
+
+                <!-- Page Header -->
+                <div class="wallet-header">
+                    <div class="wallet-title-group">
+                        <h1><i class="fa-solid fa-wallet" style="color: var(--color-primary);"></i> Ví Điện Tử TicketPass</h1>
+                        <p>Quản lý số dư, nạp tiền nhanh và tra cứu biến động số dư giao dịch thời gian thực</p>
+                    </div>
+                </div>
+
+                <!-- Grid: Virtual Card & Quick Top-Up -->
+                <div class="wallet-grid">
+                    <!-- Virtual Titanium Card -->
+                    <div class="virtual-card-wrapper">
+                        <div class="card-top">
+                            <div class="card-brand">
+                                <i class="fa-solid fa-asterisk" style="color: var(--color-primary); font-size: 12px;"></i>
+                                TicketPass Card
+                            </div>
+                            <div class="card-chip"></div>
+                        </div>
+
+                        <div class="card-balance-section">
+                            <div class="card-balance-label">Số Dư Khả Dụng</div>
+                            <div class="card-balance-value">
+                                <span th:text="${#numbers.formatDecimal(wallet.balance, 0, 'COMMA', 0, 'POINT')}">0</span>
+                                <span style="font-size: 20px; font-weight: 600; color: #94a3b8;">VNĐ</span>
+                            </div>
+                        </div>
+
+                        <div class="card-bottom">
+                            <div class="card-account-num" th:text="${wallet.formattedAccountNumber}">TP-0000-0000</div>
+                            <span class="card-status-pill" th:text="${wallet.status}">ACTIVE</span>
+                        </div>
+                    </div>
+
+                    <!-- Sandbox Quick Top-Up -->
+                    <div class="topup-card">
+                        <div class="topup-card-title">
+                            <i class="fa-solid fa-bolt" style="color: #eab308;"></i>
+                            Nạp Tiền Nhanh (Sandbox Demo)
+                        </div>
+
+                        <form th:action="@{/wallet/topup}" th:object="${topUpRequest}" method="post">
+                            <div class="chip-group">
+                                <button type="button" class="chip-btn" onclick="setTopUpAmount(500000)">+ 500.000 đ</button>
+                                <button type="button" class="chip-btn" onclick="setTopUpAmount(1000000)">+ 1.000.000 đ</button>
+                                <button type="button" class="chip-btn" onclick="setTopUpAmount(2000000)">+ 2.000.000 đ</button>
+                                <button type="button" class="chip-btn" onclick="setTopUpAmount(5000000)">+ 5.000.000 đ</button>
+                            </div>
+
+                            <input type="number" id="topupAmountInput" th:field="*{amount}"
+                                   class="custom-amount-input" placeholder="Nhập số tiền nạp (tối thiểu 10.000 VNĐ, có thể nạp tiền lẻ)"
+                                   min="10000" step="1" required />
+
+                            <input type="hidden" th:field="*{note}" id="topupNoteInput" value="Nạp tiền nhanh vào ví TicketPass" />
+
+                            <button type="submit" class="btn-topup-submit">
+                                <i class="fa-solid fa-arrow-down-to-bracket"></i> Nạp Ngay Vào Số Dư Ví
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Financial Stats Summary -->
+                <div class="stats-bar">
+                    <div class="stat-box">
+                        <div class="stat-box-label">
+                            <i class="fa-solid fa-arrow-down" style="color: #0284c7;"></i> Tổng Tiền Nạp
+                        </div>
+                        <div class="stat-box-val" th:text="${#numbers.formatDecimal(totalTopUp, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">
+                            <i class="fa-solid fa-arrow-turn-down" style="color: var(--color-success);"></i> Thu Về (Bán & Hoàn Cọc)
+                        </div>
+                        <div class="stat-box-val stat-income" th:text="${#numbers.formatDecimal(totalIncome, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">
+                            <i class="fa-solid fa-arrow-turn-up" style="color: #dc2626;"></i> Chi Ra (Ký Quỹ & Cọc)
+                        </div>
+                        <div class="stat-box-val stat-expense" th:text="${#numbers.formatDecimal(totalExpense, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
+                    </div>
+                </div>
+
+                <!-- Transaction Statement Ledger -->
+                <div class="ledger-section">
+                    <div class="ledger-header">
+                        <div class="ledger-title">
+                            <i class="fa-solid fa-receipt" style="color: var(--color-primary);"></i> Sổ Cái Biến Động Số Dư
+                        </div>
+                        <div style="font-size: 13px; color: var(--color-text-secondary);">
+                            Ghi nhận bất biến (Append-only Ledger)
+                        </div>
+                    </div>
+
+                    <div class="ledger-table-wrap">
+                        <table class="ledger-table" th:if="${transactions != null and !transactions.isEmpty()}">
+                            <thead>
+                                <tr>
+                                    <th>Thời Gian</th>
+                                    <th>Loại Giao Dịch</th>
+                                    <th>Mô Tả / Tham Chiếu</th>
+                                    <th style="text-align: right;">Biến Động</th>
+                                    <th style="text-align: right;">Số Dư Sau</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="tx : ${transactions}">
+                                    <td style="color: #64748b; white-space: nowrap;" th:text="${tx.formattedCreatedAt}">00:00:00 01/01/2026</td>
+                                    <td>
+                                        <span class="badge-tx-type"
+                                              th:classappend="${tx.credit} ? 'badge-credit' : 'badge-debit'"
+                                              th:text="${tx.typeDisplayName}">Nạp tiền</span>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 600; color: var(--color-text-main);" th:text="${tx.description}">Mô tả</div>
+                                        <small style="color: #94a3b8; font-family: monospace;" th:text="${tx.referenceId}">REF-12345</small>
+                                    </td>
+                                    <td style="text-align: right;" class="amount-col"
+                                        th:classappend="${tx.credit} ? 'amount-credit' : 'amount-debit'">
+                                        <span th:text="${tx.sign}">+</span>
+                                        <span th:text="${#numbers.formatDecimal(tx.amount, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</span>
+                                    </td>
+                                    <td style="text-align: right; font-weight: 700; color: var(--color-brand);"
+                                        th:text="${#numbers.formatDecimal(tx.balanceAfter, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="empty-ledger" th:if="${transactions == null or transactions.isEmpty()}">
+                            <i class="fa-regular fa-folder-open"></i>
+                            <div style="font-size: 15px; font-weight: 600; color: var(--color-brand); margin-bottom: 4px;">Chưa có biến động số dư nào</div>
+                            <div>Hãy nạp tiền vào ví hoặc thực hiện giao dịch mua bán để xem lịch sử tại đây.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function setTopUpAmount(val) {
+                    const input = document.getElementById('topupAmountInput');
+                    if (input) {
+                        input.value = val;
+                        input.focus();
+                    }
+                }
+            </script>
+        </content>
+    </div>
+</body>
+</html>

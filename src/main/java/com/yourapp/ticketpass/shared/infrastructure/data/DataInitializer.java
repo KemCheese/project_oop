@@ -22,6 +22,7 @@ import com.yourapp.ticketpass.user.domain.User;
 import com.yourapp.ticketpass.user.domain.UserRepository;
 import com.yourapp.ticketpass.user.domain.UserRole;
 import com.yourapp.ticketpass.user.domain.UserStatus;
+import com.yourapp.ticketpass.wallet.application.WalletService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +65,7 @@ public class DataInitializer implements CommandLineRunner {
     private final ReputationRepository reputationRepository;
     private final TicketRepository ticketRepository;
     private final PasswordEncoder passwordEncoder;
+    private final WalletService walletService;
 
     @Override
     @Transactional
@@ -170,9 +172,29 @@ public class DataInitializer implements CommandLineRunner {
                 new BigDecimal("50000000.00"),
                 now.minus(Duration.ofHours(5))
         );
-        log.info("[DataInitializer] Đã tạo tài khoản Người bán VIP: vip_seller@test.com (ID={})", vipSeller.getId());
+        // 5. Tạo tài khoản Người mua Hết Tiền (BROKE BUYER - Số dư 0đ phục vụ test không đủ tiền)
+        User brokeBuyer = createUser(
+                "broke_buyer@test.com",
+                encodedPassword,
+                "Lê Văn Hết Tiền",
+                "0911000000",
+                UserRole.USER,
+                UserStatus.ACTIVE,
+                null, null, null
+        );
+        brokeBuyer = userRepository.save(brokeBuyer);
+        createReputationScore(brokeBuyer.getId(), new BigDecimal("100.00"), 0, 0, BigDecimal.ZERO, null);
+        walletService.getOrCreateWallet(brokeBuyer.getId()); // Số dư ban đầu chính xác 0đ
+        log.info("[DataInitializer] Đã tạo tài khoản Người mua hết tiền: broke_buyer@test.com (ID={}, Số dư ví: 0đ)", brokeBuyer.getId());
 
-        // 5. Khởi tạo các vé mẫu đang ở trạng thái LISTED
+        // 6. Nạp số dư ban đầu cho các ví điện tử thử nghiệm
+        walletService.topUp(admin.getId(), new BigDecimal("50000000.00"), "Quỹ số dư ban đầu quản trị viên");
+        walletService.topUp(seller.getId(), new BigDecimal("10000000.00"), "Số dư ban đầu phục vụ nộp cọc vé");
+        walletService.topUp(buyer.getId(), new BigDecimal("10000000.00"), "Số dư ban đầu phục vụ mua vé ký quỹ");
+        walletService.topUp(vipSeller.getId(), new BigDecimal("20000000.00"), "Số dư ban đầu tài khoản người bán VIP");
+        log.info("[DataInitializer] Đã khởi tạo số dư ví điện tử thành công: Admin (50tr), Seller (10tr), Buyer (10tr), BrokeBuyer (0đ)!");
+
+        // 7. Khởi tạo các vé mẫu đang ở trạng thái LISTED
         createSampleTickets(seller.getId(), vipSeller.getId(), now);
         seedFiftyCustomTickets(seller.getId(), vipSeller.getId(), now);
 

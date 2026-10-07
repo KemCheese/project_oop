@@ -33,6 +33,7 @@ import com.yourapp.ticketpass.user.domain.User;
 import com.yourapp.ticketpass.user.domain.UserRepository;
 import com.yourapp.ticketpass.user.domain.UserRole;
 import com.yourapp.ticketpass.user.domain.UserStatus;
+import com.yourapp.ticketpass.wallet.application.WalletService;
 
 /**
  * Bộ kiểm thử đơn vị cho {@link DataInitializer}.
@@ -60,6 +61,9 @@ class DataInitializerTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private WalletService walletService;
 
     @InjectMocks
     private DataInitializer dataInitializer;
@@ -103,27 +107,28 @@ class DataInitializerTest {
             when(userRepository.existsByEmail("admin@test.com")).thenReturn(false);
             when(passwordEncoder.encode(DataInitializer.DEFAULT_PASSWORD)).thenReturn("$2a$10$dummyHashBCryptForTesting");
 
-            // Mock trả về User có ID tự tăng tuần tự 1, 2, 3, 4
+            // Mock trả về User có ID tự tăng tuần tự 1, 2, 3, 4, 5
             when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
                 User u = invocation.getArgument(0);
                 if ("admin@test.com".equals(u.getEmail())) u.setId(1L);
                 else if ("seller@test.com".equals(u.getEmail())) u.setId(2L);
                 else if ("buyer@test.com".equals(u.getEmail())) u.setId(3L);
                 else if ("vip_seller@test.com".equals(u.getEmail())) u.setId(4L);
+                else if ("broke_buyer@test.com".equals(u.getEmail())) u.setId(5L);
                 return u;
             });
         }
 
         @Test
-        @DisplayName("Khởi tạo đúng và đủ 4 tài khoản người dùng với thông tin chuẩn")
+        @DisplayName("Khởi tạo đúng và đủ 5 tài khoản người dùng với thông tin chuẩn")
         void shouldCreateFourUsersWithCorrectAttributes() {
             // Act
             dataInitializer.run();
 
             // Assert
-            verify(userRepository, times(4)).save(userCaptor.capture());
+            verify(userRepository, times(5)).save(userCaptor.capture());
             List<User> savedUsers = userCaptor.getAllValues();
-            assertThat(savedUsers).hasSize(4);
+            assertThat(savedUsers).hasSize(5);
 
             // 1. Kiểm tra Admin
             User admin = savedUsers.stream()
@@ -164,15 +169,15 @@ class DataInitializerTest {
         }
 
         @Test
-        @DisplayName("Khởi tạo đúng 4 bản ghi điểm uy tín tương ứng cho từng người dùng")
+        @DisplayName("Khởi tạo đúng 5 bản ghi điểm uy tín tương ứng cho từng người dùng")
         void shouldCreateReputationScoresForUsers() {
             // Act
             dataInitializer.run();
 
             // Assert
-            verify(reputationRepository, times(4)).save(reputationCaptor.capture());
+            verify(reputationRepository, times(5)).save(reputationCaptor.capture());
             List<UserReputationScore> scores = reputationCaptor.getAllValues();
-            assertThat(scores).hasSize(4);
+            assertThat(scores).hasSize(5);
 
             // VIP Seller phải có 25 giao dịch thành công và GMV 50.000.000
             UserReputationScore vipScore = scores.stream()

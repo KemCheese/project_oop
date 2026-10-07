@@ -9,6 +9,7 @@ import com.yourapp.ticketpass.reputation.application.UpdateReputationUseCase;
 import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.reputation.web.dto.ReputationResponse;
+import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.user.application.UserQueryService;
 import com.yourapp.ticketpass.user.domain.User;
 import java.math.BigDecimal;
@@ -53,6 +54,9 @@ class ReputationControllerTest {
 
     @Mock
     private UserQueryService userQueryService;
+
+    @Mock
+    private TicketRepository ticketRepository;
 
     @InjectMocks
     private ReputationController controller;

@@ -818,12 +818,20 @@
 
                                 <!-- When viewing as potential Buyer -->
                                 <div th:unless="${isSeller}">
-                                    <form th:action="@{/payment/escrow/buy}" method="post">
-                                        <input type="hidden" name="ticketId" th:value="${ticket.id}" />
-                                        <button type="submit" class="btn btn-primary" style="width: 100%; font-weight: 700; padding: 12px 18px; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(231, 26, 15, 0.25);">
-                                            <i class="fa-solid fa-shield-halved"></i> Mua Vé An Toàn (Ký Quỹ Escrow)
-                                        </button>
-                                    </form>
+                                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                                        <form th:action="@{/payment/wallet/pay-escrow}" method="post">
+                                            <input type="hidden" name="ticketId" th:value="${ticket.id}" />
+                                            <button type="submit" class="btn btn-primary" style="width: 100%; font-weight: 700; padding: 12px 18px; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(231, 26, 15, 0.25);">
+                                                <i class="fa-solid fa-wallet"></i> Mua Bằng Ví TicketPass (1-Click)
+                                            </button>
+                                        </form>
+                                        <form th:action="@{/payment/escrow/buy}" method="post">
+                                            <input type="hidden" name="ticketId" th:value="${ticket.id}" />
+                                            <button type="submit" class="btn" style="width: 100%; font-weight: 600; padding: 10px 16px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--color-border); background-color: var(--color-bg); color: var(--color-text-main);">
+                                                <i class="fa-solid fa-qrcode"></i> Chuyển Khoản QR Ngân Hàng
+                                            </button>
+                                        </form>
+                                    </div>
                                     <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--color-text-secondary); margin-top: 10px;">
                                         <i class="fa-solid fa-lock" style="color: var(--color-success); font-size: 11px;"></i>
                                         <span>Bảo lưu 100% tiền vé qua tài khoản trung gian của Sàn</span>
@@ -834,14 +842,22 @@
                             <!-- Ticket is PAYMENT_ESCROWED and current user is Seller (Needs to lock deposit) -->
                             <div th:if="${ticket.status != null and ticket.status.name() == 'PAYMENT_ESCROWED' and isSeller}">
                                 <div class="alert alert-warning" style="margin-bottom: 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-triangle-exclamation"></i> Người mua đã nạp tiền ký quỹ thành công. Vui lòng đóng cọc 50% bằng QR để tiếp tục bàn giao vé.
+                                    <i class="fa-solid fa-triangle-exclamation"></i> Người mua đã nạp tiền ký quỹ thành công. Vui lòng đóng cọc 50% để tiếp tục bàn giao vé.
                                 </div>
-                                <form th:action="@{/payment/deposit/lock}" method="post">
-                                    <input type="hidden" name="ticketId" th:value="${ticket.id}" />
-                                    <button type="submit" class="btn btn-warning" style="width: 100%; font-weight: 700; padding: 12px 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                        <i class="fa-solid fa-lock"></i> Đóng Cọc 50% bằng Chuyển Khoản QR
-                                    </button>
-                                </form>
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <form th:action="@{/payment/wallet/pay-deposit}" method="post">
+                                        <input type="hidden" name="ticketId" th:value="${ticket.id}" />
+                                        <button type="submit" class="btn btn-warning" style="width: 100%; font-weight: 700; padding: 12px 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                            <i class="fa-solid fa-wallet"></i> Đóng Cọc 50% Bằng Ví TicketPass (1-Click)
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/payment/deposit/lock}" method="post">
+                                        <input type="hidden" name="ticketId" th:value="${ticket.id}" />
+                                        <button type="submit" class="btn" style="width: 100%; font-weight: 600; padding: 10px 16px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--color-border); background-color: var(--color-bg); color: var(--color-text-main);">
+                                            <i class="fa-solid fa-qrcode"></i> Đóng Cọc 50% Bằng Chuyển Khoản QR
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
 
                             <!-- Ticket is PAYMENT_ESCROWED and current user is Buyer -->

@@ -514,4 +514,34 @@ Các quy chuẩn và cơ chế bảo vệ sau đây đã được Dev C hoàn th
      * Cấm chuyển hướng lặp vào các trang auth (`/login`, `/register`, `/logout`).
    - **Quy ước dành cho Dev A và Dev B:** Khi tạo liên kết chuyển hướng người dùng đến trang đăng nhập/đăng ký từ bất kỳ view nào, hãy gắn kèm tham số `redirect` (ví dụ: `<a th:href="@{/login(redirect=${#httpServletRequest.requestURI})}">`) để bảo toàn vị trí người dùng.
 
+---
+
+### 6.21. 🛡️ QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Hệ Thống Ví Điện Tử (E-Wallet), Sổ Cái Bất Biến & Nạp Tiền Linh Hoạt
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (2026-10-07):** Module Ví điện tử (`com.yourapp.ticketpass.wallet`) cung cấp tài khoản số dư nội bộ cho từng người dùng, sổ cái biến động số dư và bộ điều hợp thanh toán tích hợp tự động với luồng của Dev B.
+
+1. **Nguyên tắc ID thuần xuyên Module (Scalability Rule 1):**
+   - Thực thể [`Wallet.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/wallet/domain/Wallet.java) chỉ lưu trường thuần `Long userId`, tuyệt đối không dùng JPA `@OneToOne` hay `@ManyToOne` sang thực thể `User`.
+   - Tra cứu và khởi tạo ví thông qua phương thức idempotent `walletService.getOrCreateWallet(userId)`.
+
+2. **Sổ cái tài chính bất biến (Append-only Ledger):**
+   - Mọi biến động số dư ví (nạp tiền, ký quỹ, đặt cọc, giải ngân, hoàn tiền) bắt buộc sinh một bản ghi [`WalletTransaction.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/wallet/domain/WalletTransaction.java) lưu trữ: `amount`, `balance_before`, `balance_after`, `type`, `reference_id`, `description`.
+   - Bảng `wallet_transactions` chỉ cho phép `INSERT`, cấm tuyệt đối `UPDATE` và `DELETE` để phục vụ đối soát và kiểm toán tài chính (Auditability).
+
+3. **Kiểm soát đồng thời và Chống Race Condition:**
+   - Khi thực hiện giao dịch trừ tiền (`debit`), tầng hạ tầng bắt buộc kích hoạt Khóa bi quan ghi (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) trên hàng dữ liệu ví (`findByUserIdWithLock(userId)`) kết hợp Optimistic Locking (`@Version`).
+   - CSDL áp dụng ràng buộc toàn vẹn `CONSTRAINT chk_wallet_balance_non_negative CHECK (balance >= 0)`.
+
+4. **Tích hợp liền mạch qua Adapter & Decorator Pattern:**
+   - Hiện thực [`WalletPaymentGatewayAdapter.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/wallet/adapter/WalletPaymentGatewayAdapter.java) kế thừa port `PaymentGateway` của Dev B.
+   - Sử dụng [`DelegatingPaymentGateway.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/wallet/adapter/DelegatingPaymentGateway.java) gắn cờ `@Primary` để điều phối thanh toán thông minh mà không làm ảnh hưởng đến các use case hiện có của Dev B (`HoldFundsUseCase`, `LockDepositUseCase`, `ReleaseFundsUseCase`, `RefundBuyerUseCase`).
+
+5. **Quy chuẩn Nạp tiền linh hoạt & Defense-in-Depth Validation:**
+   - **Mức nạp tối thiểu:** 10.000 VNĐ.
+   - **Hỗ trợ nạp tiền lẻ:** Hệ thống cho phép người dùng nạp bất kỳ số tiền nguyên nào $\ge 10.000$ VNĐ (vd: 11.000, 13.000, 16.000, 17.000...) để thanh toán chính xác phần tiền vé còn thiếu mà không bị ép buộc làm tròn theo bước nhảy.
+   - **Phòng vệ đa tầng:**
+     * Client / HTML5: Ô nhập thiết lập `min="10000"` và `step="1"`.
+     * DTO: [`TopUpRequest.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/wallet/web/dto/TopUpRequest.java) áp dụng `@DecimalMin(value = "10000", message = "Số tiền nạp tối thiểu là 10.000 VNĐ")`.
+     * Application Service: [`WalletService.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/wallet/application/WalletService.java) kiểm tra hằng số `MIN_TOP_UP_AMOUNT = 10000` và ném `BusinessRuleViolationException` nếu vi phạm.
+
 

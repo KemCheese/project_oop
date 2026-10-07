@@ -766,6 +766,16 @@
                                 </form>
                             </div>
 
+                            <!-- Button 3: Instant Pay via Wallet -->
+                            <form th:action="@{/payment/wallet/pay-from-transfer}" method="post" style="margin-top: 12px;">
+                                <input type="hidden" name="ref" th:value="${ref}" />
+                                <input type="hidden" name="type" th:value="${type}" />
+                                <button type="submit" style="width: 100%; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; border: 1px solid #334155; border-radius: var(--radius-md); padding: 11px 16px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                                    <i class="fa-solid fa-wallet" style="color: #f59e0b;"></i>
+                                    <span>Trừ tiền Ví TicketPass & Xác nhận ngay (1-Click)</span>
+                                </button>
+                            </form>
+
                             <!-- Cancel Button Form -->
                             <div class="cancel-wrap">
                                 <form th:action="@{/payment/transfer/cancel}" method="post">

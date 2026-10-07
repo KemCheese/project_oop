@@ -173,7 +173,7 @@ class HoldFundsUseCaseTest {
         }
 
         @Test
-        @DisplayName("Cho phép thử lại khi escrow trước đó ở trạng thái FAILED (tái sử dụng bản ghi)")
+        @DisplayName("Cho phép thử lại khi escrow trước đó ở trạng thái FAILED (tạo bản ghi mới)")
         void initEscrowPayment_ExistingFailedEscrow_CanRetry() {
             EscrowTransaction failedTx = new EscrowTransaction();
             failedTx.setId(99L);
@@ -193,9 +193,12 @@ class HoldFundsUseCaseTest {
             PaymentResult result = holdFundsUseCase.initEscrowPayment(ticketId, buyerId, sellerId, salePrice);
 
             assertTrue(result.isSuccess());
-            assertEquals(EscrowStatus.PENDING, failedTx.getStatus());
-            assertNull(failedTx.getFailureReason());
-            assertEquals(buyerId, failedTx.getBuyerId());
+            ArgumentCaptor<EscrowTransaction> txCaptor = ArgumentCaptor.forClass(EscrowTransaction.class);
+            verify(escrowTransactionRepository).save(txCaptor.capture());
+            EscrowTransaction savedTx = txCaptor.getValue();
+            assertEquals(EscrowStatus.PENDING, savedTx.getStatus());
+            assertNull(savedTx.getFailureReason());
+            assertEquals(buyerId, savedTx.getBuyerId());
         }
 
         @Test
