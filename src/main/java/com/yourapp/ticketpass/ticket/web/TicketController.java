@@ -448,6 +448,14 @@ public class TicketController {
         response.setTransferInstruction(ticket.getTransferInstruction());
         response.setDisputeWindowClosesAt(ticket.getDisputeWindowClosesAt());
         response.setCreatedAt(ticket.getCreatedAt());
+        response.setReceivedAt(ticket.getReceivedAt());
+        
+        if (ticket.getReceivedAt() != null) {
+            java.time.Instant expiredAt = ticket.getReceivedAt().plus(java.time.Duration.ofMinutes(30));
+            response.setQrExpired(expiredAt.isBefore(java.time.Instant.now()));
+        } else {
+            response.setQrExpired(false);
+        }
         if (ticket.getTicketImageStorageKey() != null
                 && !ticket.getTicketImageStorageKey().isBlank()) {
             response.setTicketImageUrl(

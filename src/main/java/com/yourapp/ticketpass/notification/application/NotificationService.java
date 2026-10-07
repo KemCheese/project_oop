@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -27,7 +28,7 @@ public class NotificationService {
     /**
      * Tạo và lưu mới một thông báo cho người dùng.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Notification sendNotification(Long userId, String title, String content, NotificationType type, String targetUrl) {
         if (userId == null) {
             log.warn("Bỏ qua tạo thông báo vì userId bị null: title='{}'", title);

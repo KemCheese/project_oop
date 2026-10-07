@@ -23,12 +23,12 @@ import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
 public interface EscrowTransactionJpaRepository extends JpaRepository<EscrowTransaction, Long> {
 
     /**
-     * Tìm giao dịch ký quỹ của một vé.
+     * Tìm giao dịch ký quỹ mới nhất của một vé.
      *
      * @param ticketId ID của vé
      * @return giao dịch tương ứng nếu có
      */
-    Optional<EscrowTransaction> findByTicketId(Long ticketId);
+    Optional<EscrowTransaction> findFirstByTicketIdOrderByIdDesc(Long ticketId);
 
     /**
      * Tìm các giao dịch ký quỹ theo người mua.
