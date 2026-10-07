@@ -15,58 +15,57 @@ import static org.junit.jupiter.api.Assertions.*;
 class DisputeWindowPolicyTest {
 
     @Test
-    @DisplayName("MovieDisputeWindowPolicy: cửa sổ 2 giờ, cắt tại eventStartAt nếu chiếu sớm hơn")
+    @DisplayName("MovieDisputeWindowPolicy: cửa sổ khiếu nại đóng sau thời gian bắt đầu 1 ngày")
     void testMoviePolicy() {
         MovieDisputeWindowPolicy policy = new MovieDisputeWindowPolicy(2);
         assertEquals(TicketType.MOVIE, policy.supportedType());
         assertEquals(Duration.ofHours(2), policy.windowAfterTransfer());
 
         Instant transferredAt = Instant.parse("2026-10-01T10:00:00Z");
-        Instant lateEvent     = Instant.parse("2026-10-01T20:00:00Z"); // 10 tiếng sau
-        Instant earlyEvent    = Instant.parse("2026-10-01T11:00:00Z"); // 1 tiếng sau (trước khi hết 2h)
+        Instant eventAt       = Instant.parse("2026-10-01T20:00:00Z");
 
-        // Case 1: Cửa sổ 2h đến trước giờ chiếu -> đóng lúc 12:00
-        Instant close1 = policy.computeWindowClose(transferredAt, lateEvent);
-        assertEquals(Instant.parse("2026-10-01T12:00:00Z"), close1);
-        assertTrue(policy.isWithinWindow(transferredAt, lateEvent, Instant.parse("2026-10-01T11:59:59Z")));
-        assertFalse(policy.isWithinWindow(transferredAt, lateEvent, Instant.parse("2026-10-01T12:00:00Z")));
+        // Case 1: Có eventStartAt -> đóng sau eventStartAt 1 ngày (2026-10-02T20:00:00Z)
+        Instant close1 = policy.computeWindowClose(transferredAt, eventAt);
+        assertEquals(eventAt.plus(Duration.ofDays(1)), close1);
+        assertTrue(policy.isWithinWindow(transferredAt, eventAt, Instant.parse("2026-10-02T19:59:59Z")));
+        assertFalse(policy.isWithinWindow(transferredAt, eventAt, Instant.parse("2026-10-02T20:00:01Z")));
 
-        // Case 2: Giờ chiếu đến trước (11:00) -> cắt tại 11:30 (eventStartAt + 30m) theo BR-09 Revised
-        Instant close2 = policy.computeWindowClose(transferredAt, earlyEvent);
-        assertEquals(earlyEvent.plus(Duration.ofMinutes(30)), close2);
-        assertTrue(policy.isWithinWindow(transferredAt, earlyEvent, Instant.parse("2026-10-01T11:29:59Z")));
-        assertFalse(policy.isWithinWindow(transferredAt, earlyEvent, Instant.parse("2026-10-01T11:30:01Z")));
+        // Case 2: Không có eventStartAt -> fallback transferredAt + window (12:00:00Z)
+        Instant close2 = policy.computeWindowClose(transferredAt, null);
+        assertEquals(transferredAt.plus(Duration.ofHours(2)), close2);
     }
 
     @Test
-    @DisplayName("ConcertDisputeWindowPolicy: cửa sổ 24 giờ, cắt tại eventStartAt + 30m nếu diễn sớm hơn")
+    @DisplayName("ConcertDisputeWindowPolicy: cửa sổ khiếu nại đóng sau thời gian bắt đầu 1 ngày")
     void testConcertPolicy() {
         ConcertDisputeWindowPolicy policy = new ConcertDisputeWindowPolicy(24);
         assertEquals(TicketType.CONCERT, policy.supportedType());
         assertEquals(Duration.ofHours(24), policy.windowAfterTransfer());
 
         Instant transferredAt = Instant.parse("2026-12-10T09:00:00Z");
-        Instant lateEvent     = Instant.parse("2026-12-20T20:00:00Z");
-        Instant earlyEvent    = Instant.parse("2026-12-10T12:00:00Z"); // chuyển vé 3h trước show
+        Instant eventAt       = Instant.parse("2026-12-20T20:00:00Z");
 
-        // Case 1: Đóng sau 24h (11/12 09:00)
-        assertEquals(Instant.parse("2026-12-11T09:00:00Z"), policy.computeWindowClose(transferredAt, lateEvent));
+        // Có eventStartAt -> đóng sau eventStartAt 1 ngày
+        assertEquals(eventAt.plus(Duration.ofDays(1)), policy.computeWindowClose(transferredAt, eventAt));
 
-        // Case 2: Cắt tại giờ diễn + 30 phút (10/12 12:30)
-        assertEquals(earlyEvent.plus(Duration.ofMinutes(30)), policy.computeWindowClose(transferredAt, earlyEvent));
+        // Không có eventStartAt -> fallback transferredAt + 24h
+        assertEquals(transferredAt.plus(Duration.ofHours(24)), policy.computeWindowClose(transferredAt, null));
     }
 
     @Test
-    @DisplayName("BusDisputeWindowPolicy: cửa sổ 3 giờ, cắt tại eventStartAt + 30m nếu sớm hơn")
+    @DisplayName("BusDisputeWindowPolicy: cửa sổ khiếu nại đóng sau thời gian bắt đầu 1 ngày")
     void testBusPolicy() {
         BusDisputeWindowPolicy policy = new BusDisputeWindowPolicy(3);
         assertEquals(TicketType.BUS, policy.supportedType());
         assertEquals(Duration.ofHours(3), policy.windowAfterTransfer());
 
         Instant transferredAt = Instant.parse("2026-10-01T05:00:00Z");
-        Instant eventAt       = Instant.parse("2026-10-01T07:00:00Z"); // 2h sau
+        Instant eventAt       = Instant.parse("2026-10-01T07:00:00Z");
 
-        // Giờ khởi hành 07:00 + 30m = 07:30 < 08:00 -> đóng tại 07:30
-        assertEquals(eventAt.plus(Duration.ofMinutes(30)), policy.computeWindowClose(transferredAt, eventAt));
+        // Có eventStartAt -> đóng sau xuất bến 1 ngày (02/10 07:00)
+        assertEquals(eventAt.plus(Duration.ofDays(1)), policy.computeWindowClose(transferredAt, eventAt));
+
+        // Không có eventStartAt -> fallback transferredAt + 3h
+        assertEquals(transferredAt.plus(Duration.ofHours(3)), policy.computeWindowClose(transferredAt, null));
     }
 }

@@ -128,6 +128,7 @@ class TicketStateMachineServiceTest {
         assertEquals(TicketStatus.AWAITING_USE, result.getStatus());
         assertNotNull(result.getReceivedAt());
         assertNotNull(result.getDisputeWindowClosesAt());
+        assertEquals(ticket.getEventStartAt().plus(Duration.ofDays(1)), result.getDisputeWindowClosesAt());
     }
 
     @Test

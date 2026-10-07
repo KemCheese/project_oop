@@ -217,6 +217,15 @@ public class TicketController {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", id));
 
+        // Dong bo cua so khieu nai: dong sau thoi gian bat dau 1 ngay (eventStartAt + 1 day)
+        if (ticket.getEventStartAt() != null && ticket.getDisputeWindowClosesAt() != null) {
+            java.time.Instant expectedClose = ticket.getEventStartAt().plus(java.time.Duration.ofDays(1));
+            if (!ticket.getDisputeWindowClosesAt().equals(expectedClose)) {
+                ticket.setDisputeWindowClosesAt(expectedClose);
+                ticketRepository.save(ticket);
+            }
+        }
+
         TicketResponse response = toResponse(ticket);
         model.addAttribute("ticket", response);
 
@@ -446,7 +455,11 @@ public class TicketController {
         response.setOriginalPrice(ticket.getOriginalPrice());
         response.setSalePrice(ticket.getSalePrice());
         response.setTransferInstruction(ticket.getTransferInstruction());
-        response.setDisputeWindowClosesAt(ticket.getDisputeWindowClosesAt());
+        if (ticket.getEventStartAt() != null && ticket.getDisputeWindowClosesAt() != null) {
+            response.setDisputeWindowClosesAt(ticket.getEventStartAt().plus(java.time.Duration.ofDays(1)));
+        } else {
+            response.setDisputeWindowClosesAt(ticket.getDisputeWindowClosesAt());
+        }
         response.setCreatedAt(ticket.getCreatedAt());
         response.setReceivedAt(ticket.getReceivedAt());
         

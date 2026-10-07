@@ -391,7 +391,11 @@ public class TransferTicketService {
         response.setOriginalPrice(ticket.getOriginalPrice());
         response.setSalePrice(ticket.getSalePrice());
         response.setTransferInstruction(ticket.getTransferInstruction());
-        response.setDisputeWindowClosesAt(ticket.getDisputeWindowClosesAt());
+        if (ticket.getEventStartAt() != null && ticket.getDisputeWindowClosesAt() != null) {
+            response.setDisputeWindowClosesAt(ticket.getEventStartAt().plus(java.time.Duration.ofDays(1)));
+        } else {
+            response.setDisputeWindowClosesAt(ticket.getDisputeWindowClosesAt());
+        }
         response.setCreatedAt(ticket.getCreatedAt());
         response.setReceivedAt(ticket.getReceivedAt());
         
