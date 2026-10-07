@@ -40,3 +40,4 @@ cloudflared.exe
 ./cloudflared.exe
 .claude/
 data/
+.reports/
