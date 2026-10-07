@@ -2,7 +2,6 @@ package com.yourapp.ticketpass.user.application;
 
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
-import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.user.domain.StarredTicket;
 import com.yourapp.ticketpass.user.domain.StarredTicketRepository;

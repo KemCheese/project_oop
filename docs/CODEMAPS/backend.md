@@ -1,12 +1,13 @@
-<!-- Generated: 2026-10-06 | Files scanned: 105 | Token estimate: ~900 -->
+<!-- Generated: 2026-10-07 | Files scanned: 241 | Token estimate: ~1100 -->
 # Backend Architecture & Call Chains
 
 ## Security Chain & Middleware
 `SecurityConfig.filterChain()` enforces:
-- **Public:** `GET /`, `GET /tickets`, `GET /tickets/{id}`, `GET /reputation/**`, `/login`, `/register`, `/css/**`, `/js/**`, `/images/**`, `/files/**`, `/payment/momo/ipn`, `/payment/momo/return`.
-- **Authenticated (`ROLE_USER` / `ROLE_ADMIN`):** `POST /tickets`, `POST /tickets/{id}/lock-deposit`, `POST /tickets/{id}/transfer`, `/profile/**`, `/payment/**`, `/disputes/**`, `POST /api/tickets/{id}/star`.
+- **Public:** `GET /`, `GET /tickets`, `GET /tickets/{id}`, `GET /reputation/**`, `/login`, `/register`, `/css/**`, `/js/**`, `/images/**`, `/files/**`, `/h2-console/**`.
+- **Authenticated (`ROLE_USER` / `ROLE_ADMIN`):** `POST /tickets`, `POST /tickets/{id}/lock-deposit`, `POST /tickets/{id}/transfer`, `/profile/**`, `/payment/**`, `/wallet/**`, `/notifications/**`, `/api/notifications/**`, `/disputes/**`, `POST /api/tickets/{id}/star`.
 - **Admin Only (`ROLE_ADMIN`):** `/admin/disputes/**`.
-- **Exception Boundary:** `GlobalExceptionHandler` (`@ControllerAdvice`) auto-branches to JSON `ErrorResponse` (AJAX) or Thymeleaf `error/error` view.
+- **Smart Auth Handler:** `SmartAuthenticationSuccessHandler` bảo vệ phòng ngừa Open Redirect (CWE-601), chuyển hướng ưu tiên `SavedRequest` -> param `redirect` -> session attribute `REDIRECT_AFTER_AUTH`.
+- **Exception Boundary:** `GlobalExceptionHandler` (`@ControllerAdvice`) tự động phân nhánh JSON `ErrorResponse` (AJAX/REST) hoặc Thymeleaf `error/error` view.
 
 ## API Routes & Call Chains
 
@@ -24,20 +25,31 @@ POST /api/tickets/{ticketId}/star -> StarredTicketApiController.toggleStar -> St
 
 ### 2. Tickets & Marketplace (`ticket`)
 ```
-GET  /tickets                     -> TicketController.listTickets -> TicketRepository.findByStatus(LISTED) -> "ticket/list"
-GET  /tickets/new                 -> TicketController.showCreateForm -> "ticket/create"
-POST /tickets                     -> TicketController.createTicket -> ValidateTicketService.validate -> FileStorageService.store(2 images) -> TicketStateMachineService.create -> "redirect:/tickets/{id}"
-GET  /tickets/{id}                -> TicketController.showDetail -> TicketRepository.findById -> TicketAdapter.renderDetails -> "ticket/detail"
-POST /tickets/{id}/lock-deposit   -> TicketController.lockDeposit -> LockDepositUseCase.lock -> TicketStateMachineService.transition
-POST /tickets/{id}/transfer       -> TicketController.transferTicket -> TransferTicketService.transfer -> Reveal secret QR
+GET  /tickets                     -> TicketController.listTickets -> TicketRepository.searchListed -> "ticket/list"
+GET  /tickets/suggestions         -> TicketController.suggestions -> TicketRepository.findTopSuggestions -> JSON
+GET  /tickets/new                 -> TicketController.createForm -> "ticket/create"
+POST /tickets                     -> TicketController.create -> FileStorageService.store(2 images) -> TransferTicketService.createListing -> "redirect:/tickets/{id}"
+GET  /tickets/{id}                -> TicketController.detail -> TicketRepository.findById -> "ticket/detail"
+POST /tickets/{id}/transfer       -> TicketController.markTransferred -> TransferTicketService.markTransferred -> Reveal secret QR
+POST /tickets/{id}/received       -> TicketController.markReceived -> TransferTicketService.markAwaitingUse
+POST /tickets/{id}/technical-issue-> TicketController.reportTechnicalIssue -> TransferTicketService.reportTechnicalIssue (UC-06b)
+POST /tickets/{id}/cancel         -> TicketController.cancel -> TransferTicketService.cancelListing
+SCHEDULER:
+TicketExpirationScheduler (every 1m) -> TicketRepository.findExpiredListedTickets -> TicketStateMachineService.transition(CANCELLED) -> publish(TicketExpiredEvent)
+DeliveryTimeoutScheduler (every 1m)   -> Auto-confirm TRANSFERRED -> AWAITING_USE after 30m (UC-06b)
 ```
 
 ### 3. Payment & Escrow (`payment`)
 ```
-POST /payment/momo/initiate       -> PaymentController.initiatePayment -> HoldFundsUseCase.hold -> MomoTestGatewayAdapter.createPaymentUrl
-GET  /payment/momo/return         -> PaymentController.handleMomoReturn -> HoldFundsUseCase.confirmFromGateway -> EscrowTransactionRepository.save
-POST /payment/momo/ipn            -> PaymentController.handleMomoIpn -> HoldFundsUseCase.processIpn -> EscrowTransactionRepository.save
-POST /payment/{id}/release        -> PaymentController.releasePayment -> ReleaseFundsUseCase.release -> CommissionCalculator + TaxWithholding -> Payout -> DomainEventPublisher.publish(TicketTransactionCompletedEvent)
+POST /payment/escrow/buy          -> PaymentController.buyTicket -> HoldFundsUseCase.initEscrowPayment -> payUrl (/payment/transfer?ref=...&type=escrow)
+POST /payment/deposit/lock        -> PaymentController.lockDeposit -> LockDepositUseCase.initDepositPayment -> payUrl (/payment/transfer?ref=...&type=deposit)
+GET  /payment/transfer            -> PaymentController.showTransferPage -> renders payment/transfer.html (VietQR Sandbox)
+POST /payment/transfer/confirm    -> PaymentController.confirmTransfer -> HoldFundsUseCase.confirmHeld / LockDepositUseCase.confirmLocked -> "redirect:/tickets/{id}"
+POST /payment/transfer/cancel     -> PaymentController.cancelTransfer -> "redirect:/tickets/{id}"
+POST /payment/wallet/pay          -> WalletPaymentController.payWithWallet -> WalletService.deductBalance -> HoldFundsUseCase.confirmHeld
+POST /payment/{id}/release        -> PaymentController.releasePayment -> ReleaseFundsUseCase.release -> CommissionCalculator + TaxWithholding -> DomainEventPublisher.publish(TicketTransactionCompletedEvent)
+SCHEDULER:
+DepositTimeoutScheduler (every 1m) -> RefundBuyerUseCase.refundFull + Ticket CANCELLED + UpdateReputationUseCase.recordDepositTimeout (-15 pts) (UC-04b)
 ```
 
 ### 4. Dispute & Arbitration (`dispute`)
@@ -58,3 +70,23 @@ ASYNC EVENT LISTENER:
 @TransactionalEventListener(AFTER_COMMIT) TicketTransactionCompletedEvent -> UpdateReputationUseCase.onTicketTransactionCompleted (+2 pts)
 @TransactionalEventListener(AFTER_COMMIT) DisputeResolvedEvent            -> UpdateReputationUseCase.onDisputeResolved (+1 win, -15 loss)
 ```
+
+### 6. E-Wallet & Ledger (`wallet`)
+```
+GET  /wallet                      -> WalletController.walletHome -> WalletService.getOrCreateWallet + WalletService.getTransactionHistory -> "wallet/index"
+POST /wallet/topup                -> WalletController.topUp -> WalletService.topUp (>= 10.000đ) -> WalletTransactionRepository.save -> "redirect:/wallet"
+POST /payment/wallet/pay          -> WalletPaymentController.payWithWallet -> WalletPaymentGatewayAdapter.chargeEscrow
+POST /payment/wallet/deposit      -> WalletPaymentController.depositWithWallet -> WalletPaymentGatewayAdapter.lockDeposit
+```
+
+### 7. In-App Notifications (`notification`)
+```
+GET  /notifications               -> NotificationController.listNotifications -> NotificationService.getNotifications -> "notification/list"
+GET  /api/notifications/unread-count -> NotificationApiController.getUnreadCount -> NotificationService.countUnread -> JSON
+GET  /api/notifications/recent    -> NotificationApiController.getRecentNotifications -> NotificationService.getRecentNotifications -> JSON
+POST /api/notifications/{id}/read -> NotificationApiController.markAsRead -> NotificationService.markAsRead -> JSON
+POST /api/notifications/read-all  -> NotificationApiController.markAllAsRead -> NotificationService.markAllAsRead -> JSON
+ASYNC EVENT LISTENER:
+@TransactionalEventListener(AFTER_COMMIT) onTicketEscrowPaid, onTicketDepositLocked, onTicketReceived, onTicketExpired, onDisputeOpened, onDisputeResponded, onDisputeWithdrawn, onDisputeResolved, onDepositTimeout -> NotificationEventListener.createNotification
+```
+

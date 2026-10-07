@@ -30,7 +30,6 @@ import com.yourapp.ticketpass.payment.domain.DepositStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
 import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
-import com.yourapp.ticketpass.payment.domain.PaymentResult;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;

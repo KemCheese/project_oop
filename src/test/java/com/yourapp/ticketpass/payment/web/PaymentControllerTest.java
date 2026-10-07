@@ -5,7 +5,6 @@ import java.security.Principal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +27,6 @@ import com.yourapp.ticketpass.payment.domain.DepositStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
 import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
-import com.yourapp.ticketpass.payment.web.dto.EscrowSummaryResponse;
 import com.yourapp.ticketpass.shared.config.PaymentGatewayConfig;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.user.domain.UserRepository;

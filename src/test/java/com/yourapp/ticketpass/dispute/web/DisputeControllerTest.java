@@ -3,7 +3,6 @@ package com.yourapp.ticketpass.dispute.web;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;

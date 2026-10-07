@@ -1,7 +1,6 @@
 package com.yourapp.ticketpass.shared.security;
 
 import java.io.IOException;
-import java.net.URI;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;

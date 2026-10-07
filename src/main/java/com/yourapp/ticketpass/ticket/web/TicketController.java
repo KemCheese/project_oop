@@ -6,7 +6,6 @@ import com.yourapp.ticketpass.shared.storage.StoredFileRef;
 import com.yourapp.ticketpass.ticket.application.TransferTicketService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
-import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest;
 import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
@@ -79,7 +78,7 @@ public class TicketController {
     private final StarredTicketUseCase starredTicketUseCase;
 
     /**
-     * Lấy danh sách loại vé khả dụng (bỏ qua TRAIN bị deprecated).
+     * Lấy danh sách 3 loại vé khả dụng trên sàn (MOVIE, CONCERT, BUS).
      */
     private TicketType[] getActiveTicketTypes() {
         return new TicketType[] { TicketType.MOVIE, TicketType.CONCERT, TicketType.BUS };
