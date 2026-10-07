@@ -26,7 +26,6 @@ import com.yourapp.ticketpass.payment.domain.EscrowStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
 import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
 import com.yourapp.ticketpass.payment.domain.PaymentResult;
-import com.yourapp.ticketpass.payment.web.dto.EscrowSummaryResponse;
 import com.yourapp.ticketpass.payment.web.dto.InitDepositRequest;
 import com.yourapp.ticketpass.payment.web.dto.InitEscrowRequest;
 import com.yourapp.ticketpass.payment.web.dto.PaymentInitResponse;

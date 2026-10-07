@@ -3,7 +3,6 @@ package com.yourapp.ticketpass.reputation.application;
 import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.shared.event.CompletionReason;
-import com.yourapp.ticketpass.shared.event.DisputeOutcome;
 import com.yourapp.ticketpass.shared.event.DisputeResolvedEvent;
 import com.yourapp.ticketpass.shared.event.TicketTransactionCompletedEvent;
 import java.math.BigDecimal;

@@ -29,7 +29,7 @@ TicketPass là ứng dụng sàn giao dịch vé điện tử thứ cấp (P2P s
 | **Giao diện** | Thymeleaf + Vanilla CSS | 3.x | Server-side rendering, Responsive, AJAX |
 | **CSDL Quan hệ** | MySQL | 8.0+ | Hỗ trợ JSON, Foreign Keys nội bộ module |
 | **CSDL Kiểm thử** | H2 Database | 2.x | In-memory DB dùng cho test suite chạy nhanh |
-| **Migration Schema** | Flyway | 10.x | Quản lý schema tự động (`V1` đến `V4`) |
+| **Migration Schema** | Flyway | 10.x | Quản lý schema tự động (`V1` đến `V6`) |
 | **Thanh toán tích hợp** | MoMo Payment API | Sandbox | Giả lập luồng thanh toán Escrow QR/AIO |
 | **Lưu trữ tệp** | Local File Storage | Java NIO | Adapter lưu tại `./data/uploads`, chống Traversal |
 | **Quản lý dự án** | Apache Maven | 3.9+ | Wrapper `./mvnw` đính kèm sẵn trong repo |
@@ -42,11 +42,13 @@ TicketPass được thiết kế theo mô hình **Modular Monolith** kết hợp
 
 ```
 com.yourapp.ticketpass
- ├── ticket/         # Quản lý vé, vòng đời trạng thái vé, adapter 3 loại vé (Dev A)
+ ├── ticket/         # Quản lý vé, vòng đời trạng thái vé, adapter 3 loại vé, gỡ vé quá hạn (Dev A)
  ├── payment/        # Ký quỹ Escrow, khóa cọc 50%, tính hoa hồng, giải ngân (Dev B)
  ├── dispute/        # Mở khiếu nại, thu thập bằng chứng, phân xử Admin, auto-close (Dev B)
  ├── user/           # Tài khoản, phân quyền, hồ sơ, danh sách sao (Dev C)
  ├── reputation/     # Điểm uy tín 0..100, lắng nghe sự kiện domain bất đồng bộ (Dev C)
+ ├── wallet/         # Ví điện tử nội bộ, sổ cái kép giao dịch, cổng thanh toán ví (Dev B & C)
+ ├── notification/   # Thông báo in-app đa kênh, sự kiện thời gian thực (Dev C & A)
  └── shared/         # Hạ tầng chung: FileStorage, Security, Global Exceptions, Events (Dev C)
 ```
 
@@ -101,7 +103,7 @@ Hệ thống cung cấp 9 Controllers xử lý toàn bộ các yêu cầu HTTP. 
 - **Trang chủ & Sàn vé:** `GET /` (`HomeController`), `GET /tickets` (`TicketController`)
 - **Chi tiết & Thao tác vé:** `GET /tickets/{id}`, `POST /tickets`, `POST /tickets/{id}/lock-deposit`, `POST /tickets/{id}/transfer`
 - **Watchlist Đánh sao:** `POST /api/tickets/{id}/star` (`StarredTicketApiController`)
-- **Ký quỹ MoMo:** `POST /payment/momo/initiate`, `GET /payment/momo/return`, `POST /payment/momo/ipn` (`PaymentController`)
+- **Ký quỹ Escrow & Ví:** `POST /payment/escrow/buy`, `GET /payment/transfer`, `POST /payment/transfer/confirm`, `POST /payment/wallet/pay` (`PaymentController`, `WalletPaymentController`)
 - **Khiếu nại người dùng:** `GET /disputes/create/{ticketId}`, `POST /disputes`, `POST /disputes/{id}/respond` (`DisputeController`)
 - **Bàn làm việc Admin:** `GET /admin/disputes`, `POST /admin/disputes/{id}/resolve` (`DisputeReviewController`)
 - **Uy tín & Bảng vàng:** `GET /reputation/{userId}`, `GET /reputation/top` (`ReputationController`)
@@ -119,8 +121,8 @@ Seller -> POST /tickets -> ValidateTicketService (kiểm tra rạp/giờ/ghế)
        -> Lưu 2 ảnh (Public preview + Secret QR) -> Ticket: LISTED
 
 [2. NGƯỜI MUA KÝ QUỸ (ESCROW 100%)]
-Buyer  -> POST /payment/momo/initiate -> MomoTestGatewayAdapter
-       -> MoMo trả về Callback -> HoldFundsUseCase: tạo Escrow HELD
+Buyer  -> POST /payment/escrow/buy (hoặc /payment/wallet/pay)
+       -> Chuyển khoản VietQR trung gian (hoặc trừ số dư Ví) -> HoldFundsUseCase: tạo Escrow HELD
        -> TicketStateMachineService: LISTED -> PAYMENT_ESCROWED
 
 [3. NGƯỜI BÁN KHÓA CỌC (50%)]

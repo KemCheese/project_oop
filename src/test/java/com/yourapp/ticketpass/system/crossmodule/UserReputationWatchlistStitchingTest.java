@@ -12,7 +12,6 @@ import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.user.application.StarredTicketUseCase;
-import com.yourapp.ticketpass.user.domain.StarredTicket;
 import com.yourapp.ticketpass.user.domain.User;
 import com.yourapp.ticketpass.user.domain.UserRole;
 import com.yourapp.ticketpass.user.web.dto.StarredTicketItemResponse;

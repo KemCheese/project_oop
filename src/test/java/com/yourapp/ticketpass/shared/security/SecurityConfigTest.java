@@ -9,9 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,8 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Kiểm thử tích hợp cấu hình Spring Security cho các endpoint công khai và bảo vệ.
  *
  * <p>Đặc biệt xác minh:
- * - GET /payment/momo/return được permitAll(), không bị ép redirect về /login khi người dùng thanh toán xong.
- * - POST /payment/momo/ipn được permitAll() và bỏ qua CSRF.
+ * - GET /payment/transfer yêu cầu xác thực (chưa login bị redirect về /login).
  * - Các tuyến đường quản trị (/admin/**) hoặc cần xác thực (/tickets/new) vẫn bắt buộc đăng nhập.</p>
  *
  * <p>Module sở hữu: shared (Security hạ tầng).</p>

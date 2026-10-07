@@ -26,7 +26,6 @@ import com.yourapp.ticketpass.user.web.dto.UpdateBankAccountRequest;
 import com.yourapp.ticketpass.user.web.dto.UpdateProfileRequest;
 import com.yourapp.ticketpass.user.web.dto.UserProfileResponse;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.Optional;

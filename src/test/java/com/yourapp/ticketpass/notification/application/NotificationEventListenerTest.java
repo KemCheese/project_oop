@@ -13,7 +13,6 @@ import com.yourapp.ticketpass.shared.event.DisputeOpenedEvent;
 import com.yourapp.ticketpass.shared.event.DisputeOutcome;
 import com.yourapp.ticketpass.shared.event.DisputeResolvedEvent;
 import com.yourapp.ticketpass.shared.event.DisputeRespondedEvent;
-import com.yourapp.ticketpass.shared.event.DisputeWithdrawnEvent;
 import com.yourapp.ticketpass.shared.event.TicketDepositLockedEvent;
 import com.yourapp.ticketpass.shared.event.TicketEscrowPaidEvent;
 import com.yourapp.ticketpass.shared.event.TicketExpiredEvent;

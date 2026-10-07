@@ -256,6 +256,215 @@
                     border-top: 1px solid #e2e8f0;
                 }
 
+                /* ==========================================================================
+                   Trust-First Confirmation Modals (Design Taste Frontend)
+                   ========================================================================== */
+                .tp-confirm-modal {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 100000;
+                    background: rgba(15, 23, 42, 0.72);
+                    backdrop-filter: blur(10px);
+                    -webkit-backdrop-filter: blur(10px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+                    padding: 20px;
+                }
+
+                .tp-confirm-modal.is-open {
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+
+                .tp-confirm-dialog {
+                    background: #ffffff;
+                    border-radius: var(--radius-lg, 16px);
+                    border: 1px solid rgba(226, 232, 240, 0.85);
+                    box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.05);
+                    max-width: 460px;
+                    width: 100%;
+                    overflow: hidden;
+                    transform: scale(0.95);
+                    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+                    padding: 24px;
+                    position: relative;
+                    text-align: left;
+                }
+
+                .tp-confirm-modal.is-open .tp-confirm-dialog {
+                    transform: scale(1);
+                }
+
+                .tp-confirm-close-btn {
+                    position: absolute;
+                    top: 16px;
+                    right: 16px;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    border: none;
+                    background: #f1f5f9;
+                    color: #64748b;
+                    font-size: 14px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.15s ease;
+                }
+
+                .tp-confirm-close-btn:hover {
+                    background: #e2e8f0;
+                    color: #0f172a;
+                }
+
+                .tp-confirm-icon-badge {
+                    width: 52px;
+                    height: 52px;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 24px;
+                    margin-bottom: 16px;
+                }
+
+                .tp-confirm-icon-badge.badge-success {
+                    background: #f0fdf4;
+                    color: #16a34a;
+                    border: 1px solid #bbf7d0;
+                }
+
+                .tp-confirm-icon-badge.badge-danger {
+                    background: #fef2f2;
+                    color: #dc2626;
+                    border: 1px solid #fecaca;
+                }
+
+                .tp-confirm-title {
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: #0f172a;
+                    margin: 0 0 6px 0;
+                    line-height: 1.35;
+                }
+
+                .tp-confirm-desc {
+                    font-size: 13.5px;
+                    color: #475569;
+                    line-height: 1.5;
+                    margin: 0 0 16px 0;
+                }
+
+                .tp-confirm-callout {
+                    border-radius: 10px;
+                    padding: 12px 14px;
+                    margin-bottom: 20px;
+                    font-size: 13px;
+                    line-height: 1.5;
+                    display: flex;
+                    gap: 10px;
+                    align-items: flex-start;
+                }
+
+                .tp-confirm-callout.callout-warning {
+                    background: #fffbeb;
+                    border: 1px solid #fde68a;
+                    color: #92400e;
+                }
+
+                .tp-confirm-callout.callout-danger {
+                    background: #fef2f2;
+                    border: 1px solid #fecaca;
+                    color: #991b1b;
+                }
+
+                .tp-confirm-actions {
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                }
+
+                .tp-modal-btn-cancel {
+                    flex: 1;
+                    padding: 11px 16px;
+                    font-size: 13.5px;
+                    font-weight: 600;
+                    color: #475569;
+                    background: #f8fafc;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    text-align: center;
+                    transition: all 0.15s ease;
+                }
+
+                .tp-modal-btn-cancel:hover {
+                    background: #f1f5f9;
+                    color: #0f172a;
+                    border-color: #94a3b8;
+                }
+
+                .tp-modal-btn-confirm-success {
+                    flex: 1.6;
+                    padding: 11px 18px;
+                    font-size: 13.5px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #16a34a;
+                    border: 1px solid #15803d;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    box-shadow: 0 2px 4px rgba(22, 163, 74, 0.25);
+                    transition: all 0.15s ease;
+                }
+
+                .tp-modal-btn-confirm-success:hover {
+                    background: #15803d;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 10px rgba(22, 163, 74, 0.35);
+                }
+
+                .tp-modal-btn-confirm-success:active {
+                    transform: translateY(0);
+                }
+
+                .tp-modal-btn-confirm-danger {
+                    flex: 1.5;
+                    padding: 11px 18px;
+                    font-size: 13.5px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #dc2626;
+                    border: 1px solid #b91c1c;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.25);
+                    transition: all 0.15s ease;
+                }
+
+                .tp-modal-btn-confirm-danger:hover {
+                    background: #b91c1c;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+                }
+
+                .tp-modal-btn-confirm-danger:active {
+                    transform: translateY(0);
+                }
+
                 /* Specs Table */
                 .specs-grid {
                     display: grid;
@@ -412,9 +621,17 @@
                 }
 
                 @keyframes starSpringPop {
-                    0% { transform: scale(1); }
-                    50% { transform: scale(1.35) rotate(12deg); }
-                    100% { transform: scale(1) rotate(0deg); }
+                    0% {
+                        transform: scale(1);
+                    }
+
+                    50% {
+                        transform: scale(1.35) rotate(12deg);
+                    }
+
+                    100% {
+                        transform: scale(1) rotate(0deg);
+                    }
                 }
 
                 /* Flash Alert Banner (Design Taste Frontend) */
@@ -431,8 +648,15 @@
                 }
 
                 @keyframes tpSlideDown {
-                    from { opacity: 0; transform: translateY(-8px); }
-                    to { opacity: 1; transform: translateY(0); }
+                    from {
+                        opacity: 0;
+                        transform: translateY(-8px);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
                 }
 
                 .tp-flash-success {
@@ -495,7 +719,8 @@
                     <div class="tp-flash-title">Giao dịch thành công</div>
                     <div class="tp-flash-message" th:text="${successMessage}">Thông báo thành công</div>
                 </div>
-                <button type="button" class="tp-flash-close" onclick="this.parentElement.remove()" aria-label="Đóng">&times;</button>
+                <button type="button" class="tp-flash-close" onclick="this.parentElement.remove()"
+                    aria-label="Đóng">&times;</button>
             </div>
 
             <div th:if="${errorMessage != null}" class="tp-flash-banner tp-flash-danger" role="alert">
@@ -506,7 +731,8 @@
                     <div class="tp-flash-title">Lỗi xử lý</div>
                     <div class="tp-flash-message" th:text="${errorMessage}">Thông báo lỗi</div>
                 </div>
-                <button type="button" class="tp-flash-close" onclick="this.parentElement.remove()" aria-label="Đóng">&times;</button>
+                <button type="button" class="tp-flash-close" onclick="this.parentElement.remove()"
+                    aria-label="Đóng">&times;</button>
             </div>
 
             <!-- Breadcrumb Navigation -->
@@ -542,7 +768,8 @@
                                 class="badge badge-success">
                                 <i class="fa-solid fa-circle-check"></i> Đang rao bán
                             </span>
-                            <span th:if="${ticket.status != null and (ticket.status.name() == 'ESCROW_HELD' or ticket.status.name() == 'PAYMENT_ESCROWED')}"
+                            <span
+                                th:if="${ticket.status != null and (ticket.status.name() == 'ESCROW_HELD' or ticket.status.name() == 'PAYMENT_ESCROWED')}"
                                 class="badge badge-warning">
                                 <i class="fa-solid fa-hourglass-half"></i> Đã nạp ký quỹ
                             </span>
@@ -558,20 +785,24 @@
                                 class="badge badge-success">
                                 <i class="fa-solid fa-qrcode"></i> Sẵn sàng sử dụng
                             </span>
-                            <span th:if="${ticket.status != null and (ticket.status.name() == 'COMPLETED' or ticket.status.name() == 'AUTO_COMPLETE')}"
+                            <span
+                                th:if="${ticket.status != null and (ticket.status.name() == 'COMPLETED' or ticket.status.name() == 'AUTO_COMPLETE')}"
                                 class="badge badge-success">
                                 <i class="fa-solid fa-check-double"></i> Giao dịch hoàn tất
                             </span>
-                            <span th:if="${ticket.status != null and (ticket.status.name() == 'DISPUTED' or ticket.status.name() == 'DISPUTE_UNDER_REVIEW')}"
+                            <span
+                                th:if="${ticket.status != null and (ticket.status.name() == 'DISPUTED' or ticket.status.name() == 'DISPUTE_UNDER_REVIEW')}"
                                 class="badge badge-danger">
                                 <i class="fa-solid fa-triangle-exclamation"></i> Đang khiếu nại
                             </span>
                             <span th:if="${ticket.status != null and ticket.status.name() == 'RESOLVED_BUYER_WINS'}"
-                                class="badge badge-success" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                                class="badge badge-success"
+                                style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
                                 <i class="fa-solid fa-shield-heart"></i> Đã xử: Người mua thắng
                             </span>
                             <span th:if="${ticket.status != null and ticket.status.name() == 'RESOLVED_SELLER_WINS'}"
-                                class="badge badge-success" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
+                                class="badge badge-success"
+                                style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">
                                 <i class="fa-solid fa-award"></i> Đã xử: Người bán thắng
                             </span>
                             <span th:if="${ticket.status != null and ticket.status.name() == 'CANCELLED'}"
@@ -593,7 +824,8 @@
                             th:onclick="openImageLightbox(this.querySelector('img').src, 'Ảnh thông tin vé: ' + /*[[${ticket.title}]]*/ '')"
                             title="Nhấn để phóng to ảnh vé">
                             <img th:src="${ticket.ticketImageUrl}" th:alt="${ticket.title}" class="ticket-main-image" />
-                            <div class="image-zoom-badge"><i class="fa-solid fa-magnifying-glass-plus"></i> Nhấn phóng to</div>
+                            <div class="image-zoom-badge"><i class="fa-solid fa-magnifying-glass-plus"></i> Nhấn phóng
+                                to</div>
                         </div>
                         <div th:unless="${ticket.ticketImageUrl != null and !ticket.ticketImageUrl.isEmpty()}"
                             class="ticket-image-empty">
@@ -604,47 +836,57 @@
 
                     <!-- Secret QR Check-in Box (Screen 6: Lifecycle-driven QR unlock) -->
                     <!-- Pre-Unlock Verify STATE (TRANSFERRED) -->
-                    <div th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED' and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}" class="qr-unlocked-box" style="border-color: #fde68a; background-color: #fffbeb;">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-warning); font-weight: 700; font-size: 16px;">
+                    <div th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED' and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
+                        class="qr-unlocked-box" style="border-color: #fde68a; background-color: #fffbeb;">
+                        <div
+                            style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-warning); font-weight: 700; font-size: 16px;">
                             <i class="fa-solid fa-magnifying-glass"></i> Xác Nhận Thông Tin Vé
                         </div>
                         <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 6px;">
-                            Vui lòng kiểm tra lại thông tin vé để đảm bảo tính hợp lệ. Mã QR check-in bí mật vẫn đang được khóa bảo mật.
+                            Vui lòng kiểm tra lại thông tin vé để đảm bảo tính hợp lệ. Mã QR check-in bí mật vẫn đang
+                            được khóa bảo mật.
                         </p>
-                    
-                        <div th:if="${ticket.ticketImageUrl != null and !ticket.ticketImageUrl.isEmpty()}" style="text-align: center; margin-top: 16px;">
+
+                        <div th:if="${ticket.ticketImageUrl != null and !ticket.ticketImageUrl.isEmpty()}"
+                            style="text-align: center; margin-top: 16px;">
                             <div class="zoomable-image-wrapper"
-                                 th:onclick="openImageLightbox(this.querySelector('img').src, 'Ảnh thông tin vé: ' + /*[[${ticket.title}]]*/ '')"
-                                 title="Nhấn để phóng to">
-                                <img th:src="${ticket.ticketImageUrl}" alt="Ảnh thông tin vé" class="qr-preview-img" style="border-color: #fde68a;" />
-                                <div class="image-zoom-badge"><i class="fa-solid fa-magnifying-glass-plus"></i> Nhấn phóng to</div>
+                                th:onclick="openImageLightbox(this.querySelector('img').src, 'Ảnh thông tin vé: ' + /*[[${ticket.title}]]*/ '')"
+                                title="Nhấn để phóng to">
+                                <img th:src="${ticket.ticketImageUrl}" alt="Ảnh thông tin vé" class="qr-preview-img"
+                                    style="border-color: #fde68a;" />
+                                <div class="image-zoom-badge"><i class="fa-solid fa-magnifying-glass-plus"></i> Nhấn
+                                    phóng to</div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- UNLOCKED STATE (AWAITING_USE, COMPLETED, AUTO_COMPLETE...) -->
                     <div th:if="${(ticket.status != null and (ticket.status.name() == 'AWAITING_USE' or ticket.status.name() == 'COMPLETED' or ticket.status.name() == 'AUTO_COMPLETE' or ticket.status.name() == 'TECHNICAL_ISSUE' or ticket.status.name() == 'DISPUTE_UNDER_REVIEW' or ticket.status.name() == 'DISPUTED' or ticket.status.name() == 'RESOLVED_BUYER_WINS' or ticket.status.name() == 'RESOLVED_SELLER_WINS')) and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
                         class="qr-unlocked-box">
-                        
+
                         <!-- Hiển thị QR nếu chưa hết hạn 30 phút -->
                         <div th:if="${!ticket.qrExpired}">
-                            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-success); font-weight: 700; font-size: 16px;">
+                            <div
+                                style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-success); font-weight: 700; font-size: 16px;">
                                 <i class="fa-solid fa-circle-check"></i> Mã Check-in QR Đã Mở Khóa
                             </div>
                             <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 6px;">
-                                Mã này chỉ hiển thị trong vòng 30 phút kể từ lúc mở khóa. Vui lòng xuất trình mã tại quầy soát vé.
+                                Mã này chỉ hiển thị trong vòng 30 phút kể từ lúc mở khóa. Vui lòng xuất trình mã tại
+                                quầy soát vé.
                             </p>
-    
-                            <div th:if="${ticket.qrImageUrl != null and !ticket.qrImageUrl.isEmpty()}" style="text-align: center;">
+
+                            <div th:if="${ticket.qrImageUrl != null and !ticket.qrImageUrl.isEmpty()}"
+                                style="text-align: center;">
                                 <div class="zoomable-image-wrapper"
                                     th:onclick="openImageLightbox(this.querySelector('img').src, 'Mã Check-in QR Bí Mật - ' + /*[[${ticket.title}]]*/ '')"
                                     title="Nhấn để phóng to mã QR">
-                                    <img th:src="${ticket.qrImageUrl}" alt="Mã QR Check-in Bí Mật" class="qr-preview-img" />
-                                    <div class="image-zoom-badge"><i class="fa-solid fa-magnifying-glass-plus"></i> Nhấn phóng to</div>
+                                    <img th:src="${ticket.qrImageUrl}" alt="Mã QR Check-in Bí Mật"
+                                        class="qr-preview-img" />
+                                    <div class="image-zoom-badge"><i class="fa-solid fa-magnifying-glass-plus"></i> Nhấn
+                                        phóng to</div>
                                 </div>
                                 <div style="margin-top: 10px; display: flex; justify-content: center; gap: 10px;">
-                                    <button type="button" class="btn-download-ticket"
-                                        th:data-url="${ticket.qrImageUrl}"
+                                    <button type="button" class="btn-download-ticket" th:data-url="${ticket.qrImageUrl}"
                                         th:data-filename="'ve-' + ${ticket.id} + '-checkin.png'"
                                         onclick="downloadImageDirect(this.getAttribute('data-url'), this.getAttribute('data-filename'))">
                                         <i class="fa-solid fa-download"></i> Tải mã QR về máy
@@ -658,9 +900,12 @@
                         </div>
 
                         <!-- Trạng thái QR đã bị ẩn sau 30 phút -->
-                        <div th:if="${ticket.qrExpired}" style="padding: 24px 10px; background-color: #f8fafc; border-radius: 8px;">
-                            <i class="fa-solid fa-clock-rotate-left fa-3x" style="color: #94a3b8; margin-bottom: 16px; display: block; text-align: center;"></i>
-                            <h4 style="font-size: 15px; font-weight: 700; color: var(--color-brand); margin-bottom: 8px; text-align: center;">
+                        <div th:if="${ticket.qrExpired}"
+                            style="padding: 24px 10px; background-color: #f8fafc; border-radius: 8px;">
+                            <i class="fa-solid fa-clock-rotate-left fa-3x"
+                                style="color: #94a3b8; margin-bottom: 16px; display: block; text-align: center;"></i>
+                            <h4
+                                style="font-size: 15px; font-weight: 700; color: var(--color-brand); margin-bottom: 8px; text-align: center;">
                                 Mã QR Đã Bị Ẩn Bảo Mật
                             </h4>
                             <p style="font-size: 13px; color: var(--color-text-secondary); text-align: center;">
@@ -671,11 +916,13 @@
                         <!-- Dispute Window Countdown Notice (BR-09) -->
                         <div th:if="${(ticket.status.name() == 'AWAITING_USE') and isBuyer}"
                             style="margin-top: 14px; padding: 12px; background-color: #fff; border-radius: var(--radius-md); border: 1px solid #bbf7d0;">
-                            <div th:if="${ticket.disputeWindowClosesAt != null}" style="font-size: 13px; color: var(--color-brand); margin-bottom: 8px;">
+                            <div th:if="${ticket.disputeWindowClosesAt != null}"
+                                style="font-size: 13px; color: var(--color-brand); margin-bottom: 8px;">
                                 <i class="fa-regular fa-clock" style="color: var(--color-warning);"></i>
                                 Cửa sổ khiếu nại đóng lúc:
                                 <strong
-                                    th:text="${#temporals.format(ticket.disputeWindowClosesAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời gian</strong>
+                                    th:text="${#temporals.format(ticket.disputeWindowClosesAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời
+                                    gian</strong>
                             </div>
                             <a th:href="@{/disputes/new(ticketId=${ticket.id})}" class="btn btn-danger-outline btn-sm">
                                 <i class="fa-solid fa-triangle-exclamation"></i> Vé có vấn đề? Mở khiếu nại ngay
@@ -744,11 +991,13 @@
                     <!-- Pricing & Action Box -->
                     <div class="sidebar-box">
                         <!-- CSRF Token Inputs for AJAX -->
-                        <input type="hidden" id="detailCsrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <input type="hidden" id="detailCsrfToken" th:name="${_csrf.parameterName}"
+                            th:value="${_csrf.token}" />
                         <input type="hidden" id="detailCsrfHeader" th:value="${_csrf.headerName}" />
 
                         <!-- Price Container với Flexbox 2 cột: Giá bên trái, Nút sao ở góc trên bên phải (co giãn linh hoạt) -->
-                        <div class="price-container" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                        <div class="price-container"
+                            style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
                             <div style="flex: 1; min-width: 0;">
                                 <div
                                     style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">
@@ -773,14 +1022,10 @@
 
                             <!-- Nút sao tròn tinh tế (38x38px) tự căn góc trên bên phải, scale mượt mà -->
                             <th:block sec:authorize="isAuthenticated()">
-                                <button type="button"
-                                        class="btn-star-round"
-                                        id="btnDetailStar"
-                                        th:classappend="${isStarred} ? 'active' : ''"
-                                        th:data-ticket-id="${ticket.id}"
-                                        th:title="${isStarred} ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi'"
-                                        onclick="toggleStarFromDetail(this)"
-                                        aria-label="Lưu vé">
+                                <button type="button" class="btn-star-round" id="btnDetailStar"
+                                    th:classappend="${isStarred} ? 'active' : ''" th:data-ticket-id="${ticket.id}"
+                                    th:title="${isStarred} ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi'"
+                                    onclick="toggleStarFromDetail(this)" aria-label="Lưu vé">
                                     <i class="fa-solid fa-star"></i>
                                 </button>
                             </th:block>
@@ -790,7 +1035,8 @@
                         <div style="display: flex; flex-direction: column; gap: 10px;">
                             <!-- Guest User: Not logged in -->
                             <div th:if="${currentUserId == null}">
-                                <a th:href="@{/login(redirect=@{/tickets/{id}(id=${ticket.id})})}" class="btn btn-primary" style="width: 100%;">
+                                <a th:href="@{/login(redirect=@{/tickets/{id}(id=${ticket.id})})}"
+                                    class="btn btn-primary" style="width: 100%;">
                                     <i class="fa-regular fa-user"></i> Đăng nhập để mua vé
                                 </a>
                                 <p
@@ -821,39 +1067,47 @@
                                     <div style="display: flex; flex-direction: column; gap: 8px;">
                                         <form th:action="@{/payment/wallet/pay-escrow}" method="post">
                                             <input type="hidden" name="ticketId" th:value="${ticket.id}" />
-                                            <button type="submit" class="btn btn-primary" style="width: 100%; font-weight: 700; padding: 12px 18px; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(231, 26, 15, 0.25);">
+                                            <button type="submit" class="btn btn-primary"
+                                                style="width: 100%; font-weight: 700; padding: 12px 18px; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(231, 26, 15, 0.25);">
                                                 <i class="fa-solid fa-wallet"></i> Mua Bằng Ví TicketPass (1-Click)
                                             </button>
                                         </form>
                                         <form th:action="@{/payment/escrow/buy}" method="post">
                                             <input type="hidden" name="ticketId" th:value="${ticket.id}" />
-                                            <button type="submit" class="btn" style="width: 100%; font-weight: 600; padding: 10px 16px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--color-border); background-color: var(--color-bg); color: var(--color-text-main);">
+                                            <button type="submit" class="btn"
+                                                style="width: 100%; font-weight: 600; padding: 10px 16px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--color-border); background-color: var(--color-bg); color: var(--color-text-main);">
                                                 <i class="fa-solid fa-qrcode"></i> Chuyển Khoản QR Ngân Hàng
                                             </button>
                                         </form>
                                     </div>
-                                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--color-text-secondary); margin-top: 10px;">
-                                        <i class="fa-solid fa-lock" style="color: var(--color-success); font-size: 11px;"></i>
+                                    <div
+                                        style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--color-text-secondary); margin-top: 10px;">
+                                        <i class="fa-solid fa-lock"
+                                            style="color: var(--color-success); font-size: 11px;"></i>
                                         <span>Bảo lưu 100% tiền vé qua tài khoản trung gian của Sàn</span>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Ticket is PAYMENT_ESCROWED and current user is Seller (Needs to lock deposit) -->
-                            <div th:if="${ticket.status != null and ticket.status.name() == 'PAYMENT_ESCROWED' and isSeller}">
+                            <div
+                                th:if="${ticket.status != null and ticket.status.name() == 'PAYMENT_ESCROWED' and isSeller}">
                                 <div class="alert alert-warning" style="margin-bottom: 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-triangle-exclamation"></i> Người mua đã nạp tiền ký quỹ thành công. Vui lòng đóng cọc 50% để tiếp tục bàn giao vé.
+                                    <i class="fa-solid fa-triangle-exclamation"></i> Người mua đã nạp tiền ký quỹ thành
+                                    công. Vui lòng đóng cọc 50% để tiếp tục bàn giao vé.
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
                                     <form th:action="@{/payment/wallet/pay-deposit}" method="post">
                                         <input type="hidden" name="ticketId" th:value="${ticket.id}" />
-                                        <button type="submit" class="btn btn-warning" style="width: 100%; font-weight: 700; padding: 12px 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                        <button type="submit" class="btn btn-warning"
+                                            style="width: 100%; font-weight: 700; padding: 12px 18px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                             <i class="fa-solid fa-wallet"></i> Đóng Cọc 50% Bằng Ví TicketPass (1-Click)
                                         </button>
                                     </form>
                                     <form th:action="@{/payment/deposit/lock}" method="post">
                                         <input type="hidden" name="ticketId" th:value="${ticket.id}" />
-                                        <button type="submit" class="btn" style="width: 100%; font-weight: 600; padding: 10px 16px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--color-border); background-color: var(--color-bg); color: var(--color-text-main);">
+                                        <button type="submit" class="btn"
+                                            style="width: 100%; font-weight: 600; padding: 10px 16px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--color-border); background-color: var(--color-bg); color: var(--color-text-main);">
                                             <i class="fa-solid fa-qrcode"></i> Đóng Cọc 50% Bằng Chuyển Khoản QR
                                         </button>
                                     </form>
@@ -861,106 +1115,146 @@
                             </div>
 
                             <!-- Ticket is PAYMENT_ESCROWED and current user is Buyer -->
-                            <div th:if="${ticket.status != null and ticket.status.name() == 'PAYMENT_ESCROWED' and isBuyer}">
+                            <div
+                                th:if="${ticket.status != null and ticket.status.name() == 'PAYMENT_ESCROWED' and isBuyer}">
                                 <div class="alert alert-info" style="margin-bottom: 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-circle-check"></i> Bạn đã nạp tiền ký quỹ thành công. Đang chờ người bán đóng cọc bảo lãnh và chuyển giao vé cho bạn.
+                                    <i class="fa-solid fa-circle-check"></i> Bạn đã nạp tiền ký quỹ thành công. Đang chờ
+                                    người bán đóng cọc bảo lãnh và chuyển giao vé cho bạn.
                                 </div>
                             </div>
 
                             <!-- Ticket is DEPOSIT_LOCKED and current user is Seller (Needs to transfer ticket) -->
-                            <div th:if="${ticket.status != null and ticket.status.name() == 'DEPOSIT_LOCKED' and isSeller}">
+                            <div
+                                th:if="${ticket.status != null and ticket.status.name() == 'DEPOSIT_LOCKED' and isSeller}">
                                 <div class="alert alert-success" style="margin-bottom: 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-circle-check"></i> Đã hoàn tất khóa cọc 50%. Hệ thống đang chuẩn bị mở vé cho người mua.
+                                    <i class="fa-solid fa-circle-check"></i> Đã hoàn tất khóa cọc 50%. Hệ thống đang
+                                    chuẩn bị mở vé cho người mua.
                                 </div>
                             </div>
 
                             <!-- Ticket is DEPOSIT_LOCKED and current user is Buyer -->
-                            <div th:if="${ticket.status != null and ticket.status.name() == 'DEPOSIT_LOCKED' and isBuyer}">
+                            <div
+                                th:if="${ticket.status != null and ticket.status.name() == 'DEPOSIT_LOCKED' and isBuyer}">
                                 <div class="alert alert-info" style="margin-bottom: 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-hourglass-half"></i> Người bán đã khóa cọc thành công và hệ thống đang mở khóa vé cho bạn.
+                                    <i class="fa-solid fa-hourglass-half"></i> Người bán đã khóa cọc thành công và hệ
+                                    thống đang mở khóa vé cho bạn.
                                 </div>
                             </div>
 
                             <!-- Ticket is TRANSFERRED and current user is Seller -->
-                            <div th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED' and isSeller}">
-                                <div class="alert alert-success" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success);">
-                                    <i class="fa-solid fa-circle-check"></i> <strong>Đã bàn giao vé thành công:</strong><br/>
-                                    Hệ thống đã gửi ảnh thông tin vé cho người mua xác nhận. Đang chờ người mua xác nhận hợp lệ để hiển thị mã QR.
+                            <div
+                                th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED' and isSeller}">
+                                <div class="alert alert-success"
+                                    style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success);">
+                                    <i class="fa-solid fa-circle-check"></i> <strong>Đã bàn giao vé thành
+                                        công:</strong><br />
+                                    Hệ thống đã gửi ảnh thông tin vé cho người mua xác nhận. Đang chờ người mua xác nhận
+                                    hợp lệ để hiển thị mã QR.
                                 </div>
                             </div>
 
                             <!-- Ticket is TRANSFERRED and current user is Buyer (Lifecycle receipt confirm) -->
                             <div th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED' and isBuyer}">
-                                <div class="alert alert-warning" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-warning);">
-                                    <i class="fa-solid fa-bell"></i> <strong>Cần xác nhận vé:</strong><br/>
-                                    Vui lòng kiểm tra thông tin vé bên trái. Khi nào bạn sẵn sàng check-in, hãy nhấn xác nhận để mở khóa mã QR (mã QR chỉ hiển thị trong vòng 30 phút).
+                                <div class="alert alert-warning"
+                                    style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-warning);">
+                                    <i class="fa-solid fa-bell"></i> <strong>Cần xác nhận vé:</strong><br />
+                                    Vui lòng kiểm tra thông tin vé bên trái. Khi nào bạn sẵn sàng check-in, hãy nhấn xác
+                                    nhận để mở khóa mã QR (mã QR chỉ hiển thị trong vòng 30 phút).
                                 </div>
-                                <form th:action="@{/tickets/{id}/received(id=${ticket.id})}" method="post" style="margin-bottom: 8px;">
-                                    <button type="submit" class="btn btn-success" style="width: 100%; font-weight: 700; padding: 12px 16px;" onclick="return confirm('Chỉ nhấn nút này khi bạn đã sẵn sàng sử dụng vé. Mã QR sẽ TỰ ĐỘNG ẨN SAU 30 PHÚT kể từ lúc bạn nhấn đồng ý. Xác nhận tiếp tục?');">
-                                        <i class="fa-solid fa-circle-check"></i> Xác nhận vé hợp lệ &amp; Sẵn sàng sử dụng
+                                <form id="confirmReceiptForm" th:action="@{/tickets/{id}/received(id=${ticket.id})}"
+                                    method="post" style="margin-bottom: 8px;">
+                                    <button type="button" class="btn btn-success"
+                                        style="width: 100%; font-weight: 700; padding: 12px 16px;"
+                                        onclick="openConfirmReceiptModal()">
+                                        <i class="fa-solid fa-circle-check"></i> Xác nhận vé hợp lệ &amp; Sẵn sàng sử
+                                        dụng
                                     </button>
                                 </form>
-                                <form th:action="@{/tickets/{id}/technical-issue(id=${ticket.id})}" method="post">
-                                    <button type="submit" class="btn btn-danger-outline" style="width: 100%; font-size: 12px;"
-                                            onclick="return confirm('Bạn xác nhận thông tin vé không hợp lệ? Hệ thống sẽ đóng băng giao dịch để Admin xử lý.');">
+                                <form id="reportIssueForm" th:action="@{/tickets/{id}/technical-issue(id=${ticket.id})}"
+                                    method="post">
+                                    <button type="button" class="btn btn-danger-outline"
+                                        style="width: 100%; font-size: 12px;" onclick="openReportIssueModal()">
                                         <i class="fa-solid fa-triangle-exclamation"></i> Báo lỗi vé không hợp lệ
                                     </button>
                                 </form>
                             </div>
 
                             <!-- Ticket is AWAITING_USE and current user is Seller -->
-                            <div th:if="${ticket.status != null and ticket.status.name() == 'AWAITING_USE' and isSeller}">
-                                <div class="alert alert-info" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-primary);">
-                                    <i class="fa-solid fa-qrcode"></i> <strong>Người mua đã mở mã QR:</strong><br/>
-                                    Người mua đã nhấn vào nút hiện mã QR check-in để sử dụng vé (mã QR có hiệu lực trong 30 phút). Giao dịch đang chờ hết thời gian khiếu nại để hoàn tất và giải ngân tiền bán + cọc cho bạn.
+                            <div
+                                th:if="${ticket.status != null and ticket.status.name() == 'AWAITING_USE' and isSeller}">
+                                <div class="alert alert-info"
+                                    style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-primary);">
+                                    <i class="fa-solid fa-qrcode"></i> <strong>Người mua đã mở mã QR:</strong><br />
+                                    Người mua đã nhấn vào nút hiện mã QR check-in để sử dụng vé (mã QR có hiệu lực trong
+                                    30 phút). Giao dịch đang chờ hết thời gian khiếu nại để hoàn tất và giải ngân tiền
+                                    bán + cọc cho bạn.
                                 </div>
                             </div>
 
                             <!-- Ticket is AWAITING_USE and current user is Buyer -->
-                            <div th:if="${ticket.status != null and ticket.status.name() == 'AWAITING_USE' and isBuyer}">
-                                <div class="alert alert-success" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success);">
-                                    <i class="fa-solid fa-qrcode"></i> <strong>Mã QR đang hiển thị:</strong><br/>
-                                    Bạn đã mở khóa mã QR check-in (hiệu lực trong 30 phút). Vui lòng quét mã tại sự kiện.
+                            <div
+                                th:if="${ticket.status != null and ticket.status.name() == 'AWAITING_USE' and isBuyer}">
+                                <div class="alert alert-success"
+                                    style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success);">
+                                    <i class="fa-solid fa-qrcode"></i> <strong>Mã QR đang hiển thị:</strong><br />
+                                    Bạn đã mở khóa mã QR check-in (hiệu lực trong 30 phút). Vui lòng quét mã tại sự
+                                    kiện.
                                 </div>
                             </div>
 
                             <!-- Ticket is in TECHNICAL_ISSUE state -->
                             <div th:if="${ticket.status != null and ticket.status.name() == 'TECHNICAL_ISSUE'}">
-                                <div class="alert alert-warning" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-warning);">
-                                    <i class="fa-solid fa-triangle-exclamation"></i> <strong>Sự cố kỹ thuật:</strong> Người mua đã báo lỗi ảnh QR. Bộ đếm timeout đã được đóng băng để bộ phận kỹ thuật / Admin hỗ trợ can thiệp.
+                                <div class="alert alert-warning"
+                                    style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-warning);">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> <strong>Sự cố kỹ thuật:</strong>
+                                    Người mua đã báo lỗi ảnh QR. Bộ đếm timeout đã được đóng băng để bộ phận kỹ thuật /
+                                    Admin hỗ trợ can thiệp.
                                 </div>
                             </div>
 
                             <!-- Ticket is in DISPUTE_UNDER_REVIEW state -->
-                            <div th:if="${ticket.status != null and (ticket.status.name() == 'DISPUTE_UNDER_REVIEW' or ticket.status.name() == 'DISPUTED')}">
-                                <div class="alert alert-danger" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-danger); line-height: 1.5;">
-                                    <i class="fa-solid fa-triangle-exclamation"></i> <strong>Đang có khiếu nại tranh chấp:</strong><br/>
-                                    Hồ sơ đang được đối soát. Toàn bộ tiền ký quỹ và tiền cọc đã được đóng băng để Admin thụ lý.
+                            <div
+                                th:if="${ticket.status != null and (ticket.status.name() == 'DISPUTE_UNDER_REVIEW' or ticket.status.name() == 'DISPUTED')}">
+                                <div class="alert alert-danger"
+                                    style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-danger); line-height: 1.5;">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> <strong>Đang có khiếu nại tranh
+                                        chấp:</strong><br />
+                                    Hồ sơ đang được đối soát. Toàn bộ tiền ký quỹ và tiền cọc đã được đóng băng để Admin
+                                    thụ lý.
                                 </div>
-                                <a th:href="@{/disputes/ticket/{id}(id=${ticket.id})}" class="btn btn-danger" style="width: 100%; font-size: 13px; margin-bottom: 8px;">
+                                <a th:href="@{/disputes/ticket/{id}(id=${ticket.id})}" class="btn btn-danger"
+                                    style="width: 100%; font-size: 13px; margin-bottom: 8px;">
                                     <i class="fa-solid fa-file-shield"></i> Xem tiến trình tranh chấp
                                 </a>
-                                <a th:if="${#authorization.expression('hasRole(''ADMIN'')')}" th:href="@{/admin/disputes}" class="btn btn-warning" style="width: 100%; font-size: 13px;">
+                                <a th:if="${#authorization.expression('hasRole(''ADMIN'')')}"
+                                    th:href="@{/admin/disputes}" class="btn btn-warning"
+                                    style="width: 100%; font-size: 13px;">
                                     <i class="fa-solid fa-gavel"></i> Trung tâm phán quyết Admin
                                 </a>
                             </div>
 
                             <!-- Ticket is RESOLVED_BUYER_WINS -->
                             <div th:if="${ticket.status != null and ticket.status.name() == 'RESOLVED_BUYER_WINS'}">
-                                <div class="alert alert-success" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success); line-height: 1.5;">
-                                    <i class="fa-solid fa-circle-check"></i> <strong>Tranh chấp đã giải quyết:</strong> Người mua thắng kiện. Tiền ký quỹ đã được hoàn trả và người bán bị phạt cọc.
+                                <div class="alert alert-success"
+                                    style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success); line-height: 1.5;">
+                                    <i class="fa-solid fa-circle-check"></i> <strong>Tranh chấp đã giải quyết:</strong>
+                                    Người mua thắng kiện. Tiền ký quỹ đã được hoàn trả và người bán bị phạt cọc.
                                 </div>
-                                <a th:href="@{/disputes/ticket/{id}(id=${ticket.id})}" class="btn btn-outline btn-sm" style="width: 100%;">
+                                <a th:href="@{/disputes/ticket/{id}(id=${ticket.id})}" class="btn btn-outline btn-sm"
+                                    style="width: 100%;">
                                     <i class="fa-solid fa-file-lines"></i> Xem hồ sơ khiếu nại
                                 </a>
                             </div>
 
                             <!-- Ticket is RESOLVED_SELLER_WINS -->
                             <div th:if="${ticket.status != null and ticket.status.name() == 'RESOLVED_SELLER_WINS'}">
-                                <div class="alert alert-success" style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success); line-height: 1.5;">
-                                    <i class="fa-solid fa-circle-check"></i> <strong>Tranh chấp đã giải quyết:</strong> Người bán thắng kiện. Tiền bán vé đã được giải ngân và cọc đã được hoàn đủ.
+                                <div class="alert alert-success"
+                                    style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success); line-height: 1.5;">
+                                    <i class="fa-solid fa-circle-check"></i> <strong>Tranh chấp đã giải quyết:</strong>
+                                    Người bán thắng kiện. Tiền bán vé đã được giải ngân và cọc đã được hoàn đủ.
                                 </div>
-                                <a th:href="@{/disputes/ticket/{id}(id=${ticket.id})}" class="btn btn-outline btn-sm" style="width: 100%;">
+                                <a th:href="@{/disputes/ticket/{id}(id=${ticket.id})}" class="btn btn-outline btn-sm"
+                                    style="width: 100%;">
                                     <i class="fa-solid fa-file-lines"></i> Xem hồ sơ khiếu nại
                                 </a>
                             </div>
@@ -1015,15 +1309,18 @@
 
             <!-- JavaScript Toggle Sao vé mượt mà (Optimistic UI) -->
             <!-- Lightbox Modal Markup (Design Taste Frontend) -->
-            <div id="imageLightboxModal" class="tp-lightbox-modal" aria-hidden="true" onclick="handleLightboxBackdropClick(event)">
+            <div id="imageLightboxModal" class="tp-lightbox-modal" aria-hidden="true"
+                onclick="handleLightboxBackdropClick(event)">
                 <div class="tp-lightbox-container">
                     <div class="tp-lightbox-header">
                         <span class="tp-lightbox-title" id="lightboxTitle">Chi tiết vé</span>
                         <div class="tp-lightbox-actions">
-                            <button type="button" class="tp-lightbox-btn" id="lightboxDownloadBtn" onclick="downloadCurrentLightboxImage()" title="Tải ảnh về máy">
+                            <button type="button" class="tp-lightbox-btn" id="lightboxDownloadBtn"
+                                onclick="downloadCurrentLightboxImage()" title="Tải ảnh về máy">
                                 <i class="fa-solid fa-download"></i> Tải về máy
                             </button>
-                            <button type="button" class="tp-lightbox-btn tp-lightbox-close" onclick="closeImageLightbox()" title="Đóng (ESC)">
+                            <button type="button" class="tp-lightbox-btn tp-lightbox-close"
+                                onclick="closeImageLightbox()" title="Đóng (ESC)">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
                         </div>
@@ -1032,12 +1329,148 @@
                         <img id="lightboxImage" src="" alt="Ảnh vé phóng to" class="tp-lightbox-img" />
                     </div>
                     <div class="tp-lightbox-footer">
-                        <span><i class="fa-solid fa-circle-info"></i> Nhấn phím ESC hoặc nhấp ra ngoài để đóng xem ảnh</span>
+                        <span><i class="fa-solid fa-circle-info"></i> Nhấn phím ESC hoặc nhấp ra ngoài để đóng xem
+                            ảnh</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Xác Nhận Mở Mã QR Check-in (Design Taste Frontend - Trust-First Security Card) -->
+            <div id="confirmReceiptModal" class="tp-confirm-modal" role="dialog" aria-modal="true"
+                aria-labelledby="confirmReceiptTitle" onclick="handleModalBackdropClick(event, 'confirmReceiptModal')">
+                <div class="tp-confirm-dialog" onclick="event.stopPropagation()">
+                    <button type="button" class="tp-confirm-close-btn" onclick="closeConfirmReceiptModal()"
+                        title="Đóng (ESC)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div class="tp-confirm-icon-badge badge-success">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <h3 id="confirmReceiptTitle" class="tp-confirm-title">Mở khóa mã QR check-in?</h3>
+                    <p class="tp-confirm-desc">
+                        Hệ thống sẽ mở khóa mã QR bí mật để bạn soát vé tại địa điểm sự kiện.
+                    </p>
+                    <div class="tp-confirm-callout callout-warning">
+                        <i class="fa-solid fa-clock-rotate-left"
+                            style="font-size: 16px; margin-top: 2px; color: #d97706; flex-shrink: 0;"></i>
+                        <div>
+                            <strong>Cảnh báo thời gian:</strong> Mã QR sẽ <strong>tự động ẩn sau 30 phút</strong> kể từ
+                            thời điểm mở khóa. Chỉ xác nhận khi bạn đã có mặt tại điểm soát vé và sẵn sàng vào cổng.
+                        </div>
+                    </div>
+                    <div class="tp-confirm-actions">
+                        <button type="button" class="tp-modal-btn-cancel" onclick="closeConfirmReceiptModal()">
+                            Kiểm tra lại
+                        </button>
+                        <button type="button" class="tp-modal-btn-confirm-success" id="btnSubmitConfirmReceipt"
+                            onclick="submitConfirmReceipt()">
+                            <i class="fa-solid fa-circle-check"></i> Tôi đã sẵn sàng · Mở mã QR
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Báo Lỗi Vé Không Hợp Lệ (Design Taste Frontend - Trust-First Security Card) -->
+            <div id="reportIssueModal" class="tp-confirm-modal" role="dialog" aria-modal="true"
+                aria-labelledby="reportIssueTitle" onclick="handleModalBackdropClick(event, 'reportIssueModal')">
+                <div class="tp-confirm-dialog" onclick="event.stopPropagation()">
+                    <button type="button" class="tp-confirm-close-btn" onclick="closeReportIssueModal()"
+                        title="Đóng (ESC)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div class="tp-confirm-icon-badge badge-danger">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <h3 id="reportIssueTitle" class="tp-confirm-title">Báo lỗi vé không hợp lệ?</h3>
+                    <p class="tp-confirm-desc">
+                        Xác nhận thông tin vé không đúng với mô tả, ảnh vé bị lỗi hoặc phát hiện dấu hiệu bất thường.
+                    </p>
+                    <div class="tp-confirm-callout callout-danger">
+                        <i class="fa-solid fa-shield-halved"
+                            style="font-size: 16px; margin-top: 2px; color: #dc2626; flex-shrink: 0;"></i>
+                        <div>
+                            <strong>Cơ chế bảo vệ Escrow:</strong> Giao dịch sẽ được <strong>đóng băng ngay lập
+                                tức</strong>. Tiền giữ hộ và tiền cọc 50% của người bán sẽ được khóa lại để Admin can
+                            thiệp xử lý.
+                        </div>
+                    </div>
+                    <div class="tp-confirm-actions">
+                        <button type="button" class="tp-modal-btn-cancel" onclick="closeReportIssueModal()">
+                            Hủy bỏ
+                        </button>
+                        <button type="button" class="tp-modal-btn-confirm-danger" id="btnSubmitReportIssue"
+                            onclick="submitReportIssue()">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Xác nhận báo lỗi
+                        </button>
                     </div>
                 </div>
             </div>
 
             <script>
+                // --- Confirmation Modals Engine (Design Taste Frontend) ---
+                function openConfirmReceiptModal() {
+                    const modal = document.getElementById('confirmReceiptModal');
+                    if (modal) {
+                        modal.classList.add('is-open');
+                        modal.setAttribute('aria-hidden', 'false');
+                        document.body.style.overflow = 'hidden';
+                    }
+                }
+
+                function closeConfirmReceiptModal() {
+                    const modal = document.getElementById('confirmReceiptModal');
+                    if (modal) {
+                        modal.classList.remove('is-open');
+                        modal.setAttribute('aria-hidden', 'true');
+                        document.body.style.overflow = '';
+                    }
+                }
+
+                function submitConfirmReceipt() {
+                    const btn = document.getElementById('btnSubmitConfirmReceipt');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang mở khóa...';
+                    }
+                    const form = document.getElementById('confirmReceiptForm');
+                    if (form) form.submit();
+                }
+
+                function openReportIssueModal() {
+                    const modal = document.getElementById('reportIssueModal');
+                    if (modal) {
+                        modal.classList.add('is-open');
+                        modal.setAttribute('aria-hidden', 'false');
+                        document.body.style.overflow = 'hidden';
+                    }
+                }
+
+                function closeReportIssueModal() {
+                    const modal = document.getElementById('reportIssueModal');
+                    if (modal) {
+                        modal.classList.remove('is-open');
+                        modal.setAttribute('aria-hidden', 'true');
+                        document.body.style.overflow = '';
+                    }
+                }
+
+                function submitReportIssue() {
+                    const btn = document.getElementById('btnSubmitReportIssue');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang gửi báo lỗi...';
+                    }
+                    const form = document.getElementById('reportIssueForm');
+                    if (form) form.submit();
+                }
+
+                function handleModalBackdropClick(e, modalId) {
+                    if (e.target && e.target.id === modalId) {
+                        if (modalId === 'confirmReceiptModal') closeConfirmReceiptModal();
+                        else if (modalId === 'reportIssueModal') closeReportIssueModal();
+                    }
+                }
+
                 // --- Lightbox & Image Download Engine ---
                 let currentLightboxUrl = '';
                 let currentLightboxFilename = 'ticket-pass-image.png';
@@ -1079,9 +1512,11 @@
                     }
                 }
 
-                document.addEventListener('keydown', function(e) {
+                document.addEventListener('keydown', function (e) {
                     if (e.key === 'Escape' || e.keyCode === 27) {
                         closeImageLightbox();
+                        closeConfirmReceiptModal();
+                        closeReportIssueModal();
                     }
                 });
 
@@ -1139,19 +1574,19 @@
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (!data.success) {
+                        .then(res => res.json())
+                        .then(data => {
+                            if (!data.success) {
+                                btn.classList.toggle('active', isCurrentlyActive);
+                                btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+                                alert(data.message || 'Không thể lưu vé');
+                            }
+                        })
+                        .catch(err => {
                             btn.classList.toggle('active', isCurrentlyActive);
                             btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
-                            alert(data.message || 'Không thể lưu vé');
-                        }
-                    })
-                    .catch(err => {
-                        btn.classList.toggle('active', isCurrentlyActive);
-                        btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
-                        console.error("Lỗi khi toggle sao:", err);
-                    });
+                            console.error("Lỗi khi toggle sao:", err);
+                        });
                 }
             </script>
         </content>

@@ -8,7 +8,6 @@ import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.user.application.UserQueryService;
 import com.yourapp.ticketpass.user.domain.User;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
