@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -207,6 +209,7 @@ public class NotificationEventListener {
      * 7. Người mua đã nhận vé (thủ công hoặc tự động sau 30 phút) -> Bắt đầu cửa sổ khiếu nại.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onTicketReceived(TicketReceivedEvent event) {
         log.info("Xử lý thông báo TICKET_RECEIVED cho vé {}", event.getTicketId());
         String targetUrl = "/tickets/" + event.getTicketId();
@@ -230,14 +233,14 @@ public class NotificationEventListener {
             notificationService.sendNotification(
                     event.getBuyerId(),
                     "Xác nhận nhận vé thành công",
-                    String.format("Bạn đã xác nhận nhận vé \"%s\". Cửa sổ khiếu nại chính thức kích hoạt.", event.getTicketTitle()),
+                    String.format("Bạn đã xác nhận nhận vé \"%s\" và mở mã QR check-in (mã QR có hiệu lực trong 30 phút). Cửa sổ khiếu nại chính thức kích hoạt.", event.getTicketTitle()),
                     NotificationType.TICKET_RECEIVED,
                     targetUrl
             );
             notificationService.sendNotification(
                     event.getSellerId(),
-                    "Người mua đã xác nhận nhận vé",
-                    String.format("Người mua đã xác nhận nhận vé \"%s\". Tiền sẽ được giải ngân khi hết cửa sổ khiếu nại.", event.getTicketTitle()),
+                    "Người mua đã xác nhận & mở mã QR",
+                    String.format("Người mua đã xác nhận vé hợp lệ và nhấn hiện mã QR check-in cho vé \"%s\" (mã QR có hiệu lực trong 30 phút). Tiền sẽ được giải ngân khi hết cửa sổ khiếu nại.", event.getTicketTitle()),
                     NotificationType.TICKET_RECEIVED,
                     targetUrl
             );

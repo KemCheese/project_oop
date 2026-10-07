@@ -110,12 +110,22 @@ public class HoldFundsUseCase {
         if (existingOpt.isPresent()) {
             EscrowTransaction existing = existingOpt.get();
             if (existing.getStatus() != EscrowStatus.FAILED) {
-                throw new BusinessRuleViolationException(
-                        "Vé #" + ticketId + " đã có giao dịch ký quỹ đang hiệu lực (trạng thái: "
-                        + existing.getStatus() + "). Không thể mở thêm escrow mới.");
+                // Tự động huỷ giao dịch cũ nếu đang PENDING và quá hạn 15 phút
+                if (existing.getStatus() == EscrowStatus.PENDING 
+                        && existing.getCreatedAt() != null 
+                        && existing.getCreatedAt().plus(java.time.Duration.ofMinutes(15)).isBefore(Instant.now())) {
+                    log.warn("[HoldFunds] Giao dịch ký quỹ cũ #{} đã quá hạn 15 phút chờ thanh toán. Đánh dấu FAILED.", existing.getId());
+                    existing.setStatus(EscrowStatus.FAILED);
+                    existing.setFailureReason("Quá hạn 15 phút chờ thanh toán (System Timeout).");
+                    escrowTransactionRepository.save(existing);
+                } else {
+                    throw new BusinessRuleViolationException(
+                            "Vé #" + ticketId + " đã có giao dịch ký quỹ đang hiệu lực (trạng thái: "
+                            + existing.getStatus() + "). Không thể mở thêm escrow mới.");
+                }
             }
-            // Tái sử dụng bản ghi FAILED trước đó để tránh trùng lặp 2 bản ghi cho cùng 1 ticketId
-            tx = existing;
+            // Tạo bản ghi mới hoàn toàn để tránh lỗi IPN trùng lặp từ giao dịch cũ
+            tx = new EscrowTransaction();
         } else {
             tx = new EscrowTransaction();
         }

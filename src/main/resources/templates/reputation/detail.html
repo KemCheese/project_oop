@@ -221,6 +221,83 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Lịch sử giao dịch -->
+                <div class="rules-card" style="margin-top: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 700; color: var(--color-brand); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-clock-rotate-left" style="color: var(--color-primary);"></i>
+                        Lịch Sử Giao Dịch
+                    </h3>
+
+                    <div th:if="${#lists.isEmpty(history)}"
+                         style="text-align: center; padding: 32px 0; color: var(--color-text-muted); font-size: 14px;">
+                        <i class="fa-solid fa-inbox" style="font-size: 28px; display: block; margin-bottom: 10px; opacity: 0.4;"></i>
+                        Chưa có giao dịch nào được ghi nhận.
+                    </div>
+
+                    <div th:unless="${#lists.isEmpty(history)}" style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px;">
+                            <thead>
+                                <tr style="background-color: #fafbfc; text-align: left;">
+                                    <th style="padding: 10px 14px; color: var(--color-text-muted); font-weight: 700; border-bottom: 1px solid var(--color-border);">Sự kiện / Vé</th>
+                                    <th style="padding: 10px 14px; color: var(--color-text-muted); font-weight: 700; border-bottom: 1px solid var(--color-border);">Vai trò</th>
+                                    <th style="padding: 10px 14px; color: var(--color-text-muted); font-weight: 700; border-bottom: 1px solid var(--color-border);">Giá trị</th>
+                                    <th style="padding: 10px 14px; color: var(--color-text-muted); font-weight: 700; border-bottom: 1px solid var(--color-border);">Kết quả</th>
+                                    <th style="padding: 10px 14px; color: var(--color-text-muted); font-weight: 700; border-bottom: 1px solid var(--color-border);">Thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="item : ${history}"
+                                    style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;"
+                                    onmouseover="this.style.backgroundColor='#f8fafc'" onmouseout="this.style.backgroundColor=''">
+
+                                    <!-- Tên sự kiện / link vé -->
+                                    <td style="padding: 12px 14px;">
+                                        <a th:href="@{/tickets/{id}(id=${item.ticketId})}"
+                                           style="font-weight: 600; color: var(--color-brand); text-decoration: none;"
+                                           th:text="${item.eventName}">Tên sự kiện</a>
+                                        <div style="font-size: 11px; color: var(--color-text-muted); margin-top: 2px;"
+                                             th:text="'#' + ${item.ticketId}">#1</div>
+                                    </td>
+
+                                    <!-- Vai trò -->
+                                    <td style="padding: 12px 14px;">
+                                        <span th:if="${item.role == 'SELLER'}"
+                                              style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; background-color: #eff6ff; color: #1d4ed8;">
+                                            <i class="fa-solid fa-tag" style="font-size: 10px;"></i> Người bán
+                                        </span>
+                                        <span th:if="${item.role == 'BUYER'}"
+                                              style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; background-color: #f0fdf4; color: #15803d;">
+                                            <i class="fa-solid fa-bag-shopping" style="font-size: 10px;"></i> Người mua
+                                        </span>
+                                    </td>
+
+                                    <!-- Giá trị -->
+                                    <td style="padding: 12px 14px; font-weight: 600; color: var(--color-text-secondary);"
+                                        th:text="${item.salePrice != null ? #numbers.formatDecimal(item.salePrice, 0, 'COMMA', 0, 'POINT') + ' đ' : '-'}">-</td>
+
+                                    <!-- Kết quả -->
+                                    <td style="padding: 12px 14px;">
+                                        <span th:text="${item.outcomeLabel}"
+                                              th:style="${item.outcomeColor == 'success'} ? 'display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;background-color:#f0fdf4;color:#15803d;' :
+                                                        (${item.outcomeColor == 'danger'} ? 'display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;background-color:#fef2f2;color:#dc2626;' :
+                                                        (${item.outcomeColor == 'warning'} ? 'display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;background-color:#fffbeb;color:#d97706;' :
+                                                                                             'display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;background-color:#eff6ff;color:#1d4ed8;'))">
+                                            Đang xử lý
+                                        </span>
+                                    </td>
+
+                                    <!-- Thời gian -->
+                                    <td style="padding: 12px 14px; color: var(--color-text-muted); font-size: 12px; white-space: nowrap;"
+                                        th:text="${item.eventAt != null ? #temporals.format(item.eventAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : '-'}">
+                                        --/--/---- --:--
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </content>
     </div>

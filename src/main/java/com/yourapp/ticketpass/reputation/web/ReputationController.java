@@ -4,7 +4,14 @@ import com.yourapp.ticketpass.reputation.application.UpdateReputationUseCase;
 import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.reputation.web.dto.ReputationResponse;
+import com.yourapp.ticketpass.reputation.web.dto.TransactionHistoryItem;
+import com.yourapp.ticketpass.ticket.domain.Ticket;
+import com.yourapp.ticketpass.ticket.domain.TicketRepository;
+import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.user.application.UserQueryService;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +72,8 @@ public class ReputationController {
 
     private final UserQueryService userQueryService;
 
+    private final TicketRepository ticketRepository;
+
     /**
      * Hiển thị hồ sơ uy tín công khai của một người dùng.
      *
@@ -84,6 +93,11 @@ public class ReputationController {
         UserReputationScore score = updateReputationUseCase.getOrCreate(userId);
         ReputationResponse response = mapToResponse(score);
         model.addAttribute("reputation", response);
+
+        // Lịch sử giao dịch: gom vé đã bán + vé đã mua, rồi sắp xếp mới nhất trước
+        List<TransactionHistoryItem> history = buildTransactionHistory(userId);
+        model.addAttribute("history", history);
+
         return "reputation/detail";
     }
 
@@ -145,5 +159,79 @@ public class ReputationController {
         }
 
         return response;
+    }
+
+    /**
+     * Xây dựng danh sách lịch sử giao dịch từ bảng tickets.
+     *
+     * <p>Gom cả vé user từng bán (sellerId) lẫn từng mua (buyerId).
+     * Chỉ lấy các vé đã có diễn biến thực sự (loại trừ LISTED đang chờ).
+     * Sắp xếp theo thời điểm sự kiện mới nhất trước.</p>
+     */
+    private List<TransactionHistoryItem> buildTransactionHistory(Long userId) {
+        List<TransactionHistoryItem> result = new ArrayList<>();
+
+        // Vé đã bán
+        ticketRepository.findBySellerId(userId).forEach(ticket -> {
+            if (ticket.getStatus() != TicketStatus.LISTED) {
+                result.add(toHistoryItem(ticket, "SELLER"));
+            }
+        });
+
+        // Vé đã mua
+        ticketRepository.findByBuyerId(userId).forEach(ticket -> {
+            result.add(toHistoryItem(ticket, "BUYER"));
+        });
+
+        // Sắp xếp: giao dịch mới nhất lên đầu
+        result.sort(Comparator.comparing(
+                item -> item.getEventAt() != null ? item.getEventAt() : Instant.EPOCH,
+                Comparator.reverseOrder()
+        ));
+
+        return result;
+    }
+
+    /**
+     * Map một Ticket sang TransactionHistoryItem.
+     *
+     * @param ticket entity vé
+     * @param role "SELLER" hoặc "BUYER"
+     */
+    private TransactionHistoryItem toHistoryItem(Ticket ticket, String role) {
+        TransactionHistoryItem item = new TransactionHistoryItem();
+        item.setTicketId(ticket.getId());
+        item.setEventName(ticket.getEventName() != null ? ticket.getEventName() : ticket.getTitle());
+        item.setTitle(ticket.getTitle());
+        item.setSalePrice(ticket.getSalePrice());
+        item.setRole(role);
+        item.setRawStatus(ticket.getStatus() != null ? ticket.getStatus().name() : "");
+
+        // Xác định outcome label và màu
+        TicketStatus status = ticket.getStatus();
+        if (status == TicketStatus.AUTO_COMPLETE
+                || status == TicketStatus.RESOLVED_SELLER_WINS
+                || status == TicketStatus.RESOLVED_BUYER_WINS) {
+            item.setOutcomeLabel("Thành công");
+            item.setOutcomeColor("success");
+        } else if (status == TicketStatus.CANCELLED) {
+            item.setOutcomeLabel("Đã hủy");
+            item.setOutcomeColor("danger");
+        } else if (status == TicketStatus.DISPUTE_UNDER_REVIEW) {
+            item.setOutcomeLabel("Đang tranh chấp");
+            item.setOutcomeColor("warning");
+        } else {
+            item.setOutcomeLabel("Đang xử lý");
+            item.setOutcomeColor("info");
+        }
+
+        // Thời điểm sự kiện: ưu tiên mốc mới nhất
+        Instant eventAt = ticket.getCompletedAt();
+        if (eventAt == null) eventAt = ticket.getTransferredAt();
+        if (eventAt == null) eventAt = ticket.getListedAt();
+        if (eventAt == null) eventAt = ticket.getCreatedAt();
+        item.setEventAt(eventAt);
+
+        return item;
     }
 }

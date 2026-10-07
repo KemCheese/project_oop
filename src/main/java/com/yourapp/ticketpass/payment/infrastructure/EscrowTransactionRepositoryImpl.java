@@ -42,7 +42,7 @@ public class EscrowTransactionRepositoryImpl implements EscrowTransactionReposit
 
     @Override
     public Optional<EscrowTransaction> findByTicketId(Long ticketId) {
-        return jpaRepository.findByTicketId(ticketId);
+        return jpaRepository.findFirstByTicketIdOrderByIdDesc(ticketId);
     }
 
     @Override

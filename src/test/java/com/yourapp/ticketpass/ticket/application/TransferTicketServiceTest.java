@@ -5,6 +5,7 @@ import com.yourapp.ticketpass.shared.storage.FileStorageService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +34,9 @@ class TransferTicketServiceTest {
 
     @Mock
     private FileStorageService fileStorageService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private TransferTicketService transferTicketService;

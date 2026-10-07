@@ -57,4 +57,8 @@ public class TicketResponse {
     private Instant disputeWindowClosesAt;
 
     private Instant createdAt;
+
+    private Instant receivedAt;
+
+    private boolean qrExpired;
 }

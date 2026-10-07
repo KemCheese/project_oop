@@ -56,8 +56,7 @@ public class TransferTicketService {
 
     private final FileStorageService fileStorageService;
 
-    @Autowired(required = false)
-    private ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Tao mot listing moi tu du lieu nguoi ban nhap.
@@ -394,6 +393,14 @@ public class TransferTicketService {
         response.setTransferInstruction(ticket.getTransferInstruction());
         response.setDisputeWindowClosesAt(ticket.getDisputeWindowClosesAt());
         response.setCreatedAt(ticket.getCreatedAt());
+        response.setReceivedAt(ticket.getReceivedAt());
+        
+        if (ticket.getReceivedAt() != null) {
+            java.time.Instant expiredAt = ticket.getReceivedAt().plus(java.time.Duration.ofMinutes(30));
+            response.setQrExpired(expiredAt.isBefore(java.time.Instant.now()));
+        } else {
+            response.setQrExpired(false);
+        }
 
         // Chuyen storageKey thanh URL cong khai qua FileStorageService
         if (ticket.getTicketImageStorageKey() != null && !ticket.getTicketImageStorageKey().isBlank()) {
