@@ -286,7 +286,7 @@
                                th:data-id="${n.id}">
                                 
                                 <div class="notif-full-icon"
-                                     th:classappend="${n.type == 'ESCROW_PAID' or n.type == 'DEPOSIT_LOCKED' or n.type == 'STARRED_TICKET_BOUGHT'} ? 'escrow' : (${n.type == 'TICKET_RECEIVED' or n.type == 'TRANSACTION_COMPLETED'} ? 'success' : (${n.type == 'DISPUTE_FILED' or n.type == 'DISPUTE_RESOLVED' or n.type == 'DEPOSIT_TIMEOUT' or n.type == 'TICKET_EXPIRED'} ? 'danger' : 'system'))">
+                                     th:classappend="${n.type == 'ESCROW_PAID' or n.type == 'DEPOSIT_LOCKED' or n.type == 'STARRED_TICKET_BOUGHT' or n.type == 'UPCOMING_EVENT_REMINDER'} ? 'escrow' : (${n.type == 'TICKET_RECEIVED' or n.type == 'TRANSACTION_COMPLETED'} ? 'success' : (${n.type == 'DISPUTE_FILED' or n.type == 'DISPUTE_RESOLVED' or n.type == 'DEPOSIT_TIMEOUT' or n.type == 'TICKET_EXPIRED'} ? 'danger' : 'system'))">
                                     <i th:if="${n.type == 'ESCROW_PAID'}" class="fa-solid fa-wallet"></i>
                                     <i th:if="${n.type == 'DEPOSIT_LOCKED'}" class="fa-solid fa-lock"></i>
                                     <i th:if="${n.type == 'TICKET_RECEIVED'}" class="fa-solid fa-ticket"></i>
@@ -299,6 +299,7 @@
                                     <i th:if="${n.type == 'TICKET_EXPIRED'}" class="fa-solid fa-calendar-xmark"></i>
                                     <i th:if="${n.type == 'STARRED_TICKET_BOUGHT'}" class="fa-solid fa-star"></i>
                                     <i th:if="${n.type == 'STARRED_TICKET_EXPIRED'}" class="fa-solid fa-clock-rotate-left"></i>
+                                    <i th:if="${n.type == 'UPCOMING_EVENT_REMINDER'}" class="fa-solid fa-clock"></i>
                                     <i th:if="${n.type == 'SYSTEM'}" class="fa-solid fa-bell"></i>
                                 </div>
 

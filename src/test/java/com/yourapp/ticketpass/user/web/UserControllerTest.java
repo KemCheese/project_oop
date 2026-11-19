@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.yourapp.ticketpass.reputation.application.UpdateReputationUseCase;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
+import com.yourapp.ticketpass.user.application.AccountSecurityService;
 import com.yourapp.ticketpass.user.application.RegisterUserUseCase;
 import com.yourapp.ticketpass.user.application.StarredTicketUseCase;
 import com.yourapp.ticketpass.user.application.UserProfileService;
@@ -21,10 +22,13 @@ import com.yourapp.ticketpass.user.application.UserQueryService;
 import com.yourapp.ticketpass.user.domain.User;
 import com.yourapp.ticketpass.user.domain.UserRole;
 import com.yourapp.ticketpass.user.domain.UserStatus;
+import com.yourapp.ticketpass.user.web.dto.ChangePasswordRequest;
 import com.yourapp.ticketpass.user.web.dto.RegisterRequest;
 import com.yourapp.ticketpass.user.web.dto.UpdateBankAccountRequest;
 import com.yourapp.ticketpass.user.web.dto.UpdateProfileRequest;
 import com.yourapp.ticketpass.user.web.dto.UserProfileResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.security.Principal;
@@ -71,6 +75,9 @@ class UserControllerTest {
 
     @Mock
     private StarredTicketUseCase starredTicketUseCase;
+
+    @Mock
+    private AccountSecurityService accountSecurityService;
 
     @InjectMocks
     private UserController userController;
@@ -462,6 +469,97 @@ class UserControllerTest {
             assertThat(model.getAttribute("profile")).isNotNull();
             assertThat(model.getAttribute("maskedBankAccount")).isEqualTo("******6789");
             assertThat(model.getAttribute("updateBankAccountRequest")).isSameAs(request);
+            assertThat(model.getAttribute("changePasswordRequest")).isInstanceOf(ChangePasswordRequest.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("6. POST /profile/password")
+    class ChangePasswordRouteTests {
+
+        @Test
+        @DisplayName("Đổi mật khẩu hợp lệ: gọi service giữ lại phiên hiện tại và redirect với #password-section")
+        void changePassword_WhenValid_ShouldCallServiceAndRedirect() {
+            Principal principal = () -> "user@example.com";
+            Model model = new ConcurrentModel();
+            User user = buildUser(10L, "user@example.com");
+
+            ChangePasswordRequest request = new ChangePasswordRequest();
+            request.setCurrentPassword("OldPass123");
+            request.setNewPassword("NewPass123");
+            request.setConfirmNewPassword("NewPass123");
+            BindingResult bindingResult = new BeanPropertyBindingResult(request, "changePasswordRequest");
+
+            HttpServletRequest httpRequest = mock(HttpServletRequest.class);
+            HttpSession session = mock(HttpSession.class);
+            when(httpRequest.getSession(false)).thenReturn(session);
+            when(session.getId()).thenReturn("sess-current-1");
+            when(userQueryService.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+
+            String view = userController.changePassword(request, bindingResult, httpRequest, principal, model);
+
+            assertThat(view).isEqualTo("redirect:/profile?passwordUpdated#password-section");
+            verify(accountSecurityService).changePassword(10L, request, "sess-current-1");
+        }
+
+        @Test
+        @DisplayName("Lỗi Bean Validation đổi mật khẩu: repopulate model và không gọi service")
+        void changePassword_WhenBindingErrors_ShouldRepopulateAndReturnProfileView() {
+            Principal principal = () -> "user@example.com";
+            Model model = new ConcurrentModel();
+            User user = buildUser(10L, "user@example.com");
+            UserProfileResponse profileResponse = buildProfileResponse(10L, "user@example.com", "0123456789");
+            UserReputationScore score = buildReputationScore(10L, new BigDecimal("100.00"), 0);
+
+            ChangePasswordRequest request = new ChangePasswordRequest();
+            BindingResult bindingResult = new BeanPropertyBindingResult(request, "changePasswordRequest");
+            bindingResult.rejectValue("newPassword", "Size", "Mật khẩu mới quá ngắn");
+
+            when(userQueryService.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+            when(userProfileService.getProfile(10L)).thenReturn(profileResponse);
+            when(updateReputationUseCase.getOrCreate(10L)).thenReturn(score);
+
+            String view = userController.changePassword(
+                    request, bindingResult, mock(HttpServletRequest.class), principal, model);
+
+            assertThat(view).isEqualTo("user/profile");
+            verify(accountSecurityService, never()).changePassword(anyLong(), any(), any());
+            assertThat(model.getAttribute("profile")).isNotNull();
+            assertThat(model.getAttribute("updateProfileRequest")).isNotNull();
+            assertThat(model.getAttribute("updateBankAccountRequest")).isNotNull();
+        }
+
+        @Test
+        @DisplayName("Sai mật khẩu hiện tại từ service: gắn đúng field currentPassword vào BindingResult")
+        void changePassword_WhenFieldValidationException_ShouldRejectExactField() {
+            Principal principal = () -> "user@example.com";
+            Model model = new ConcurrentModel();
+            User user = buildUser(10L, "user@example.com");
+            UserProfileResponse profileResponse = buildProfileResponse(10L, "user@example.com", null);
+            UserReputationScore score = buildReputationScore(10L, new BigDecimal("100.00"), 0);
+
+            ChangePasswordRequest request = new ChangePasswordRequest();
+            request.setCurrentPassword("WrongPass1");
+            request.setNewPassword("NewPass123");
+            request.setConfirmNewPassword("NewPass123");
+            BindingResult bindingResult = new BeanPropertyBindingResult(request, "changePasswordRequest");
+
+            when(userQueryService.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+            when(userProfileService.getProfile(10L)).thenReturn(profileResponse);
+            when(updateReputationUseCase.getOrCreate(10L)).thenReturn(score);
+            doThrow(new AccountSecurityService.PasswordChangeValidationException(
+                    "currentPassword", "Mật khẩu hiện tại không chính xác."))
+                    .when(accountSecurityService).changePassword(10L, request, null);
+
+            HttpServletRequest httpRequest = mock(HttpServletRequest.class);
+            when(httpRequest.getSession(false)).thenReturn(null);
+
+            String view = userController.changePassword(request, bindingResult, httpRequest, principal, model);
+
+            assertThat(view).isEqualTo("user/profile");
+            assertThat(bindingResult.hasFieldErrors("currentPassword")).isTrue();
+            assertThat(bindingResult.getFieldError("currentPassword").getDefaultMessage())
+                    .isEqualTo("Mật khẩu hiện tại không chính xác.");
         }
     }
 }

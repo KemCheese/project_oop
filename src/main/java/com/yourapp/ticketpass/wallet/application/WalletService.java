@@ -21,17 +21,27 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Service điều phối nghiệp vụ ví điện tử và sổ cái kế toán (Ledger).
  *
- * <p><b>Nguyên tắc toàn vẹn giao dịch:</b></p>
+ * <p>
+ * <b>Nguyên tắc toàn vẹn giao dịch:</b>
+ * </p>
  * <ul>
- *   <li>Mọi thao tác thay đổi số dư (nạp, trừ, cộng) đều chạy trong ranh giới {@code @Transactional}.</li>
- *   <li>Mọi thao tác trừ tiền (debit) bắt buộc sử dụng {@link WalletRepository#findByUserIdWithLock(Long)}
- *       để khóa bi quan hàng dữ liệu ({@code SELECT ... FOR UPDATE}), chống triệt để Race Condition.</li>
- *   <li>Mỗi lần số dư thay đổi, một bản ghi {@link WalletTransaction} bất biến tương ứng bắt buộc
- *       được lưu vào sổ cái trong cùng transaction.</li>
+ * <li>Mọi thao tác thay đổi số dư (nạp, trừ, cộng) đều chạy trong ranh giới
+ * {@code @Transactional}.</li>
+ * <li>Mọi thao tác trừ tiền (debit) bắt buộc sử dụng
+ * {@link WalletRepository#findByUserIdWithLock(Long)}
+ * để khóa bi quan hàng dữ liệu ({@code SELECT ... FOR UPDATE}), chống triệt để
+ * Race Condition.</li>
+ * <li>Mỗi lần số dư thay đổi, một bản ghi {@link WalletTransaction} bất biến
+ * tương ứng bắt buộc
+ * được lưu vào sổ cái trong cùng transaction.</li>
  * </ul>
  *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
+ * <p>
+ * Module: wallet
+ * </p>
+ * <p>
+ * Chủ sở hữu: Người C (Dev C)
+ * </p>
  */
 @Slf4j
 @Service
@@ -42,7 +52,8 @@ public class WalletService {
     private final WalletTransactionRepository walletTransactionRepository;
 
     /**
-     * Tra cứu ví của người dùng, tự động khởi tạo ví mới nếu chưa tồn tại (Idempotent).
+     * Tra cứu ví của người dùng, tự động khởi tạo ví mới nếu chưa tồn tại
+     * (Idempotent).
      *
      * @param userId ID người dùng
      * @return thực thể ví
@@ -143,7 +154,7 @@ public class WalletService {
      */
     @Transactional
     public Wallet debit(Long userId, BigDecimal amount, WalletTransactionType type,
-                        String referenceId, String description) {
+            String referenceId, String description) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessRuleViolationException("Số tiền trừ phải lớn hơn 0.");
         }
@@ -161,24 +172,27 @@ public class WalletService {
                 type, referenceId, description);
         walletTransactionRepository.save(tx);
 
-        log.info("[WalletService] Trừ tiền thành công: userId={}, amount={}, type={}, balanceBefore={}, balanceAfter={}",
+        log.info(
+                "[WalletService] Trừ tiền thành công: userId={}, amount={}, type={}, balanceBefore={}, balanceAfter={}",
                 userId, amount, type, before, wallet.getBalance());
         return wallet;
     }
 
     /**
-     * Cộng tiền vào ví (Credit) — Dùng cho Giải ngân, Hoàn cọc, Hoàn tiền khiếu nại.
+     * Cộng tiền vào ví (Credit) — Dùng cho Giải ngân, Hoàn cọc, Hoàn tiền khiếu
+     * nại.
      *
      * @param userId      ID người dùng nhận tiền
      * @param amount      số tiền được cộng
-     * @param type        loại giao dịch (PAYOUT_RECEIVE, DEPOSIT_REFUND, ESCROW_REFUND...)
+     * @param type        loại giao dịch (PAYOUT_RECEIVE, DEPOSIT_REFUND,
+     *                    ESCROW_REFUND...)
      * @param referenceId mã đối soát nghiệp vụ
      * @param description mô tả giao dịch
      * @return thực thể ví sau khi cộng tiền
      */
     @Transactional
     public Wallet credit(Long userId, BigDecimal amount, WalletTransactionType type,
-                         String referenceId, String description) {
+            String referenceId, String description) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessRuleViolationException("Số tiền cộng phải lớn hơn 0.");
         }
@@ -195,7 +209,8 @@ public class WalletService {
                 type, referenceId, description);
         walletTransactionRepository.save(tx);
 
-        log.info("[WalletService] Cộng tiền thành công: userId={}, amount={}, type={}, balanceBefore={}, balanceAfter={}",
+        log.info(
+                "[WalletService] Cộng tiền thành công: userId={}, amount={}, type={}, balanceBefore={}, balanceAfter={}",
                 userId, amount, type, before, wallet.getBalance());
         return wallet;
     }

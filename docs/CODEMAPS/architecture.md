@@ -34,6 +34,7 @@ TicketPass is a Spring Boot Modular Monolith applying Hexagonal Architecture (Po
           │ ├── TicketTransactionCompletedEvent      │
           │ ├── DisputeResolvedEvent / DisputeOpened │
           │ ├── TicketExpiredEvent / ReceivedEvent   │
+          │ ├── TicketUpcomingReminderEvent        │
           │ └── DepositTimeoutEvent                  │
           ▼                                          ▼
   ┌────────────────────────────────────────────────────────┐
@@ -46,7 +47,7 @@ TicketPass is a Spring Boot Modular Monolith applying Hexagonal Architecture (Po
   ┌────────────────────────────────────────────────────────┐
   │            Shared Infrastructure & Storage             │
   │ FileStorageService (LocalFileStorageAdapter -> ./data) │
-  │ MySQL 8.0 (Flyway V1..V6) / H2 in-memory (Tests)       │
+  │ MySQL 8.0 (Flyway V1..V7) / H2 in-memory (Tests)       │
   └────────────────────────────────────────────────────────┘
 ```
 

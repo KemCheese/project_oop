@@ -465,6 +465,34 @@
                     transform: translateY(0);
                 }
 
+                .tp-modal-btn-confirm-warning {
+                    flex: 1.5;
+                    padding: 11px 18px;
+                    font-size: 13.5px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    background: #d97706;
+                    border: 1px solid #b45309;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    box-shadow: 0 2px 4px rgba(217, 119, 6, 0.25);
+                    transition: all 0.15s ease;
+                }
+
+                .tp-modal-btn-confirm-warning:hover {
+                    background: #b45309;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 10px rgba(217, 119, 6, 0.35);
+                }
+
+                .tp-modal-btn-confirm-warning:active {
+                    transform: translateY(0);
+                }
+
                 /* Specs Table */
                 .specs-grid {
                     display: grid;
@@ -836,7 +864,7 @@
 
                     <!-- Secret QR Check-in Box (Screen 6: Lifecycle-driven QR unlock) -->
                     <!-- Pre-Unlock Verify STATE (TRANSFERRED) -->
-                    <div th:if="${ticket.status != null and ticket.status.name() == 'TRANSFERRED' and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
+                    <div th:if="${ticket.eligibleForTransferVerifyBox and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
                         class="qr-unlocked-box" style="border-color: #fde68a; background-color: #fffbeb;">
                         <div
                             style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-warning); font-weight: 700; font-size: 16px;">
@@ -860,8 +888,8 @@
                         </div>
                     </div>
 
-                    <!-- UNLOCKED STATE (AWAITING_USE, COMPLETED, AUTO_COMPLETE...) -->
-                    <div th:if="${(ticket.status != null and (ticket.status.name() == 'AWAITING_USE' or ticket.status.name() == 'COMPLETED' or ticket.status.name() == 'AUTO_COMPLETE' or ticket.status.name() == 'TECHNICAL_ISSUE' or ticket.status.name() == 'DISPUTE_UNDER_REVIEW' or ticket.status.name() == 'DISPUTED' or ticket.status.name() == 'RESOLVED_BUYER_WINS' or ticket.status.name() == 'RESOLVED_SELLER_WINS')) and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
+                    <!-- UNLOCKED STATE (Chỉ hiển thị khung xanh khi vé còn hiệu lực, chưa kết thúc và QR chưa hết hạn 30 phút) -->
+                    <div th:if="${ticket.eligibleForUnlockedQrBox and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
                         class="qr-unlocked-box">
 
                         <!-- Hiển thị QR nếu chưa hết hạn 30 phút -->
@@ -914,7 +942,7 @@
                         </div>
 
                         <!-- Dispute Window Countdown Notice (BR-09) -->
-                        <div th:if="${(ticket.status.name() == 'AWAITING_USE') and isBuyer}"
+                        <div th:if="${ticket.status != null and ticket.status.name() == 'AWAITING_USE' and isBuyer}"
                             style="margin-top: 14px; padding: 12px; background-color: #fff; border-radius: var(--radius-md); border: 1px solid #bbf7d0;">
                             <div th:if="${ticket.disputeWindowClosesAt != null}"
                                 style="font-size: 13px; color: var(--color-brand); margin-bottom: 8px;">
@@ -930,9 +958,8 @@
                         </div>
                     </div>
 
-                    <!-- LOCKED STATE: When ticket is still in LISTED / ESCROW_HELD / DEPOSIT_LOCKED (pre-transfer) -->
-                    <div th:unless="${(ticket.status != null and ticket.status.name() != 'LISTED' and ticket.status.name() != 'PAYMENT_ESCROWED' and ticket.status.name() != 'DEPOSIT_LOCKED' and ticket.status.name() != 'CANCELLED') and (isBuyer or isSeller or #authorization.expression('hasRole(''ADMIN'')'))}"
-                        class="qr-locked-box">
+                    <!-- LOCKED STATE: Chỉ hiển thị khi vé còn hạn và đang trong quy trình trước khi chuyển vé -->
+                    <div th:if="${ticket.eligibleForLockedQrBox}" class="qr-locked-box">
                         <i class="fa-solid fa-shield-halved fa-2x" style="color: #94a3b8; margin-bottom: 8px;"></i>
                         <h4 style="font-size: 15px; font-weight: 700; color: var(--color-brand); margin-bottom: 4px;">
                             Mã QR Check-in Đang Được Khóa Bảo Mật
@@ -964,10 +991,20 @@
                         </div>
 
                         <div class="spec-item">
-                            <div class="spec-label">Thời gian bắt đầu / Xuất bến</div>
-                            <div class="spec-value"
-                                th:text="${ticket.eventStartAt != null ? #temporals.format(ticket.eventStartAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : 'Chưa cập nhật'}">
-                                Thời gian
+                            <div class="spec-label">Thời gian sử dụng sự kiện</div>
+                            <div class="spec-value">
+                                <span
+                                    th:text="${ticket.eventStartAt != null ? #temporals.format(ticket.eventStartAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh') : 'Chưa cập nhật'}">
+                                    Thời gian bắt đầu
+                                </span>
+                                <span th:if="${ticket.eventEndAt != null}">
+                                    – <span
+                                        th:text="${#temporals.format(ticket.eventEndAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời
+                                        gian kết thúc</span>
+                                    <span th:if="${ticket.estimatedEndTime}"
+                                        style="font-size: 11px; color: var(--color-text-muted); font-weight: 500;">(ước
+                                        tính)</span>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1065,16 +1102,24 @@
                                 <!-- When viewing as potential Buyer -->
                                 <div th:unless="${isSeller}">
                                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                                        <form th:action="@{/payment/wallet/pay-escrow}" method="post">
+                                        <form id="walletBuyForm" th:action="@{/payment/wallet/pay-escrow}" method="post"
+                                            th:attr="data-has-conflict=${(hasScheduleConflict != null and hasScheduleConflict) or (overlapWarning != null and overlapWarning)}">
                                             <input type="hidden" name="ticketId" th:value="${ticket.id}" />
+                                            <input type="hidden" name="confirmOverlap" id="walletConfirmOverlap"
+                                                value="false" />
                                             <button type="submit" class="btn btn-primary"
+                                                onclick="return handlePurchaseClick(event, 'walletBuyForm');"
                                                 style="width: 100%; font-weight: 700; padding: 12px 18px; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(231, 26, 15, 0.25);">
                                                 <i class="fa-solid fa-wallet"></i> Mua Bằng Ví TicketPass (1-Click)
                                             </button>
                                         </form>
-                                        <form th:action="@{/payment/escrow/buy}" method="post">
+                                        <form id="vietqrBuyForm" th:action="@{/payment/escrow/buy}" method="post"
+                                            th:attr="data-has-conflict=${(hasScheduleConflict != null and hasScheduleConflict) or (overlapWarning != null and overlapWarning)}">
                                             <input type="hidden" name="ticketId" th:value="${ticket.id}" />
+                                            <input type="hidden" name="confirmOverlap" id="vietqrConfirmOverlap"
+                                                value="false" />
                                             <button type="submit" class="btn"
+                                                onclick="return handlePurchaseClick(event, 'vietqrBuyForm');"
                                                 style="width: 100%; font-weight: 600; padding: 10px 16px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--color-border); background-color: var(--color-bg); color: var(--color-text-main);">
                                                 <i class="fa-solid fa-qrcode"></i> Chuyển Khoản QR Ngân Hàng
                                             </button>
@@ -1194,11 +1239,35 @@
                             <!-- Ticket is AWAITING_USE and current user is Buyer -->
                             <div
                                 th:if="${ticket.status != null and ticket.status.name() == 'AWAITING_USE' and isBuyer}">
-                                <div class="alert alert-success"
+                                <div th:if="${ticket.eligibleForUnlockedQrBox}"
+                                    class="alert alert-success"
                                     style="margin-bottom: 12px; font-size: 13px; border-left: 4px solid var(--color-success);">
                                     <i class="fa-solid fa-qrcode"></i> <strong>Mã QR đang hiển thị:</strong><br />
                                     Bạn đã mở khóa mã QR check-in (hiệu lực trong 30 phút). Vui lòng quét mã tại sự
                                     kiện.
+                                </div>
+                                <div th:unless="${ticket.eligibleForUnlockedQrBox}"
+                                    style="margin-bottom: 12px; padding: 12px; background-color: #f8fafc; border-radius: var(--radius-md); border: 1px solid #cbd5e1; font-size: 13px; color: var(--color-text-secondary);">
+                                    <div style="margin-bottom: 8px;">
+                                        <i class="fa-solid fa-clock-rotate-left"></i> <strong>Mã QR đã
+                                            ẩn:</strong><br />
+                                        <span th:if="${ticket.eventExpired}">Sự kiện đã kết thúc nên khung hiển thị mã
+                                            QR được ẩn đi.</span>
+                                        <span th:unless="${ticket.eventExpired}">Đã quá 30 phút kể từ lúc mở khóa vé, mã
+                                            QR đã được ẩn bảo mật.</span>
+                                    </div>
+                                    <div th:if="${ticket.disputeWindowClosesAt != null}"
+                                        style="font-size: 12px; color: var(--color-brand); margin-bottom: 8px;">
+                                        Cửa sổ khiếu nại đóng lúc:
+                                        <strong
+                                            th:text="${#temporals.format(ticket.disputeWindowClosesAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời
+                                            gian</strong>
+                                    </div>
+                                    <a th:href="@{/disputes/new(ticketId=${ticket.id})}"
+                                        class="btn btn-danger-outline btn-sm"
+                                        style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Vé có vấn đề? Mở khiếu nại ngay
+                                    </a>
                                 </div>
                             </div>
 
@@ -1406,6 +1475,65 @@
                 </div>
             </div>
 
+            <!-- Modal Pop-up Cảnh Báo & Xác Nhận Trùng Giờ Sử Dụng Vé -->
+            <div id="overlapConfirmModal" class="tp-confirm-modal" role="dialog" aria-modal="true"
+                aria-labelledby="overlapConfirmTitle" aria-hidden="true"
+                th:attr="data-has-conflict=${(hasScheduleConflict != null and hasScheduleConflict) or (overlapWarning != null and overlapWarning)}"
+                onclick="handleModalBackdropClick(event, 'overlapConfirmModal')">
+                <div class="tp-confirm-dialog" onclick="event.stopPropagation()">
+                    <button type="button" class="tp-confirm-close-btn" onclick="closeOverlapConfirmModal()"
+                        title="Đóng (ESC)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div class="tp-confirm-icon-badge"
+                        style="background: #fef3c7; color: #d97706; border: 1px solid #fde68a;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <h3 id="overlapConfirmTitle" class="tp-confirm-title">Cảnh báo trùng khung giờ sử dụng vé!</h3>
+                    <p id="overlapConfirmDesc" class="tp-confirm-desc">
+                        Vé bạn đang xem có khung giờ diễn ra chồng lấn với vé bạn đã sở hữu trước đó trên TicketPass:
+                    </p>
+                    <div class="tp-confirm-callout callout-warning"
+                        style="flex-direction: column; align-items: stretch; gap: 8px; max-height: 220px; overflow-y: auto;">
+                        <div th:each="c : ${scheduleConflicts != null and !scheduleConflicts.isEmpty() ? scheduleConflicts : overlapConflicts}"
+                            style="border-bottom: 1px dashed #fcd34d; padding-bottom: 8px;">
+                            <div style="font-weight: 700; color: #92400e; line-height: 1.4;" th:text="${c.title}">Vé đã
+                                mua</div>
+                            <div
+                                style="font-size: 12.5px; color: #78350f; margin-top: 3px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+                                <span><i class="fa-regular fa-clock"></i> <span th:text="${c.formattedTimeRange}">13:00
+                                        - 15:00</span></span>
+                                <span th:if="${c.estimatedEndTime}" style="font-size: 11px;">(ước tính)</span>
+                                <span>·</span>
+                                <span th:text="${c.statusLabel}" style="font-weight: 600;">Trạng thái</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 12px; color: #78350f; padding-top: 2px;">
+                            Nếu bạn mua vé cho người thân/bạn bè hoặc chắc chắn sắp xếp được lịch, bạn vẫn có thể tiếp
+                            tục thanh toán.
+                        </div>
+                    </div>
+                    <div id="overlapNoticeActions" class="tp-confirm-actions">
+                        <a th:href="@{/tickets}" class="tp-modal-btn-cancel"
+                            style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;">
+                            <i class="fa-solid fa-arrow-left"></i> Quay lại sàn vé
+                        </a>
+                        <button type="button" class="tp-modal-btn-confirm-warning" onclick="closeOverlapConfirmModal()">
+                            <i class="fa-solid fa-eye"></i> Đã hiểu · Tiếp tục xem
+                        </button>
+                    </div>
+                    <div id="overlapConfirmActions" class="tp-confirm-actions" style="display: none;">
+                        <button type="button" class="tp-modal-btn-cancel" onclick="closeOverlapConfirmModal()">
+                            Quay lại kiểm tra
+                        </button>
+                        <button type="button" class="tp-modal-btn-confirm-warning" id="btnConfirmOverlapPurchase"
+                            onclick="confirmOverlapAndSubmit()">
+                            <i class="fa-solid fa-check"></i> Tôi hiểu &amp; Vẫn muốn mua
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <script>
                 // --- Confirmation Modals Engine (Design Taste Frontend) ---
                 function openConfirmReceiptModal() {
@@ -1468,8 +1596,92 @@
                     if (e.target && e.target.id === modalId) {
                         if (modalId === 'confirmReceiptModal') closeConfirmReceiptModal();
                         else if (modalId === 'reportIssueModal') closeReportIssueModal();
+                        else if (modalId === 'overlapConfirmModal') closeOverlapConfirmModal();
                     }
                 }
+
+                // --- Schedule Overlap Soft Warning Engine (Pop-up Modal 2-Mode) ---
+                let pendingPurchaseFormId = 'walletBuyForm';
+
+                function handlePurchaseClick(event, formId) {
+                    const form = document.getElementById(formId);
+                    if (!form) return true;
+                    const hasConflict = form.getAttribute('data-has-conflict') === 'true';
+                    const hiddenConfirm = form.querySelector('input[name="confirmOverlap"]');
+                    if (hasConflict && (!hiddenConfirm || hiddenConfirm.value !== 'true')) {
+                        if (event) event.preventDefault();
+                        openOverlapConfirmModal('confirm', formId);
+                        return false;
+                    }
+                    return true;
+                }
+
+                function openOverlapConfirmModal(mode, formId) {
+                    const modal = document.getElementById('overlapConfirmModal');
+                    if (!modal) return;
+                    if (formId) pendingPurchaseFormId = formId;
+
+                    const isConfirmMode = mode === 'confirm';
+                    const titleEl = document.getElementById('overlapConfirmTitle');
+                    const descEl = document.getElementById('overlapConfirmDesc');
+                    const noticeActions = document.getElementById('overlapNoticeActions');
+                    const confirmActions = document.getElementById('overlapConfirmActions');
+
+                    if (titleEl) {
+                        titleEl.textContent = isConfirmMode
+                            ? 'Xác nhận mua vé trùng khung giờ?'
+                            : 'Cảnh báo trùng khung giờ sử dụng vé!';
+                    }
+                    if (descEl) {
+                        descEl.textContent = isConfirmMode
+                            ? 'Vé bạn sắp thanh toán có khung giờ trùng với vé bạn đang sở hữu. Bạn có chắc chắn muốn tiếp tục giao dịch không?'
+                            : 'Vé bạn đang xem có khung giờ diễn ra chồng lấn với vé bạn đã sở hữu trước đó trên TicketPass:';
+                    }
+                    if (noticeActions) noticeActions.style.display = isConfirmMode ? 'none' : 'flex';
+                    if (confirmActions) confirmActions.style.display = isConfirmMode ? 'flex' : 'none';
+
+                    modal.classList.add('is-open');
+                    modal.setAttribute('aria-hidden', 'false');
+                    document.body.style.overflow = 'hidden';
+                }
+
+                function closeOverlapConfirmModal() {
+                    const modal = document.getElementById('overlapConfirmModal');
+                    if (modal) {
+                        modal.classList.remove('is-open');
+                        modal.setAttribute('aria-hidden', 'true');
+                        document.body.style.overflow = '';
+                    }
+                }
+
+                function confirmOverlapAndSubmit() {
+                    const form = document.getElementById(pendingPurchaseFormId) || document.getElementById('walletBuyForm');
+                    if (!form) return;
+                    const hiddenConfirm = form.querySelector('input[name="confirmOverlap"]');
+                    if (hiddenConfirm) hiddenConfirm.value = 'true';
+                    const btn = document.getElementById('btnConfirmOverlapPurchase');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+                    }
+                    form.submit();
+                }
+
+                document.addEventListener('DOMContentLoaded', function () {
+                    const modal = document.getElementById('overlapConfirmModal');
+                    if (!modal) return;
+                    const hasConflict = modal.getAttribute('data-has-conflict') === 'true';
+                    if (!hasConflict) return;
+
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.get('overlapWarning') === 'true') {
+                        const method = params.get('method');
+                        const targetForm = (method === 'vietqr') ? 'vietqrBuyForm' : 'walletBuyForm';
+                        openOverlapConfirmModal('confirm', targetForm);
+                    } else {
+                        openOverlapConfirmModal('notice');
+                    }
+                });
 
                 // --- Lightbox & Image Download Engine ---
                 let currentLightboxUrl = '';
@@ -1517,6 +1729,7 @@
                         closeImageLightbox();
                         closeConfirmReceiptModal();
                         closeReportIssueModal();
+                        closeOverlapConfirmModal();
                     }
                 });
 

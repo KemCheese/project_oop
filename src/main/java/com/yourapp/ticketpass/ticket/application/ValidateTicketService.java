@@ -7,6 +7,7 @@ import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.ValidationResult;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,11 +18,15 @@ import org.springframework.stereotype.Service;
 /**
  * Kiem tra dieu kien hop le cua ve khi dang ban tren san marketplace.
  *
- * <p>Service nay khong tu viet luat rieng cho tung loai ve ma uy quyen cho
+ * <p>
+ * Service nay khong tu viet luat rieng cho tung loai ve ma uy quyen cho
  * {@link TicketAdapter} tuong ung; phan con lai la cac luat chung cua san nhu
- * gia ban hop le, gio su kien o tuong lai, so ghe khop so ve, va quyen so huu.</p>
+ * gia ban hop le, gio su kien o tuong lai, so ghe khop so ve, va quyen so huu.
+ * </p>
  *
- * <p>Module: ticket</p>
+ * <p>
+ * Module: ticket
+ * </p>
  *
  * Chu so huu: Nguoi A
  */
@@ -33,17 +38,21 @@ public class ValidateTicketService {
 
     private final List<TicketAdapter> ticketAdapters;
 
+    private final Clock clock;
+
     @Value("${app.ticket.allow-markup:false}")
     private boolean allowMarkup;
 
     /**
      * Kiem tra ve co du dieu kien dang ban khong.
      *
-     * <p>Luong xu ly theo BR-01:
+     * <p>
+     * Luong xu ly theo BR-01:
      * 1. Kiem tra cac luat chung cua san (gia ban, thoi gian su kien, anh ve)
      * 2. Tim adapter phu hop theo TicketType
      * 3. Goi adapter.validateListing() de kiem tra luat rieng cua loai ve
-     * 4. Gop toan bo loi thanh mot ValidationResult duy nhat</p>
+     * 4. Gop toan bo loi thanh mot ValidationResult duy nhat
+     * </p>
      *
      * @param ticket ve chuan bi dang
      * @return ket qua kiem tra kem danh sach loi
@@ -67,10 +76,18 @@ public class ValidateTicketService {
         }
 
         // eventStartAt phai o tuong lai
+        Instant now = resolveNow();
         if (ticket.getEventStartAt() == null) {
             errors.add("Thoi gian su kien khong duoc de trong.");
-        } else if (!ticket.getEventStartAt().isAfter(Instant.now())) {
+        } else if (!ticket.getEventStartAt().isAfter(now)) {
             errors.add("Thoi gian su kien phai nam o tuong lai.");
+        }
+
+        // 1.PA B: Ve dang ban moi bat buoc phai co eventEndAt va phai sau eventStartAt
+        if (ticket.getEventEndAt() == null) {
+            errors.add("Thoi gian ket thuc su kien khong duoc de trong.");
+        } else if (ticket.getEventStartAt() != null && !ticket.getEventEndAt().isAfter(ticket.getEventStartAt())) {
+            errors.add("Thoi gian ket thuc su kien phai sau thoi gian bat dau.");
         }
 
         // Phai co anh cong khai
@@ -105,7 +122,7 @@ public class ValidateTicketService {
      * Kiem tra mot nguoi mua co duoc phep mua ve nay khong.
      *
      * @param ticketId id cua ve
-     * @param buyerId id nguoi mua
+     * @param buyerId  id nguoi mua
      * @return ket qua kiem tra kem danh sach loi
      */
     public ValidationResult validateForPurchase(Long ticketId, Long buyerId) {
@@ -125,7 +142,7 @@ public class ValidateTicketService {
         }
 
         // eventStartAt phai con o tuong lai
-        if (ticket.getEventStartAt() != null && !ticket.getEventStartAt().isAfter(Instant.now())) {
+        if (ticket.getEventStartAt() != null && !ticket.getEventStartAt().isAfter(resolveNow())) {
             errors.add("Ve da qua thoi gian su kien, khong the mua.");
         }
 
@@ -184,5 +201,10 @@ public class ValidateTicketService {
                 .filter(adapter -> adapter.supportedType() == ticket.getTicketType())
                 .findFirst()
                 .orElse(null);
+    }
+
+    private Instant resolveNow() {
+        Instant instant = clock != null ? clock.instant() : null;
+        return instant != null ? instant : Instant.now();
     }
 }

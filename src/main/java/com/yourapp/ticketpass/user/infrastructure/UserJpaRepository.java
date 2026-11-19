@@ -6,6 +6,8 @@ import com.yourapp.ticketpass.user.domain.UserStatus;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Repository Spring Data JPA cho bảng {@code users}.
@@ -51,4 +53,29 @@ public interface UserJpaRepository extends JpaRepository<User, Long> {
      * @return danh sách tài khoản
      */
     List<User> findByRole(UserRole role);
+
+    /**
+     * Tìm kiếm tài khoản trên toàn bộ hệ thống khi Admin không lọc theo trạng thái.
+     * Tách riêng khỏi query có {@code status} để MySQL sử dụng đúng index sắp xếp thay vì OR-null scan.
+     */
+    @Query("SELECT u FROM User u " +
+           "WHERE (:keyword IS NULL OR :keyword = '' " +
+           "     OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(COALESCE(u.fullName, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(COALESCE(u.phoneNumber, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "ORDER BY u.createdAt DESC, u.id DESC")
+    List<User> searchAdminByKeyword(@Param("keyword") String keyword);
+
+    /**
+     * Tìm kiếm tài khoản theo trạng thái cụ thể và từ khóa tùy chọn, tối ưu qua {@code idx_users_status_created_id}.
+     */
+    @Query("SELECT u FROM User u " +
+           "WHERE u.status = :status " +
+           "AND (:keyword IS NULL OR :keyword = '' " +
+           "     OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(COALESCE(u.fullName, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "     OR LOWER(COALESCE(u.phoneNumber, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "ORDER BY u.createdAt DESC, u.id DESC")
+    List<User> searchAdminByStatusAndKeyword(@Param("status") UserStatus status,
+                                             @Param("keyword") String keyword);
 }

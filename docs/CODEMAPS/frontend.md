@@ -52,7 +52,8 @@ templates/
 | **Wallet Top-Up** | `wallet/index.html` | Form submit amount | `POST /wallet/topup` | Credits balance (>= 10.000đ, accepts odd sums) and adds ledger item |
 | **Report QR Issue** | `ticket/detail.html` | Click button within 30m | `POST /tickets/{id}/technical-issue` | Transitions to `TECHNICAL_ISSUE`, freezes auto-completion (UC-06b) |
 | **VietQR Confirm** | `payment/transfer.html` | Click "Xác nhận chuyển khoản" | `POST /payment/transfer/confirm` | Confirms escrow payment, triggers PRG pattern redirect to ticket |
-| **Escrow Checkout** | `ticket/detail.html`| Submit Buy button | `POST /payment/escrow/buy` or `/payment/wallet/pay` | Charges buyer via VietQR Transfer or Wallet balance |
+| **Escrow Checkout** | `ticket/detail.html`| Submit Buy button | `POST /payment/escrow/buy` or `/payment/wallet/pay-escrow` | Opens 2-mode Pop-up Modal `#overlapConfirmModal` if schedule overlaps (`notice` on load, `confirm` on submit); enforces `confirmOverlap=true` |
+| **QR Display Guard** | `ticket/detail.html` | Render ticket detail | `TicketResponse` (`eventExpired`, `qrExpired`) | Hides `.qr-unlocked-box` and `.qr-locked-box` completely for expired/terminal/QR-expired tickets while preserving BR-09 dispute button on sidebar |
 | **Lock Deposit** | `ticket/detail.html`| Submit Lock button | `POST /tickets/{id}/lock-deposit` or `/wallet/deposit` | Freezes 50% deposit and reveals transfer button |
 | **Reveal QR** | `ticket/detail.html`| Transfer confirmed | `POST /tickets/{id}/transfer` | Unlocks & displays hidden check-in image to buyer |
 | **File Dispute** | `dispute/create.html`| Submit evidence form | `POST /disputes` (Multipart) | Uploads proof file, sets ticket to `DISPUTED` |

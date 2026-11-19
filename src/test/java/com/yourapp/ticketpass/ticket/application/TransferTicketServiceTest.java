@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -37,6 +38,12 @@ class TransferTicketServiceTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private TicketReminderService ticketReminderService;
+
+    @Mock
+    private Clock clock;
 
     @InjectMocks
     private TransferTicketService transferTicketService;
@@ -127,6 +134,7 @@ class TransferTicketServiceTest {
 
         verify(stateMachineService).transition(406L, TicketStatus.DEPOSIT_LOCKED);
         verify(stateMachineService).transition(406L, TicketStatus.TRANSFERRED);
+        verify(ticketReminderService).triggerEarlyReminderIfWithinLeadWindow(ticket);
     }
 
     @Test
@@ -142,5 +150,38 @@ class TransferTicketServiceTest {
         transferTicketService.markTransferred(407L, 100L);
 
         verify(stateMachineService, never()).transition(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("createListing: Map đầy đủ eventEndAt sang entity Ticket và trả về trong TicketResponse")
+    void testCreateListingMapsEventEndAt() {
+        java.time.LocalDateTime startLdt = java.time.LocalDateTime.of(2026, 11, 18, 13, 0);
+        java.time.LocalDateTime endLdt = java.time.LocalDateTime.of(2026, 11, 18, 15, 0);
+
+        com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest req =
+                new com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest();
+        req.setTicketType(com.yourapp.ticketpass.ticket.domain.TicketType.MOVIE);
+        req.setTitle("Vé Dune 13h");
+        req.setEventName("Dune Part 3");
+        req.setSeatInfo("H10");
+        req.setEventStartAt(startLdt);
+        req.setEventEndAt(endLdt);
+        req.setSalePrice(new java.math.BigDecimal("150000"));
+        req.setOriginalPrice(new java.math.BigDecimal("200000"));
+
+        when(validateTicketService.validateForListing(any(Ticket.class)))
+                .thenReturn(com.yourapp.ticketpass.ticket.domain.ValidationResult.ok());
+        com.yourapp.ticketpass.ticket.domain.TicketAdapter adapter = mock(com.yourapp.ticketpass.ticket.domain.TicketAdapter.class);
+        when(adapter.buildTransferInstruction(any(Ticket.class)))
+                .thenReturn(new com.yourapp.ticketpass.ticket.domain.TransferInstruction());
+        when(stateMachineService.resolveAdapter(com.yourapp.ticketpass.ticket.domain.TicketType.MOVIE))
+                .thenReturn(adapter);
+        when(ticketRepository.save(any(Ticket.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var res = transferTicketService.createListing(req, 10L);
+
+        org.junit.jupiter.api.Assertions.assertEquals(
+                endLdt.atZone(java.time.ZoneId.systemDefault()).toInstant(),
+                res.getEventEndAt());
     }
 }

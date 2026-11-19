@@ -69,6 +69,14 @@ public interface TicketAdapter {
     ValidationResult validateListing(Ticket ticket);
 
     /**
+     * Thoi luong su kien mac dinh cua loai ve nay.
+     * Dung lam fallback khi tinh khung gio cho cac ve cu/mau chua luu {@code eventEndAt}.
+     *
+     * @return thoi luong mac dinh (duong) cua loai ve
+     */
+    Duration defaultEventDuration();
+
+    /**
      * Sinh huong dan chuyen ve phu hop voi loai ve.
      * Tren san marketplace, buoc chuyen ve chinh la san mo khoa anh QR an cho buyer.
      *

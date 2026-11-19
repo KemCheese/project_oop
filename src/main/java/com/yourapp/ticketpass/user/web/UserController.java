@@ -4,11 +4,13 @@ import com.yourapp.ticketpass.reputation.application.UpdateReputationUseCase;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
+import com.yourapp.ticketpass.user.application.AccountSecurityService;
 import com.yourapp.ticketpass.user.application.RegisterUserUseCase;
 import com.yourapp.ticketpass.user.application.StarredTicketUseCase;
 import com.yourapp.ticketpass.user.application.UserProfileService;
 import com.yourapp.ticketpass.user.application.UserQueryService;
 import com.yourapp.ticketpass.user.domain.User;
+import com.yourapp.ticketpass.user.web.dto.ChangePasswordRequest;
 import com.yourapp.ticketpass.user.web.dto.RegisterRequest;
 import com.yourapp.ticketpass.user.web.dto.StarredTicketItemResponse;
 import com.yourapp.ticketpass.user.web.dto.UpdateBankAccountRequest;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.yourapp.ticketpass.shared.security.SmartAuthenticationSuccessHandler;
@@ -95,6 +98,8 @@ public class UserController {
     private final UpdateReputationUseCase updateReputationUseCase;
 
     private final StarredTicketUseCase starredTicketUseCase;
+
+    private final AccountSecurityService accountSecurityService;
 
     /**
      * Hiển thị form đăng nhập.
@@ -350,6 +355,9 @@ public class UserController {
      *                                   bất thường)
      */
     private Long resolveUserId(Principal principal) {
+        if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
+            throw new BusinessRuleViolationException("Phiên đăng nhập không hợp lệ.");
+        }
         String email = principal.getName();
         User user = userQueryService.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email=" + email));
@@ -415,6 +423,50 @@ public class UserController {
             updateBankAccountRequest.setBankName(profile.getBankName());
             updateBankAccountRequest.setBankAccountHolder(profile.getBankAccountHolder());
             model.addAttribute("updateBankAccountRequest", updateBankAccountRequest);
+        }
+
+        if (!model.containsAttribute("changePasswordRequest")) {
+            model.addAttribute("changePasswordRequest", new ChangePasswordRequest());
+        }
+    }
+
+    /**
+     * Đổi mật khẩu tài khoản của người dùng đang đăng nhập và thu hồi các phiên khác.
+     *
+     * @param request dữ liệu form đổi mật khẩu
+     * @param bindingResult kết quả kiểm tra hợp lệ đầu vào
+     * @param httpRequest HTTP request để lấy ID phiên hiện tại giữ nguyên
+     * @param principal danh tính người dùng hiện tại
+     * @param model model Thymeleaf
+     * @return redirect về {@code /profile?passwordUpdated#password-section} khi thành công
+     *         hoặc trả lại {@code user/profile} kèm lỗi từng field
+     */
+    @PostMapping("/profile/password")
+    public String changePassword(@Valid @ModelAttribute("changePasswordRequest") ChangePasswordRequest changePasswordRequest,
+                                 BindingResult bindingResult,
+                                 HttpServletRequest httpRequest,
+                                 Principal principal,
+                                 Model model) {
+        Long userId = resolveUserId(principal);
+        if (bindingResult.hasErrors()) {
+            populateProfileModel(model, userId);
+            return "user/profile";
+        }
+
+        HttpSession currentSession = httpRequest != null ? httpRequest.getSession(false) : null;
+        String currentSessionId = currentSession != null ? currentSession.getId() : null;
+
+        try {
+            accountSecurityService.changePassword(userId, changePasswordRequest, currentSessionId);
+            return "redirect:/profile?passwordUpdated#password-section";
+        } catch (AccountSecurityService.PasswordChangeValidationException ex) {
+            bindingResult.rejectValue(ex.getFieldName(), "password.invalid", ex.getMessage());
+            populateProfileModel(model, userId);
+            return "user/profile";
+        } catch (BusinessRuleViolationException ex) {
+            model.addAttribute("passwordErrorMessage", ex.getMessage());
+            populateProfileModel(model, userId);
+            return "user/profile";
         }
     }
 

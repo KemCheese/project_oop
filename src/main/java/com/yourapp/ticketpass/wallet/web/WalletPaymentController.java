@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.Principal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -21,8 +22,10 @@ import com.yourapp.ticketpass.payment.domain.EscrowStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
 import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
 import com.yourapp.ticketpass.payment.domain.PaymentResult;
+import com.yourapp.ticketpass.shared.dto.ConflictingTicketInfo;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
+import com.yourapp.ticketpass.ticket.application.TicketScheduleService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.user.domain.User;
@@ -53,6 +56,7 @@ public class WalletPaymentController {
     private final UserRepository userRepository;
     private final EscrowTransactionRepository escrowTransactionRepository;
     private final DepositRepository depositRepository;
+    private final TicketScheduleService ticketScheduleService;
 
     private Long resolveUserId(Principal principal) {
         if (principal == null) {
@@ -69,6 +73,7 @@ public class WalletPaymentController {
      */
     @PostMapping("/pay-escrow")
     public String payEscrowWithWallet(@RequestParam Long ticketId,
+                                      @RequestParam(defaultValue = "false") boolean confirmOverlap,
                                       Principal principal,
                                       RedirectAttributes redirectAttributes) {
         Long buyerId = resolveUserId(principal);
@@ -76,8 +81,23 @@ public class WalletPaymentController {
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         if (buyerId.equals(ticket.getSellerId())) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không thể tự mua vé của chính mình.");
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không thể tự mua vé của chính mình.");
+            }
             return "redirect:/tickets/" + ticketId;
+        }
+
+        // Guard Backend: Kiểm tra trùng giờ với vé hiệu lực của buyer nếu chưa có confirmOverlap=true
+        if (!confirmOverlap && ticketScheduleService != null) {
+            List<ConflictingTicketInfo> conflicts = ticketScheduleService.findConflictingTickets(buyerId, ticket);
+            if (conflicts != null && !conflicts.isEmpty()) {
+                if (redirectAttributes != null) {
+                    redirectAttributes.addFlashAttribute("overlapWarning", true);
+                    redirectAttributes.addFlashAttribute("overlapConflicts", conflicts);
+                    redirectAttributes.addFlashAttribute("pendingPaymentMethod", "WALLET");
+                }
+                return "redirect:/tickets/" + ticketId + "?overlapWarning=true&method=wallet";
+            }
         }
 
         BigDecimal salePrice = ticket.getSalePrice();
@@ -85,9 +105,11 @@ public class WalletPaymentController {
 
         // Kiểm tra số dư ví trước
         if (!wallet.hasSufficientBalance(salePrice)) {
-            redirectAttributes.addFlashAttribute("errorMessage",
-                    String.format("Số dư ví không đủ để thanh toán (Hiện có: %,.0f VNĐ, Cần: %,.0f VNĐ). Vui lòng nạp thêm tiền vào ví.",
-                            wallet.getBalance(), salePrice));
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        String.format("Số dư ví không đủ để thanh toán (Hiện có: %,.0f VNĐ, Cần: %,.0f VNĐ). Vui lòng nạp thêm tiền vào ví.",
+                                wallet.getBalance(), salePrice));
+            }
             return "redirect:/tickets/" + ticketId;
         }
 
@@ -117,14 +139,25 @@ public class WalletPaymentController {
             callbackParams.put("orderId", String.valueOf(tx.getId()));
             holdFundsUseCase.confirmHeld(null, callbackParams);
 
-            redirectAttributes.addFlashAttribute("successMessage",
-                    String.format("Thanh toán bằng Ví TicketPass thành công! Đã ký quỹ %,.0f VNĐ an toàn.", salePrice));
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("successMessage",
+                        String.format("Thanh toán bằng Ví TicketPass thành công! Đã ký quỹ %,.0f VNĐ an toàn.", salePrice));
+            }
         } catch (Exception e) {
             log.error("[WalletPaymentController] Lỗi thanh toán ký quỹ bằng ví: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "Thanh toán bằng ví thất bại: " + e.getMessage());
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Thanh toán bằng ví thất bại: " + e.getMessage());
+            }
         }
 
         return "redirect:/tickets/" + ticketId;
+    }
+
+    /** Overload giữ tương thích chữ ký 3 tham số cho unit test hiện có. */
+    public String payEscrowWithWallet(Long ticketId,
+                                      Principal principal,
+                                      RedirectAttributes redirectAttributes) {
+        return payEscrowWithWallet(ticketId, false, principal, redirectAttributes);
     }
 
     /**
@@ -139,7 +172,9 @@ public class WalletPaymentController {
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         if (!sellerId.equals(ticket.getSellerId())) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không phải chủ sở hữu của vé này.");
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không phải chủ sở hữu của vé này.");
+            }
             return "redirect:/tickets/" + ticketId;
         }
 
@@ -148,9 +183,11 @@ public class WalletPaymentController {
 
         // Kiểm tra số dư ví
         if (!wallet.hasSufficientBalance(depositAmount)) {
-            redirectAttributes.addFlashAttribute("errorMessage",
-                    String.format("Số dư ví không đủ để nộp cọc 50%% (Hiện có: %,.0f VNĐ, Cần: %,.0f VNĐ). Vui lòng nạp thêm tiền vào ví.",
-                            wallet.getBalance(), depositAmount));
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        String.format("Số dư ví không đủ để nộp cọc 50%% (Hiện có: %,.0f VNĐ, Cần: %,.0f VNĐ). Vui lòng nạp thêm tiền vào ví.",
+                                wallet.getBalance(), depositAmount));
+            }
             return "redirect:/tickets/" + ticketId;
         }
 
@@ -179,11 +216,15 @@ public class WalletPaymentController {
             callbackParams.put("orderId", String.valueOf(deposit.getId()));
             lockDepositUseCase.confirmLocked(null, callbackParams);
 
-            redirectAttributes.addFlashAttribute("successMessage",
-                    String.format("Khóa cọc 50%% (%,.0f VNĐ) bằng Ví thành công! Vé đã được tự động mở cho người mua kiểm tra.", deposit.getAmount()));
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("successMessage",
+                        String.format("Khóa cọc 50%% (%,.0f VNĐ) bằng Ví thành công! Vé đã được tự động mở cho người mua kiểm tra.", deposit.getAmount()));
+            }
         } catch (Exception e) {
             log.error("[WalletPaymentController] Lỗi khóa cọc bằng ví: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "Khóa cọc bằng ví thất bại: " + e.getMessage());
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Khóa cọc bằng ví thất bại: " + e.getMessage());
+            }
         }
 
         return "redirect:/tickets/" + ticketId;
@@ -211,9 +252,11 @@ public class WalletPaymentController {
                 }
 
                 if (!wallet.hasSufficientBalance(escrow.getSalePrice())) {
-                    redirectAttributes.addFlashAttribute("errorMessage",
-                            String.format("Số dư ví không đủ (Hiện có: %,.0f VNĐ, Cần: %,.0f VNĐ). Vui lòng nạp tiền vào ví.",
-                                    wallet.getBalance(), escrow.getSalePrice()));
+                    if (redirectAttributes != null) {
+                        redirectAttributes.addFlashAttribute("errorMessage",
+                                String.format("Số dư ví không đủ (Hiện có: %,.0f VNĐ, Cần: %,.0f VNĐ). Vui lòng nạp tiền vào ví.",
+                                        wallet.getBalance(), escrow.getSalePrice()));
+                    }
                     return "redirect:/payment/transfer?ref=" + ref + "&type=" + type;
                 }
 
@@ -227,8 +270,10 @@ public class WalletPaymentController {
                 callbackParams.put("orderId", ref);
                 holdFundsUseCase.confirmHeld(null, callbackParams);
 
-                redirectAttributes.addFlashAttribute("successMessage",
-                        "Thanh toán ký quỹ thành công qua Ví TicketPass!");
+                if (redirectAttributes != null) {
+                    redirectAttributes.addFlashAttribute("successMessage",
+                            "Thanh toán ký quỹ thành công qua Ví TicketPass!");
+                }
                 return "redirect:/tickets/" + escrow.getTicketId();
 
             } else if ("deposit".equals(type)) {
@@ -240,9 +285,11 @@ public class WalletPaymentController {
                 }
 
                 if (!wallet.hasSufficientBalance(deposit.getAmount())) {
-                    redirectAttributes.addFlashAttribute("errorMessage",
-                            String.format("Số dư ví không đủ (Hiện có: %,.0f VNĐ, Cần: %,.0f VNĐ). Vui lòng nạp tiền vào ví.",
-                                    wallet.getBalance(), deposit.getAmount()));
+                    if (redirectAttributes != null) {
+                        redirectAttributes.addFlashAttribute("errorMessage",
+                                String.format("Số dư ví không đủ (Hiện có: %,.0f VNĐ, Cần: %,.0f VNĐ). Vui lòng nạp tiền vào ví.",
+                                        wallet.getBalance(), deposit.getAmount()));
+                    }
                     return "redirect:/payment/transfer?ref=" + ref + "&type=" + type;
                 }
 
@@ -256,15 +303,19 @@ public class WalletPaymentController {
                 callbackParams.put("orderId", ref);
                 lockDepositUseCase.confirmLocked(null, callbackParams);
 
-                redirectAttributes.addFlashAttribute("successMessage",
-                        "Khóa cọc bảo đảm 50% thành công qua Ví TicketPass!");
+                if (redirectAttributes != null) {
+                    redirectAttributes.addFlashAttribute("successMessage",
+                            "Khóa cọc bảo đảm 50% thành công qua Ví TicketPass!");
+                }
                 return "redirect:/tickets/" + deposit.getTicketId();
             } else {
                 throw new BusinessRuleViolationException("Loại giao dịch không hợp lệ: " + type);
             }
         } catch (Exception e) {
             log.error("[WalletPaymentController] Lỗi pay-from-transfer: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi thanh toán ví: " + e.getMessage());
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Lỗi thanh toán ví: " + e.getMessage());
+            }
             return "redirect:/payment/transfer?ref=" + ref + "&type=" + type;
         }
     }

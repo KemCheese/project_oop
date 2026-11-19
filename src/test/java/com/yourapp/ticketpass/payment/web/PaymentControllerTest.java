@@ -28,6 +28,10 @@ import com.yourapp.ticketpass.payment.domain.EscrowStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
 import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
 import com.yourapp.ticketpass.shared.config.PaymentGatewayConfig;
+import com.yourapp.ticketpass.shared.dto.ConflictingTicketInfo;
+import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
+import com.yourapp.ticketpass.ticket.application.TicketScheduleService;
+import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.user.domain.UserRepository;
 
@@ -57,6 +61,9 @@ class PaymentControllerTest {
 
     @Mock
     private PaymentGatewayConfig paymentGatewayConfig;
+
+    @Mock
+    private TicketScheduleService ticketScheduleService;
 
     @Mock
     private Principal principal;
@@ -232,5 +239,65 @@ class PaymentControllerTest {
         String redirect = controller.lockDeposit(100L, principal);
 
         assertEquals("redirect:/payment/transfer?ref=20&type=deposit", redirect);
+    }
+
+    @Test
+    @DisplayName("buyTicket() - Khi có vé trùng giờ và chưa confirm: redirect về trang chi tiết kèm ?overlapWarning=true")
+    void buyTicket_overlapWarning_redirectsWithoutCallingHoldFunds() {
+        com.yourapp.ticketpass.user.domain.User buyer = new com.yourapp.ticketpass.user.domain.User();
+        buyer.setId(1L);
+        buyer.setEmail("buyer@example.com");
+
+        Ticket ticket = new Ticket();
+        ticket.setId(100L);
+        ticket.setSellerId(2L);
+        ticket.setSalePrice(new BigDecimal("500000"));
+
+        ConflictingTicketInfo conflict = new ConflictingTicketInfo(
+                55L, "Vé cũ", "Concert", "Mỹ Đình", "TRANSFERRED", "Đã mở mã vé QR",
+                java.time.Instant.now(), java.time.Instant.now().plusSeconds(3600), false, "13:00 - 15:00"
+        );
+        when(principal.getName()).thenReturn("buyer@example.com");
+        when(userRepository.findByEmail("buyer@example.com")).thenReturn(Optional.of(buyer));
+        when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
+        when(ticketScheduleService.findConflictingTickets(1L, ticket)).thenReturn(java.util.List.of(conflict));
+
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap attrs =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+        String redirect = controller.buyTicket(100L, false, principal, attrs);
+
+        assertEquals("redirect:/tickets/100?overlapWarning=true&method=vietqr", redirect);
+        assertEquals(true, attrs.getFlashAttributes().get("overlapWarning"));
+    }
+
+    @Test
+    @DisplayName("initEscrow() JSON - Khi trùng giờ và confirmOverlap=false: ném BusinessRuleViolationException")
+    void initEscrow_overlapUnconfirmed_throwsBusinessRuleViolation() {
+        com.yourapp.ticketpass.user.domain.User buyer = new com.yourapp.ticketpass.user.domain.User();
+        buyer.setId(1L);
+        buyer.setEmail("buyer@example.com");
+
+        Ticket ticket = new Ticket();
+        ticket.setId(100L);
+        ticket.setSellerId(2L);
+        ticket.setSalePrice(new BigDecimal("500000"));
+
+        ConflictingTicketInfo conflict = new ConflictingTicketInfo(
+                55L, "Vé cũ", "Concert", "Mỹ Đình", "TRANSFERRED", "Đã mở mã vé QR",
+                java.time.Instant.now(), java.time.Instant.now().plusSeconds(3600), false, "13:00 - 15:00"
+        );
+        when(principal.getName()).thenReturn("buyer@example.com");
+        when(userRepository.findByEmail("buyer@example.com")).thenReturn(Optional.of(buyer));
+        when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
+        when(ticketScheduleService.findConflictingTickets(1L, ticket)).thenReturn(java.util.List.of(conflict));
+
+        com.yourapp.ticketpass.payment.web.dto.InitEscrowRequest req =
+                new com.yourapp.ticketpass.payment.web.dto.InitEscrowRequest();
+        req.setTicketId(100L);
+        req.setPaymentMethod("MANUAL_TRANSFER");
+        req.setConfirmOverlap(false);
+
+        org.junit.jupiter.api.Assertions.assertThrows(BusinessRuleViolationException.class,
+                () -> controller.initEscrow(req, principal));
     }
 }

@@ -11,6 +11,7 @@
 | `V4` | `V4__add_timeout_and_gate_dispute_fields.sql` | Adds `escrowed_at`, `received_at`, and `TECHNICAL_ISSUE` enum state to `tickets` for timeout policies |
 | `V5` | `V5__create_notifications_table.sql` | Creates `notifications` table with composite index `(user_id, created_at DESC)` for fast paginated feed |
 | `V6` | `V6__create_wallets_and_wallet_transactions.sql` | Creates `wallets` and `wallet_transactions` tables with check constraint `chk_wallet_balance_non_negative` |
+| `V7` | `V7__add_event_end_at_and_reminder_fields.sql` | Adds `event_end_at`, `reminded_24h_at` and composite indexes `idx_tickets_buyer_status_start`, `idx_tickets_reminder_24h` on `tickets` |
 
 ## Primary Database Tables & Schemas
 
@@ -18,7 +19,8 @@
 - Columns: `id` (PK, AUTO_INCREMENT), `email` (UNIQUE), `password_hash`, `full_name`, `phone_number`, `role` (`USER`,`ADMIN`), `status` (`ACTIVE`,`PENDING_VERIFICATION`,`SUSPENDED`,`BANNED`), `avatar_storage_key`, `bank_name`, `bank_account_number`, `bank_account_holder`, `version`, `created_at`, `updated_at`.
 
 ### 2. `tickets`
-- Columns: `id` (PK), `seller_id` (BIGINT, unconstrained), `buyer_id` (BIGINT, nullable), `title`, `ticket_type` (`MOVIE`,`BUS`,`CONCERT`), `price` (DECIMAL), `status` (`DRAFT`,`LISTED`,`ESCROWED`,`DELIVERED`,`COMPLETED`,`DISPUTED`,`CANCELLED`,`EXPIRED`,`TECHNICAL_ISSUE`), `public_image_key`, `secret_image_key`, `escrowed_at`, `received_at`, `details` (JSON / text attributes), `created_at`, `updated_at`.
+- Columns: `id` (PK), `seller_id` (BIGINT, unconstrained), `buyer_id` (BIGINT, nullable), `title`, `ticket_type` (`MOVIE`,`BUS`,`CONCERT`), `sale_price` (DECIMAL), `status` (`LISTED`,`PAYMENT_ESCROWED`,`DEPOSIT_LOCKED`,`TRANSFERRED`,`AWAITING_USE`,`AUTO_COMPLETE`,`DISPUTE_UNDER_REVIEW`,`RESOLVED_BUYER_WINS`,`RESOLVED_SELLER_WINS`,`CANCELLED`,`TECHNICAL_ISSUE`), `event_start_at`, `event_end_at`, `reminded_24h_at`, `ticket_image_storage_key`, `qr_image_storage_key`, `escrowed_at`, `received_at`, `dispute_window_closes_at`, `created_at`, `updated_at`.
+- Indexes: `idx_tickets_buyer_status_start (buyer_id, status, event_start_at)`, `idx_tickets_reminder_24h (status, reminded_24h_at, event_start_at)`.
 
 ### 3. `escrow_transactions`
 - Columns: `id` (PK), `ticket_id` (BIGINT), `buyer_id` (BIGINT), `seller_id` (BIGINT), `amount` (DECIMAL), `status` (`HELD`,`RELEASED`,`REFUNDED`,`FORFEITED`), `gateway_reference`, `gateway_payment_url`, `created_at`, `updated_at`.
@@ -37,7 +39,7 @@
 - Columns: `id` (PK), `user_id` (BIGINT), `ticket_id` (BIGINT), `starred_at`. Unique constraint: `(user_id, ticket_id)`.
 
 ### 8. `notifications`
-- Columns: `id` (PK, AUTO_INCREMENT), `user_id` (BIGINT, unconstrained), `title`, `message`, `type` (`ESCROW_PAID`,`DEPOSIT_LOCKED`,`TICKET_TRANSFERRED`,`TICKET_RECEIVED`,`DISPUTE_OPENED`,`DISPUTE_RESOLVED`,`DEPOSIT_TIMEOUT`,`TICKET_EXPIRED`,`STARRED_TICKET_BOUGHT`,`STARRED_TICKET_EXPIRED`,`GENERAL`), `target_url`, `read` (BOOLEAN, default FALSE), `created_at`.
+- Columns: `id` (PK, AUTO_INCREMENT), `user_id` (BIGINT, unconstrained), `title`, `message`, `type` (`ESCROW_PAID`,`DEPOSIT_LOCKED`,`TICKET_TRANSFERRED`,`TICKET_RECEIVED`,`DISPUTE_OPENED`,`DISPUTE_RESOLVED`,`DEPOSIT_TIMEOUT`,`TICKET_EXPIRED`,`STARRED_TICKET_BOUGHT`,`STARRED_TICKET_EXPIRED`,`UPCOMING_EVENT_REMINDER`,`GENERAL`), `target_url`, `read` (BOOLEAN, default FALSE), `created_at`.
 - Index: `idx_notifications_user_created (user_id, created_at DESC)`.
 
 ### 9. `wallets`

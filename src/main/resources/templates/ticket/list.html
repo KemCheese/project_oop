@@ -131,9 +131,17 @@
                 }
 
                 @keyframes starSpringPop {
-                    0% { transform: scale(0.85); }
-                    50% { transform: scale(1.22); }
-                    100% { transform: scale(1); }
+                    0% {
+                        transform: scale(0.85);
+                    }
+
+                    50% {
+                        transform: scale(1.22);
+                    }
+
+                    100% {
+                        transform: scale(1);
+                    }
                 }
 
                 .ticket-body {
@@ -336,7 +344,6 @@
                         font-size: 13px;
                     }
                 }
-
             </style>
 
             <div class="page-header">
@@ -351,7 +358,8 @@
                     <i class="fa-solid fa-magnifying-glass" style="color: var(--color-primary);"></i>
                     <span>Kết quả tìm kiếm cho: </span>
                     <strong th:text="'&quot;' + ${keyword} + '&quot;'">"Tên sự kiện"</strong>
-                    <span class="search-meta-count" th:text="'(' + ${#lists.size(tickets)} + ' vé phù hợp)'">(0 vé phù hợp)</span>
+                    <span class="search-meta-count" th:text="'(' + ${#lists.size(tickets)} + ' vé phù hợp)'">(0 vé phù
+                        hợp)</span>
                 </div>
                 <a th:href="@{/tickets(ticketType=${selectedType})}" class="btn-clear-search">
                     <i class="fa-solid fa-xmark"></i> Xóa tìm kiếm
@@ -366,15 +374,17 @@
                 </div>
                 <h2 class="empty-title">Không tìm thấy vé phù hợp</h2>
                 <p class="empty-desc" th:if="${keyword != null and !keyword.isEmpty()}">
-                    Không tìm thấy vé sự kiện nào khớp với từ khóa "<span th:text="${keyword}" style="font-weight: 600;">từ khóa</span>". Bạn hãy kiểm tra lại chính tả hoặc xóa bộ lọc để xem các vé khác.
+                    Không tìm thấy vé sự kiện nào khớp với từ khóa "<span th:text="${keyword}"
+                        style="font-weight: 600;">từ khóa</span>". Bạn hãy kiểm tra lại chính tả hoặc xóa bộ lọc để xem
+                    các vé khác.
                 </p>
                 <p class="empty-desc" th:unless="${keyword != null and !keyword.isEmpty()}">
-                    Hiện tại chưa có vé nào thuộc danh mục này đang được rao bán trên sàn. Bạn có thể quay lại sau hoặc đăng bán vé ngay.
+                    Hiện tại chưa có vé nào thuộc danh mục này đang được rao bán trên sàn. Bạn có thể quay lại sau hoặc
+                    đăng bán vé ngay.
                 </p>
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                     <a th:if="${keyword != null and !keyword.isEmpty()}"
-                       th:href="@{/tickets(ticketType=${selectedType})}"
-                       class="btn btn-outline btn-sm">
+                        th:href="@{/tickets(ticketType=${selectedType})}" class="btn btn-outline btn-sm">
                         <i class="fa-solid fa-arrow-rotate-left"></i> Xóa từ khóa tìm kiếm
                     </a>
                     <a th:href="@{/tickets}" class="btn btn-outline btn-sm">Xem tất cả vé</a>
@@ -388,40 +398,42 @@
                     <!-- Image Area -->
                     <div class="ticket-image-wrapper">
                         <img th:if="${ticket.thumbnailUrl != null and !ticket.thumbnailUrl.isEmpty()}"
-                             th:src="${ticket.thumbnailUrl}"
-                             th:alt="${ticket.title}"
-                             class="ticket-image" />
+                            th:src="${ticket.thumbnailUrl}" th:alt="${ticket.title}" class="ticket-image" />
                         <div th:unless="${ticket.thumbnailUrl != null and !ticket.thumbnailUrl.isEmpty()}"
-                             class="ticket-image-placeholder">
-                            <i th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'MOVIE'}" class="fa-solid fa-film fa-2x"></i>
-                            <i th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'CONCERT'}" class="fa-solid fa-music fa-2x"></i>
-                            <i th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'BUS'}" class="fa-solid fa-bus fa-2x"></i>
+                            class="ticket-image-placeholder">
+                            <i th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'MOVIE'}"
+                                class="fa-solid fa-film fa-2x"></i>
+                            <i th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'CONCERT'}"
+                                class="fa-solid fa-music fa-2x"></i>
+                            <i th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'BUS'}"
+                                class="fa-solid fa-bus fa-2x"></i>
                             <i th:if="${ticket.ticketType == null}" class="fa-solid fa-ticket fa-2x"></i>
                             <span style="font-size: 11px; font-weight: 500;">Ảnh công khai</span>
                         </div>
 
                         <!-- Type Badge -->
                         <div class="ticket-type-badge-pos">
-                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'MOVIE'}" class="badge badge-movie">
+                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'MOVIE'}"
+                                class="badge badge-movie">
                                 <i class="fa-solid fa-film"></i> Phim
                             </span>
-                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'CONCERT'}" class="badge badge-concert">
+                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'CONCERT'}"
+                                class="badge badge-concert">
                                 <i class="fa-solid fa-music"></i> Concert
                             </span>
-                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'BUS'}" class="badge badge-bus">
+                            <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'BUS'}"
+                                class="badge badge-bus">
                                 <i class="fa-solid fa-bus"></i> Xe khách
                             </span>
                         </div>
 
                         <!-- Nút Đánh sao nhanh trên ảnh vé -->
                         <th:block sec:authorize="isAuthenticated()">
-                            <button type="button"
-                                    class="btn-star-ticket"
-                                    th:classappend="${starredTicketIds != null and starredTicketIds.contains(ticket.id)} ? 'active' : ''"
-                                    th:data-ticket-id="${ticket.id}"
-                                    th:title="${starredTicketIds != null and starredTicketIds.contains(ticket.id)} ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi'"
-                                    onclick="toggleStarFromList(this, event)"
-                                    aria-label="Lưu vé">
+                            <button type="button" class="btn-star-ticket"
+                                th:classappend="${starredTicketIds != null and starredTicketIds.contains(ticket.id)} ? 'active' : ''"
+                                th:data-ticket-id="${ticket.id}"
+                                th:title="${starredTicketIds != null and starredTicketIds.contains(ticket.id)} ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi'"
+                                onclick="toggleStarFromList(this, event)" aria-label="Lưu vé">
                                 <i class="fa-solid fa-star"></i>
                             </button>
                         </th:block>
@@ -438,7 +450,13 @@
 
                         <div class="ticket-meta" th:if="${ticket.eventStartAt != null}">
                             <i class="fa-regular fa-clock"></i>
-                            <span th:text="${#temporals.format(ticket.eventStartAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời gian</span>
+                            <span>
+                                <span
+                                    th:text="${#temporals.format(ticket.eventStartAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}">Thời
+                                    gian</span>
+                                <span th:if="${ticket.eventEndAt != null}"
+                                    th:text="' - ' + ${#temporals.format(ticket.eventEndAt, 'HH:mm', 'Asia/Ho_Chi_Minh')}"></span>
+                            </span>
                         </div>
 
                         <!-- Footer -->
@@ -446,7 +464,7 @@
                             <div class="ticket-price-box">
                                 <span class="ticket-price-label">Giá chuyển nhượng</span>
                                 <span class="ticket-price-value"
-                                      th:text="${ticket.salePrice != null ? #numbers.formatDecimal(ticket.salePrice, 0, 'POINT', 0, 'POINT') + ' ₫' : 'Liên hệ'}">
+                                    th:text="${ticket.salePrice != null ? #numbers.formatDecimal(ticket.salePrice, 0, 'POINT', 0, 'POINT') + ' ₫' : 'Liên hệ'}">
                                     0 ₫
                                 </span>
                             </div>
@@ -470,10 +488,8 @@
                 <nav class="pagination-nav" aria-label="Điều hướng phân trang sàn vé">
                     <!-- Nút Trang trước -->
                     <a th:if="${hasPrevious}"
-                       th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${currentPage - 1})}"
-                       class="page-btn"
-                       title="Trang trước"
-                       aria-label="Trang trước">
+                        th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${currentPage - 1})}"
+                        class="page-btn" title="Trang trước" aria-label="Trang trước">
                         <i class="fa-solid fa-chevron-left" style="font-size: 11px; margin-right: 4px;"></i> Trước
                     </a>
                     <span th:unless="${hasPrevious}" class="page-btn disabled" aria-disabled="true">
@@ -483,21 +499,16 @@
                     <!-- Danh sách các số trang -->
                     <th:block th:each="p : ${pageNumbers}">
                         <a th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${p})}"
-                           class="page-btn"
-                           th:classappend="${p == currentPage} ? 'active' : ''"
-                           th:text="${p + 1}"
-                           th:title="'Trang ' + ${p + 1}"
-                           th:attr="aria-current=${p == currentPage} ? 'page' : null">
+                            class="page-btn" th:classappend="${p == currentPage} ? 'active' : ''" th:text="${p + 1}"
+                            th:title="'Trang ' + ${p + 1}" th:attr="aria-current=${p == currentPage} ? 'page' : null">
                             1
                         </a>
                     </th:block>
 
                     <!-- Nút Trang sau -->
                     <a th:if="${hasNext}"
-                       th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${currentPage + 1})}"
-                       class="page-btn"
-                       title="Trang sau"
-                       aria-label="Trang sau">
+                        th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${currentPage + 1})}"
+                        class="page-btn" title="Trang sau" aria-label="Trang sau">
                         Sau <i class="fa-solid fa-chevron-right" style="font-size: 11px; margin-left: 4px;"></i>
                     </a>
                     <span th:unless="${hasNext}" class="page-btn disabled" aria-disabled="true">
@@ -507,13 +518,15 @@
 
                 <!-- Dòng trạng thái tiến độ hiển thị -->
                 <div class="pagination-info">
-                    Hiển thị <strong th:text="${startItem}">1</strong>–<strong th:text="${endItem}">16</strong> trong tổng số <strong th:text="${totalElements}">48</strong> vé (Trang <span th:text="${currentPage + 1}">1</span> / <span th:text="${totalPages}">3</span>)
+                    Hiển thị <strong th:text="${startItem}">1</strong>–<strong th:text="${endItem}">16</strong> trong
+                    tổng số <strong th:text="${totalElements}">48</strong> vé (Trang <span
+                        th:text="${currentPage + 1}">1</span> / <span th:text="${totalPages}">3</span>)
                 </div>
             </div>
 
             <!-- Client Screen Detector: Tự động đo màn hình và đặt cookie tp_page_size (0 request thừa) -->
             <script>
-                (function() {
+                (function () {
                     function getTargetPageSize() {
                         var w = window.innerWidth;
                         if (w >= 1400) return 20; // 5 cột x 4 dòng
@@ -531,7 +544,7 @@
                     }
                     syncPageSizeCookie();
                     var resizeTimer;
-                    window.addEventListener('resize', function() {
+                    window.addEventListener('resize', function () {
                         clearTimeout(resizeTimer);
                         resizeTimer = setTimeout(syncPageSizeCookie, 300);
                     });
@@ -562,19 +575,19 @@
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (!data.success) {
+                        .then(res => res.json())
+                        .then(data => {
+                            if (!data.success) {
+                                btn.classList.toggle('active', isCurrentlyActive);
+                                btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
+                                alert(data.message || 'Không thể cập nhật trạng thái lưu vé');
+                            }
+                        })
+                        .catch(err => {
                             btn.classList.toggle('active', isCurrentlyActive);
                             btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
-                            alert(data.message || 'Không thể cập nhật trạng thái lưu vé');
-                        }
-                    })
-                    .catch(err => {
-                        btn.classList.toggle('active', isCurrentlyActive);
-                        btn.setAttribute('title', isCurrentlyActive ? 'Bỏ theo dõi vé này' : 'Lưu vé vào danh sách theo dõi');
-                        console.error("Lỗi khi toggle sao vé:", err);
-                    });
+                            console.error("Lỗi khi toggle sao vé:", err);
+                        });
                 }
             </script>
         </content>

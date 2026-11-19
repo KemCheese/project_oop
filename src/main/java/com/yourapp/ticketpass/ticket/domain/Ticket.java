@@ -83,6 +83,10 @@ public class Ticket {
     /** Thoi diem su kien bat dau; moi cua so khieu nai deu phai dong truoc moc nay. */
     private Instant eventStartAt;
 
+    /** Thoi diem su kien ket thuc (cho phep null voi du lieu cu; fallback theo TicketAdapter). */
+    @Column(name = "event_end_at")
+    private Instant eventEndAt;
+
     @Column(precision = 15, scale = 2)
     private BigDecimal originalPrice;
 
@@ -128,6 +132,10 @@ public class Ticket {
     private Instant disputeWindowClosesAt;
 
     private Instant completedAt;
+
+    /** Moc thoi gian he thong da gui thong bao nhac su dung ve truoc 24h (dam bao idempotent). */
+    @Column(name = "reminded_24h_at")
+    private Instant reminded24hAt;
 
     private Instant createdAt;
 

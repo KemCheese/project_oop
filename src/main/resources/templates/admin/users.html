@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Quản Trị Tài Khoản Người Dùng - Admin TicketPass</title>
+</head>
+
+<body>
+    <div th:replace="~{layout/base :: layout('Quản Trị Tài Khoản Người Dùng - Admin TicketPass', ~{::content})}">
+        <content>
+            <style>
+                .admin-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                    flex-wrap: wrap;
+                    gap: 16px;
+                    margin-bottom: 24px;
+                }
+
+                .stat-cards-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 16px;
+                    margin-bottom: 24px;
+                }
+
+                .stat-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 18px 20px;
+                    box-shadow: var(--shadow-card);
+                }
+
+                .stat-number {
+                    font-size: 26px;
+                    font-weight: 800;
+                    color: var(--color-brand);
+                    margin: 6px 0 2px;
+                }
+
+                .filter-panel {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    padding: 16px 20px;
+                    box-shadow: var(--shadow-card);
+                    margin-bottom: 20px;
+                }
+
+                .filter-form {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                    align-items: flex-end;
+                }
+
+                .users-table-card {
+                    background-color: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-lg);
+                    box-shadow: var(--shadow-card);
+                    overflow: hidden;
+                }
+
+                .table-responsive {
+                    width: 100%;
+                    overflow-x: auto;
+                }
+
+                .custom-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    text-align: left;
+                    font-size: 13px;
+                }
+
+                .custom-table th {
+                    background-color: #fafbfc;
+                    color: var(--color-text-secondary);
+                    font-weight: 700;
+                    padding: 12px 16px;
+                    border-bottom: 1px solid var(--color-border);
+                    white-space: nowrap;
+                }
+
+                .custom-table td {
+                    padding: 12px 16px;
+                    border-bottom: 1px solid #f1f5f9;
+                    color: var(--color-text-main);
+                    vertical-align: middle;
+                }
+
+                .custom-table tr:hover {
+                    background-color: #f8fafc;
+                }
+
+                .mod-modal-backdrop {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(15, 23, 42, 0.55);
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                    padding: 16px;
+                }
+
+                .mod-modal-backdrop.is-open {
+                    display: flex;
+                }
+
+                .mod-modal {
+                    background: #fff;
+                    border-radius: var(--radius-lg);
+                    max-width: 480px;
+                    width: 100%;
+                    padding: 24px;
+                    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.25);
+                    border: 1px solid var(--color-border);
+                }
+
+                .action-btn-group {
+                    display: flex;
+                    gap: 6px;
+                    justify-content: flex-end;
+                    flex-wrap: wrap;
+                }
+
+                @media (max-width: 1024px) {
+                    .stat-cards-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                }
+
+                @media (max-width: 640px) {
+                    .stat-cards-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+            </style>
+
+            <div class="admin-header">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span class="badge" style="background-color: #0f172a; color: #fff;">
+                            <i class="fa-solid fa-lock"></i> ROLE_ADMIN
+                        </span>
+                        <span style="font-size: 13px; color: var(--color-text-muted);">
+                            Giám sát uy tín, lịch sử tranh chấp &amp; thu hồi phiên tức thì
+                        </span>
+                    </div>
+                    <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand);">
+                        Quản Lý Tài Khoản &amp; Kiểm Duyệt Vi Phạm
+                    </h1>
+                </div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a th:href="@{/admin/dashboard}" class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard tài chính
+                    </a>
+                    <a th:href="@{/admin/disputes}" class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-shield-halved"></i> Tranh chấp
+                    </a>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            <div class="alert alert-success" th:if="${successMessage != null}" style="margin-bottom: 16px;">
+                <i class="fa-solid fa-circle-check"></i> <span th:text="${successMessage}">Thao tác thành công</span>
+            </div>
+            <div class="alert alert-danger" th:if="${errorMessage != null}" style="margin-bottom: 16px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> <span th:text="${errorMessage}">Lỗi kiểm duyệt</span>
+            </div>
+
+            <!-- 4 KPI Cards -->
+            <div class="stat-cards-grid">
+                <div class="stat-card">
+                    <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">
+                        Tổng Tài Khoản
+                    </div>
+                    <div class="stat-number" th:text="${stats.totalUsers}">0</div>
+                    <div style="font-size: 12px; color: var(--color-text-muted);">Tài khoản đã đăng ký</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">
+                        Đang Hoạt Động
+                    </div>
+                    <div class="stat-number" style="color: var(--color-success);" th:text="${stats.activeUsers}">0</div>
+                    <div style="font-size: 12px; color: var(--color-text-muted);">Trạng thái ACTIVE</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">
+                        Đang Bị Khóa / Cấm
+                    </div>
+                    <div class="stat-number" style="color: var(--color-danger);" th:text="${stats.lockedUsers}">0</div>
+                    <div style="font-size: 12px; color: var(--color-text-muted);">SUSPENDED hoặc BANNED</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 12px; color: var(--color-text-muted); font-weight: 700; text-transform: uppercase;">
+                        Cảnh Báo Rủi Ro
+                    </div>
+                    <div class="stat-number" style="color: #b45309;" th:text="${stats.warningUsers}">0</div>
+                    <div style="font-size: 12px; color: var(--color-text-muted);">Uy tín thấp / nhiều tranh chấp thua</div>
+                </div>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="filter-panel">
+                <form method="get" th:action="@{/admin/users}" class="filter-form">
+                    <div style="flex: 1; min-width: 220px;">
+                        <label for="keywordInput" class="form-label" style="margin-bottom: 4px;">Tìm kiếm</label>
+                        <input type="text" id="keywordInput" name="keyword" th:value="${keyword}"
+                               class="form-control" placeholder="Email, họ tên hoặc số điện thoại..." />
+                    </div>
+                    <div style="min-width: 180px;">
+                        <label for="statusSelect" class="form-label" style="margin-bottom: 4px;">Trạng thái</label>
+                        <select id="statusSelect" name="status" class="form-control">
+                            <option value="">Tất cả trạng thái</option>
+                            <option th:each="st : ${allStatuses}"
+                                    th:value="${st.name()}"
+                                    th:text="${st.name()}"
+                                    th:selected="${selectedStatus != null and selectedStatus == st}"></option>
+                        </select>
+                    </div>
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding-bottom: 8px; cursor: pointer;">
+                        <input type="checkbox" name="warningOnly" value="true" th:checked="${warningOnly}" />
+                        Chỉ hiện cảnh báo rủi ro
+                    </label>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-magnifying-glass"></i> Lọc danh sách
+                    </button>
+                    <a th:href="@{/admin/users}" class="btn btn-outline btn-sm">Xóa bộ lọc</a>
+                </form>
+            </div>
+
+            <!-- Users Table -->
+            <div class="users-table-card">
+                <div style="padding: 14px 20px; border-bottom: 1px solid var(--color-border); font-weight: 700; color: var(--color-brand);">
+                    Danh Sách Người Dùng (<span th:text="${#lists.size(users)}">0</span>)
+                </div>
+
+                <div th:if="${#lists.isEmpty(users)}" style="padding: 36px 20px; text-align: center; color: var(--color-text-muted);">
+                    Không tìm thấy tài khoản nào khớp với điều kiện lọc hiện tại.
+                </div>
+
+                <div th:if="${!#lists.isEmpty(users)}" class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tài khoản</th>
+                                <th>Trạng thái</th>
+                                <th>Điểm uy tín &amp; Lịch sử</th>
+                                <th>Cảnh báo rủi ro</th>
+                                <th>Kiểm duyệt gần nhất</th>
+                                <th style="text-align: right;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="u : ${users}">
+                                <td><strong th:text="'#' + ${u.id}">#1</strong></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        <strong th:text="${u.email}">user@example.com</strong>
+                                        <span th:if="${u.role != null and u.role.name() == 'ADMIN'}" class="badge"
+                                              style="background-color: #0f172a; color: #fff; font-size: 10px;">ADMIN</span>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--color-text-secondary);">
+                                        <span th:text="${u.fullName ?: 'Chưa cập nhật tên'}">Tên</span>
+                                        <span th:if="${u.phoneNumber != null and !u.phoneNumber.isBlank()}"
+                                              th:text="' · ' + ${u.phoneNumber}"></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span th:if="${u.status.name() == 'ACTIVE'}" class="badge badge-success">ACTIVE</span>
+                                    <span th:if="${u.status.name() == 'SUSPENDED'}" class="badge badge-warning">SUSPENDED</span>
+                                    <span th:if="${u.status.name() == 'BANNED'}" class="badge badge-danger">BANNED</span>
+                                    <span th:if="${u.status.name() == 'PENDING_VERIFICATION'}" class="badge"
+                                          style="background-color: #e2e8f0; color: #334155;">PENDING_VERIFICATION</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong th:text="${u.reputationScore} + '/100'">100.00/100</strong>
+                                        <span style="font-size: 12px; color: var(--color-text-muted);"
+                                              th:text="' · ' + ${u.totalTransactions} + ' GD'"> · 0 GD</span>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--color-text-secondary);">
+                                        Thua tranh chấp: <strong th:text="${u.disputesLost}">0</strong>
+                                        · Hủy vé: <strong th:text="${u.cancelledListings}">0</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span th:if="${u.flaggedRisk}" class="badge badge-danger" th:text="${u.riskReason}">Cảnh báo</span>
+                                    <span th:unless="${u.flaggedRisk}" style="font-size: 12px; color: var(--color-text-muted);">Bình thường</span>
+                                </td>
+                                <td style="max-width: 240px;">
+                                    <div th:if="${u.moderationReason != null and !u.moderationReason.isBlank()}"
+                                         style="font-size: 12px;" th:text="${u.moderationReason}">Lý do</div>
+                                    <div th:unless="${u.moderationReason != null and !u.moderationReason.isBlank()}"
+                                         style="font-size: 12px; color: var(--color-text-muted);">Chưa có</div>
+                                </td>
+                                <td>
+                                    <div class="action-btn-group">
+                                        <span th:if="${u.id == currentAdminId or (u.role != null and u.role.name() == 'ADMIN')}"
+                                              style="font-size: 12px; color: var(--color-text-muted); font-style: italic;">
+                                            Được bảo vệ
+                                        </span>
+
+                                        <th:block th:if="${u.id != currentAdminId and (u.role == null or u.role.name() != 'ADMIN')}">
+                                            <button type="button"
+                                                    th:if="${u.status.name() == 'ACTIVE'}"
+                                                    class="btn btn-outline btn-sm"
+                                                    style="color: #b45309; border-color: #f59e0b;"
+                                                    th:data-user-id="${u.id}"
+                                                    th:data-user-email="${u.email}"
+                                                    data-action="suspend"
+                                                    onclick="openModerationModal(this)">
+                                                <i class="fa-solid fa-user-lock"></i> Tạm khóa
+                                            </button>
+
+                                            <button type="button"
+                                                    th:if="${u.status.name() != 'BANNED'}"
+                                                    class="btn btn-outline btn-sm"
+                                                    style="color: var(--color-danger); border-color: var(--color-danger);"
+                                                    th:data-user-id="${u.id}"
+                                                    th:data-user-email="${u.email}"
+                                                    data-action="ban"
+                                                    onclick="openModerationModal(this)">
+                                                <i class="fa-solid fa-ban"></i> Cấm vĩnh viễn
+                                            </button>
+
+                                            <button type="button"
+                                                    th:if="${u.status.name() != 'ACTIVE'}"
+                                                    class="btn btn-primary btn-sm"
+                                                    th:data-user-id="${u.id}"
+                                                    th:data-user-email="${u.email}"
+                                                    data-action="activate"
+                                                    onclick="openModerationModal(this)">
+                                                <i class="fa-solid fa-user-check"></i> Mở khóa
+                                            </button>
+                                        </th:block>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Moderation Action Modal -->
+            <div id="moderationModalBackdrop" class="mod-modal-backdrop" aria-hidden="true">
+                <div class="mod-modal" role="dialog" aria-modal="true" aria-labelledby="moderationModalTitle">
+                    <h2 id="moderationModalTitle" style="font-size: 18px; font-weight: 800; color: var(--color-brand); margin-bottom: 6px;">
+                        Xác nhận kiểm duyệt tài khoản
+                    </h2>
+                    <p id="moderationModalDesc" style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 16px;">
+                        Nhập lý do kiểm duyệt để lưu lịch sử audit.
+                    </p>
+
+                    <form id="moderationModalForm" method="post" onsubmit="return handleModerationSubmit(this)">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <input type="hidden" name="keyword" th:value="${keyword}" />
+                        <input type="hidden" name="status" th:value="${selectedStatus != null ? selectedStatus.name() : ''}" />
+                        <input type="hidden" name="warningOnly" th:value="${warningOnly}" />
+
+                        <div class="form-group">
+                            <label for="moderationReasonInput" class="form-label">
+                                Lý do kiểm duyệt <span id="reasonRequiredBadge" class="required">*</span>
+                            </label>
+                            <textarea id="moderationReasonInput" name="reason" rows="3" maxlength="500"
+                                      class="form-control"
+                                      placeholder="Nhập lý do chi tiết (tối thiểu 5 ký tự khi khóa/cấm)..."></textarea>
+                            <div id="moderationReasonClientError" class="form-error" style="display: none; margin-top: 6px;">
+                                Vui lòng nhập lý do tối thiểu 5 ký tự khi khóa hoặc cấm tài khoản.
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+                            <button type="button" class="btn btn-outline btn-sm" onclick="closeModerationModal()">Hủy</button>
+                            <button type="submit" id="moderationSubmitBtn" class="btn btn-primary btn-sm">Xác nhận</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                let currentModerationAction = '';
+
+                function openModerationModal(btn) {
+                    const userId = btn.getAttribute('data-user-id');
+                    const email = btn.getAttribute('data-user-email');
+                    const action = btn.getAttribute('data-action');
+                    currentModerationAction = action;
+
+                    const backdrop = document.getElementById('moderationModalBackdrop');
+                    const form = document.getElementById('moderationModalForm');
+                    const title = document.getElementById('moderationModalTitle');
+                    const desc = document.getElementById('moderationModalDesc');
+                    const reasonInput = document.getElementById('moderationReasonInput');
+                    const requiredBadge = document.getElementById('reasonRequiredBadge');
+                    const errorEl = document.getElementById('moderationReasonClientError');
+                    const submitBtn = document.getElementById('moderationSubmitBtn');
+
+                    form.action = '/admin/users/' + userId + '/' + action;
+                    reasonInput.value = '';
+                    errorEl.style.display = 'none';
+                    submitBtn.disabled = false;
+
+                    if (action === 'suspend') {
+                        title.textContent = 'Tạm khóa tài khoản #' + userId;
+                        desc.textContent = 'Tài khoản ' + email + ' sẽ bị khóa và đăng xuất ngay lập tức khỏi mọi thiết bị.';
+                        requiredBadge.style.display = 'inline';
+                        reasonInput.required = true;
+                        submitBtn.textContent = 'Xác nhận tạm khóa';
+                    } else if (action === 'ban') {
+                        title.textContent = 'Cấm tài khoản #' + userId;
+                        desc.textContent = 'Tài khoản ' + email + ' sẽ bị cấm vĩnh viễn cho tới khi Admin xem xét mở khóa.';
+                        requiredBadge.style.display = 'inline';
+                        reasonInput.required = true;
+                        submitBtn.textContent = 'Xác nhận cấm tài khoản';
+                    } else {
+                        title.textContent = 'Mở khóa tài khoản #' + userId;
+                        desc.textContent = 'Tài khoản ' + email + ' sẽ được kích hoạt lại và nhận thông báo hệ thống.';
+                        requiredBadge.style.display = 'none';
+                        reasonInput.required = false;
+                        submitBtn.textContent = 'Xác nhận mở khóa';
+                    }
+
+                    backdrop.classList.add('is-open');
+                    backdrop.setAttribute('aria-hidden', 'false');
+                    reasonInput.focus();
+                }
+
+                function closeModerationModal() {
+                    const backdrop = document.getElementById('moderationModalBackdrop');
+                    backdrop.classList.remove('is-open');
+                    backdrop.setAttribute('aria-hidden', 'true');
+                }
+
+                function handleModerationSubmit(form) {
+                    const reasonInput = document.getElementById('moderationReasonInput');
+                    const errorEl = document.getElementById('moderationReasonClientError');
+                    const submitBtn = document.getElementById('moderationSubmitBtn');
+
+                    if ((currentModerationAction === 'suspend' || currentModerationAction === 'ban')
+                            && reasonInput.value.trim().length < 5) {
+                        errorEl.style.display = 'block';
+                        reasonInput.focus();
+                        return false;
+                    }
+                    errorEl.style.display = 'none';
+                    submitBtn.disabled = true;
+                    return true;
+                }
+
+                document.getElementById('moderationModalBackdrop').addEventListener('click', function (e) {
+                    if (e.target === this) {
+                        closeModerationModal();
+                    }
+                });
+
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        closeModerationModal();
+                    }
+                });
+            </script>
+        </content>
+    </div>
+</body>
+
+</html>

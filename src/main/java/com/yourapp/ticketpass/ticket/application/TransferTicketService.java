@@ -14,6 +14,7 @@ import com.yourapp.ticketpass.ticket.domain.TransferInstruction;
 import com.yourapp.ticketpass.ticket.domain.ValidationResult;
 import com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest;
 import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.stream.Collectors;
@@ -57,6 +58,10 @@ public class TransferTicketService {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    private final TicketReminderService ticketReminderService;
+
+    private final Clock clock;
+
     /**
      * Tao mot listing moi tu du lieu nguoi ban nhap.
      *
@@ -81,8 +86,12 @@ public class TransferTicketService {
         ticket.setEventName(request.getEventName());
         ticket.setVenue(request.getVenue());
         ticket.setSeatInfo(request.getSeatInfo());
+        ZoneId zoneId = resolveZoneId();
         ticket.setEventStartAt(request.getEventStartAt() != null
-                ? request.getEventStartAt().atZone(ZoneId.systemDefault()).toInstant()
+                ? request.getEventStartAt().atZone(zoneId).toInstant()
+                : null);
+        ticket.setEventEndAt(request.getEventEndAt() != null
+                ? request.getEventEndAt().atZone(zoneId).toInstant()
                 : null);
         ticket.setOriginalPrice(request.getOriginalPrice());
         ticket.setSalePrice(request.getSalePrice());
@@ -91,7 +100,7 @@ public class TransferTicketService {
         ticket.setTicketImageStorageKey(request.getTicketImageStorageKey());
         ticket.setQrImageStorageKey(request.getQrImageStorageKey());
         ticket.setStatus(TicketStatus.LISTED);
-        ticket.setListedAt(Instant.now());
+        ticket.setListedAt(resolveNow());
 
         // --- 2. Validate luat chung + luat rieng theo loai ve ---
         ValidationResult result = validateTicketService.validateForListing(ticket);
@@ -182,8 +191,13 @@ public class TransferTicketService {
                     ticket.getBuyerId(),
                     ticket.getTitle(),
                     ticket.getSalePrice(),
-                    Instant.now()
+                    resolveNow()
             ));
+        }
+
+        // Nếu vé được mua sát giờ (0 < eventStartAt - now <= 24h), nhắc sớm 1 lần ngay khi khóa cọc
+        if (ticketReminderService != null) {
+            ticketReminderService.triggerEarlyReminderIfWithinLeadWindow(ticket);
         }
     }
 
@@ -387,6 +401,7 @@ public class TransferTicketService {
         response.setVenue(ticket.getVenue());
         response.setSeatInfo(ticket.getSeatInfo());
         response.setEventStartAt(ticket.getEventStartAt());
+        response.setEventEndAt(ticket.getEventEndAt());
         response.setOriginalPrice(ticket.getOriginalPrice());
         response.setSalePrice(ticket.getSalePrice());
         response.setTransferInstruction(ticket.getTransferInstruction());
@@ -414,5 +429,15 @@ public class TransferTicketService {
         }
 
         return response;
+    }
+
+    private Instant resolveNow() {
+        Instant instant = clock != null ? clock.instant() : null;
+        return instant != null ? instant : Instant.now();
+    }
+
+    private ZoneId resolveZoneId() {
+        ZoneId zone = clock != null ? clock.getZone() : null;
+        return zone != null ? zone : ZoneId.systemDefault();
     }
 }

@@ -55,4 +55,13 @@ public class UserRepositoryImpl implements UserRepository {
     public List<User> findByRole(UserRole role) {
         return userJpaRepository.findByRole(role);
     }
+
+    @Override
+    public List<User> searchForAdmin(String keyword, UserStatus status) {
+        String cleanKeyword = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        if (status == null) {
+            return userJpaRepository.searchAdminByKeyword(cleanKeyword);
+        }
+        return userJpaRepository.searchAdminByStatusAndKeyword(status, cleanKeyword);
+    }
 }

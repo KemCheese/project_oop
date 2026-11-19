@@ -36,9 +36,18 @@ public class BusTicketAdapter implements TicketAdapter {
     @Value("${app.dispute.window.bus-hours:3}")
     private int disputeWindowHours;
 
+    @Value("${app.ticket.default-duration.bus-minutes:240}")
+    private long defaultDurationMinutes = 240L;
+
     @Override
     public TicketType supportedType() {
         return TicketType.BUS;
+    }
+
+    @Override
+    public Duration defaultEventDuration() {
+        long minutes = defaultDurationMinutes > 0 ? defaultDurationMinutes : 240L;
+        return Duration.ofMinutes(minutes);
     }
 
     @Override

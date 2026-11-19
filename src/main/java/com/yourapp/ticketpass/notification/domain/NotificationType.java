@@ -43,6 +43,9 @@ public enum NotificationType {
     /** Vé mà người dùng theo dõi (đánh sao) đã hết hạn thời gian. */
     STARRED_TICKET_EXPIRED,
 
+    /** Nhắc nhở người mua sắp đến thời gian sử dụng vé (trước 24 giờ hoặc khi mua sát giờ). */
+    UPCOMING_EVENT_REMINDER,
+
     /** Thông báo hệ thống khác. */
     SYSTEM
 }

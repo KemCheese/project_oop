@@ -1,6 +1,7 @@
 package com.yourapp.ticketpass.reputation.infrastructure;
 
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -33,4 +34,12 @@ public interface ReputationJpaRepository extends JpaRepository<UserReputationSco
      * @return danh sách bản ghi của trang tương ứng
      */
     List<UserReputationScore> findAllByOrderByScoreDescSuccessfulTransactionsDesc(Pageable pageable);
+
+    /**
+     * Tải hàng loạt bản ghi điểm uy tín theo tập ID người dùng.
+     *
+     * @param userIds tập ID người dùng
+     * @return danh sách bản ghi điểm
+     */
+    List<UserReputationScore> findByUserIdIn(Collection<Long> userIds);
 }

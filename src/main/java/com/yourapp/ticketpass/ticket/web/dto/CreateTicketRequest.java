@@ -52,6 +52,11 @@ public class CreateTicketRequest {
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime eventStartAt;
 
+    @NotNull(message = "Thời gian kết thúc sự kiện không được để trống.")
+    @Future(message = "Thời gian kết thúc sự kiện phải nằm ở tương lai.")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
+    private LocalDateTime eventEndAt;
+
     @NotNull
     @DecimalMin("0")
     private BigDecimal originalPrice;

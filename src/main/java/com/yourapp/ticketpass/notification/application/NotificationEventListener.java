@@ -12,8 +12,12 @@ import com.yourapp.ticketpass.shared.event.TicketEscrowPaidEvent;
 import com.yourapp.ticketpass.shared.event.TicketExpiredEvent;
 import com.yourapp.ticketpass.shared.event.TicketReceivedEvent;
 import com.yourapp.ticketpass.shared.event.TicketTransactionCompletedEvent;
+import com.yourapp.ticketpass.shared.event.TicketUpcomingReminderEvent;
+import com.yourapp.ticketpass.shared.event.UserAccountModeratedEvent;
 import com.yourapp.ticketpass.user.domain.StarredTicketRepository;
 import java.math.BigDecimal;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +41,10 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @RequiredArgsConstructor
 public class NotificationEventListener {
+
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter REMINDER_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm 'ngày' dd/MM/yyyy");
 
     private final NotificationService notificationService;
     private final StarredTicketRepository starredTicketRepository;
@@ -323,6 +331,70 @@ public class NotificationEventListener {
             }
         } catch (Exception e) {
             log.warn("Không thể gửi thông báo hết hạn vé #{} cho watchers: {}", event.getTicketId(), e.getMessage());
+        }
+    }
+
+    /**
+     * 11. Nhắc người mua sắp đến giờ sử dụng vé (trước 24 giờ hoặc nhắc sớm khi mua sát giờ &lt;= 24h).
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onTicketUpcomingReminder(TicketUpcomingReminderEvent event) {
+        if (event == null || event.getBuyerId() == null) {
+            return;
+        }
+        log.info("Xử lý thông báo UPCOMING_EVENT_REMINDER cho vé {} (lastMinute={})",
+                event.getTicketId(), event.isLastMinutePurchase());
+
+        String startText = event.getEventStartAt() != null
+                ? REMINDER_TIME_FORMATTER.format(event.getEventStartAt().atZone(VIETNAM_ZONE))
+                : "sắp tới";
+        String venuePart = (event.getVenue() != null && !event.getVenue().isBlank())
+                ? " tại " + event.getVenue()
+                : "";
+
+        String title = event.isLastMinutePurchase()
+                ? "Sự kiện sắp diễn ra — Chuẩn bị sử dụng vé!"
+                : "Nhắc lịch sử dụng vé trong 24 giờ tới!";
+        String content = event.isLastMinutePurchase()
+                ? String.format("Vé \"%s\"%s bạn vừa mua sẽ bắt đầu lúc %s (trong vòng 24 giờ tới). Hãy mở mã QR để sẵn sàng check-in!",
+                        event.getTicketTitle(), venuePart, startText)
+                : String.format("Vé \"%s\"%s sẽ bắt đầu lúc %s. Đừng quên kiểm tra mã vé QR và sắp xếp thời gian tham dự nhé!",
+                        event.getTicketTitle(), venuePart, startText);
+
+        notificationService.sendNotification(
+                event.getBuyerId(),
+                title,
+                content,
+                NotificationType.UPCOMING_EVENT_REMINDER,
+                "/tickets/" + event.getTicketId()
+        );
+    }
+
+    /**
+     * 12. Admin mở khóa / kích hoạt lại tài khoản người dùng -&gt; Gửi thông báo hệ thống.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onUserAccountModerated(UserAccountModeratedEvent event) {
+        if (event == null || event.getUserId() == null) {
+            return;
+        }
+        if (!"ACTIVE".equals(event.getTargetStatusName())) {
+            return;
+        }
+        log.info("Xử lý thông báo kích hoạt lại tài khoản cho user {}", event.getUserId());
+        String reasonPart = (event.getReason() != null && !event.getReason().isBlank())
+                ? " Ghi chú quản trị viên: " + event.getReason()
+                : "";
+        try {
+            notificationService.sendNotification(
+                    event.getUserId(),
+                    "Tài khoản của bạn đã được mở khóa",
+                    "Quản trị viên đã kích hoạt lại tài khoản TicketPass của bạn. Bạn có thể đăng nhập và giao dịch bình thường trở lại." + reasonPart,
+                    NotificationType.SYSTEM,
+                    "/profile"
+            );
+        } catch (Exception ex) {
+            log.warn("Không thể gửi thông báo mở khóa tài khoản cho user #{}: {}", event.getUserId(), ex.getMessage());
         }
     }
 

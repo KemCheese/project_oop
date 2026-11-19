@@ -97,6 +97,18 @@ public class User {
 
     private Instant updatedAt;
 
+    /** Lý do kiểm duyệt tài khoản gần nhất từ Quản trị viên (nếu có). */
+    @Column(name = "moderation_reason", length = 500)
+    private String moderationReason;
+
+    /** Thời điểm thực hiện thao tác kiểm duyệt tài khoản gần nhất. */
+    @Column(name = "moderated_at")
+    private Instant moderatedAt;
+
+    /** ID quản trị viên thực hiện thao tác kiểm duyệt gần nhất. */
+    @Column(name = "moderated_by_admin_id")
+    private Long moderatedByAdminId;
+
     @Version
     private Long version;
 

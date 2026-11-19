@@ -37,6 +37,8 @@ POST /tickets/{id}/cancel         -> TicketController.cancel -> TransferTicketSe
 SCHEDULER:
 TicketExpirationScheduler (every 1m) -> TicketRepository.findExpiredListedTickets -> TicketStateMachineService.transition(CANCELLED) -> publish(TicketExpiredEvent)
 DeliveryTimeoutScheduler (every 1m)   -> Auto-confirm TRANSFERRED -> AWAITING_USE after 30m (UC-06b)
+TicketReminderScheduler (every 1m)    -> TicketRepository.findTicketsDueFor24hReminder -> TicketReminderService.claimAndNotify -> publish(TicketUpcomingReminderEvent)
+ScheduleOverlap Guard (ticket/payment/wallet) -> TicketScheduleService.findConflictingTickets -> 2-mode Pop-up Modal & confirmOverlap guard
 ```
 
 ### 3. Payment & Escrow (`payment`)
@@ -87,6 +89,6 @@ GET  /api/notifications/recent    -> NotificationApiController.getRecentNotifica
 POST /api/notifications/{id}/read -> NotificationApiController.markAsRead -> NotificationService.markAsRead -> JSON
 POST /api/notifications/read-all  -> NotificationApiController.markAllAsRead -> NotificationService.markAllAsRead -> JSON
 ASYNC EVENT LISTENER:
-@TransactionalEventListener(AFTER_COMMIT) onTicketEscrowPaid, onTicketDepositLocked, onTicketReceived, onTicketExpired, onDisputeOpened, onDisputeResponded, onDisputeWithdrawn, onDisputeResolved, onDepositTimeout -> NotificationEventListener.createNotification
+@TransactionalEventListener(AFTER_COMMIT) onTicketEscrowPaid, onTicketDepositLocked, onTicketReceived, onTicketExpired, onTicketUpcomingReminder, onDisputeOpened, onDisputeResponded, onDisputeWithdrawn, onDisputeResolved, onDepositTimeout -> NotificationEventListener.createNotification
 ```
 

@@ -1,5 +1,7 @@
 package com.yourapp.ticketpass.payment.infrastructure;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,5 +65,19 @@ public class EscrowTransactionRepositoryImpl implements EscrowTransactionReposit
     @Override
     public Optional<EscrowTransaction> findByGatewayTransactionId(String gatewayTransactionId) {
         return jpaRepository.findByGatewayTransactionId(gatewayTransactionId);
+    }
+
+    @Override
+    public List<EscrowTransaction> findReleasedBetween(Instant startInclusive, Instant endExclusive) {
+        if (startInclusive == null || endExclusive == null) {
+            return List.of();
+        }
+        return jpaRepository.findReleasedBetween(startInclusive, endExclusive);
+    }
+
+    @Override
+    public BigDecimal sumHeldAmount() {
+        BigDecimal total = jpaRepository.sumHeldAmount();
+        return total != null ? total : BigDecimal.ZERO;
     }
 }
