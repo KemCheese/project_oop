@@ -412,6 +412,40 @@ Kiểm tra tính đúng đắn: ở mọi dòng, `founder_cut + buyer_compensati
 
 ---
 
+## BR-14 — Kiểm tra trùng khung giờ sử dụng vé (Schedule Overlap Check)
+
+**Phát biểu.** Hệ thống nhận diện khi Người mua xem hoặc đặt mua một vé có khung thời gian `[eventStartAt, eventEndAt)` chồng lấn với ít nhất một vé khác mà người đó đang sở hữu/giữ ở trạng thái hiệu lực, và kích hoạt cơ chế **Cảnh báo mềm 2 lớp** thay vì chặn cứng.
+
+1. **Ràng buộc giờ sự kiện khi đăng bán (`1.PA B`):**
+   - Người bán đăng vé mới bắt buộc cung cấp cả `eventStartAt` và `eventEndAt`, bảo đảm `eventEndAt > eventStartAt`.
+   - Đối với vé cũ hoặc dữ liệu mẫu thiếu `event_end_at`, hệ thống suy ra thời lượng mặc định đa hình qua `TicketAdapter.defaultEventDuration()` (cấu hình tại `app.ticket.default-duration.*`: Movie 120 phút, Concert 180 phút, Bus 240 phút).
+2. **Toán học khoảng nửa mở `[start, end)` (`TimeSlot`):**
+   - Hai vé giao thoa khi và chỉ khi `start1 < end2 && start2 < end1`. Tiếp xúc đúng điểm biên (`13:00–15:00` và `15:00–17:00`) **không** tính là trùng.
+3. **Phạm vi 6 trạng thái sở hữu hiệu lực của Buyer:**
+   - Áp dụng đối chiếu với `PAYMENT_ESCROWED`, `DEPOSIT_LOCKED`, `TRANSFERRED`, `AWAITING_USE`, `AUTO_COMPLETE`, `RESOLVED_SELLER_WINS`.
+   - Loại trừ `CANCELLED`, `RESOLVED_BUYER_WINS`, `DISPUTE_UNDER_REVIEW`, `TECHNICAL_ISSUE` và chính vé đang mua (`excludeTicketId`).
+4. **Cơ chế Cảnh báo mềm 2 lớp:**
+   - **Frontend (`detail.html`):** Pop-up Modal `#overlapConfirmModal` 2 chế độ — tự động bật cảnh báo sớm khi mở trang vé trùng giờ (`notice`, giữ nền card giá vé sạch) và bật lại ở chế độ xác nhận (`confirm`) khi bấm mua.
+   - **Backend Guard:** Chặn khởi tạo giao dịch ở `WalletPaymentController.payEscrowWithWallet`, `PaymentController.buyTicket`, `PaymentController.initEscrow` nếu chưa có cờ `confirmOverlap=true`.
+
+**Nơi hiện thực.** `TimeSlot` (`ticket.domain`), `TicketScheduleService` (`ticket.application`), `ConflictingTicketInfo` (`shared.dto`), `TicketController`, `WalletPaymentController`, `PaymentController`.
+
+---
+
+## BR-15 — Nhắc nhở sử dụng vé trước 24 giờ & Ẩn khung QR vé hết hạn
+
+**Phát biểu.**
+1. **Nhắc nhở trước 24 giờ (`UPCOMING_EVENT_REMINDER`):**
+   - Scheduler `TicketReminderScheduler` quét định kỳ theo batch (tối đa 100 vé/lượt) các vé ở nhóm trạng thái đang sở hữu (`PAYMENT_ESCROWED`, `DEPOSIT_LOCKED`, `TRANSFERRED`, `AWAITING_USE`) có `eventStartAt` nằm trong cửa sổ `(now, now + app.reminder.lead-hours]` (mặc định 24 giờ) và `reminded_24h_at IS NULL`.
+   - Với vé mua sát giờ (`0 < eventStartAt - now <= 24h`), `TransferTicketService.markDepositLocked` kích hoạt nhắc sớm ngay khi Seller hoàn tất khóa cọc.
+   - Việc đánh dấu gửi nhắc thực hiện nguyên tử (`UPDATE ... WHERE reminded_24h_at IS NULL` với `Propagation.REQUIRED`) để bảo đảm gửi đúng **1 lần duy nhất (idempotent)**, không tạo deadlock và không gửi trùng.
+2. **Ẩn khung QR đối với vé hết hạn:**
+   - Đối với vé đã qua thời gian sự kiện (`eventExpired`), vé ở trạng thái kết thúc/hủy (`AUTO_COMPLETE`, `CANCELLED`, `RESOLVED_BUYER_WINS`, `RESOLVED_SELLER_WINS`), hoặc mã QR đã quá hạn 30 phút (`qrExpired == true`), trang chi tiết vé (`detail.html`) ẩn hoàn toàn khung xanh `.qr-unlocked-box` và khung khóa `.qr-locked-box` nhằm tránh hiển thị khung thừa gây hiểu nhầm; riêng giao dịch đang ở `AWAITING_USE` vẫn giữ nút mở khiếu nại BR-09 ở cột thông tin bên phải.
+
+**Nơi hiện thực.** `TicketReminderService`, `TicketReminderScheduler`, `TransferTicketService`, `TicketUpcomingReminderEvent`, `NotificationEventListener`, `TicketResponse`.
+
+---
+
 ## Ví dụ tính toán trọn vẹn một giao dịch
 
 Ba kịch bản dưới đây ghép tất cả quy tắc lại, dùng để viết integration test. Ở cả ba, tổng tiền vào hệ thống luôn bằng tổng tiền ra — đây là bất biến phải kiểm tra trong test.

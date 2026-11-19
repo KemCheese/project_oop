@@ -98,6 +98,9 @@
                 <div class="auth-alert success" th:if="${param.registered}">
                     <i class="fa-solid fa-circle-check"></i> Đăng ký thành công! Bạn được cấp 100 điểm uy tín ban đầu.
                 </div>
+                <div class="auth-alert error" th:if="${param.expired}">
+                    <i class="fa-solid fa-circle-exclamation"></i> Phiên đăng nhập của bạn đã hết hạn hoặc bị thu hồi do thay đổi bảo mật tài khoản. Vui lòng đăng nhập lại.
+                </div>
 
                 <form method="post" th:action="@{/login}">
                     <!-- Preserve redirect URL for guest users -->

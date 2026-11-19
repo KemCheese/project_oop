@@ -5,10 +5,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import com.yourapp.ticketpass.shared.security.CsrfDeferredTokenInitFilter;
 import com.yourapp.ticketpass.shared.security.SmartAuthenticationSuccessHandler;
 
@@ -82,6 +85,11 @@ public class SecurityConfig {
                         .deleteCookies("JSESSIONID")
                         .permitAll()
                 )
+                .sessionManagement(session -> session
+                        .maximumSessions(-1)
+                        .sessionRegistry(sessionRegistry())
+                        .expiredUrl("/login?expired")
+                )
                 // Cho phép H2 Console hiển thị trong iframe (dev tool dùng <iframe>)
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin())
@@ -94,6 +102,27 @@ public class SecurityConfig {
                 .addFilterAfter(new CsrfDeferredTokenInitFilter(), CsrfFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Đăng ký bộ theo dõi các {@code HttpSession} đang hoạt động phục vụ thu hồi phiên tức thì
+     * khi người dùng đổi mật khẩu hoặc bị Admin khóa tài khoản.
+     *
+     * @return {@link SessionRegistry} dùng chung toàn ứng dụng
+     */
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    /**
+     * Đồng bộ vòng đời hủy session của Servlet Container với {@link SessionRegistry}.
+     *
+     * @return listener xuất sự kiện session lifecycle cho Spring Security
+     */
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
     }
 
     /**

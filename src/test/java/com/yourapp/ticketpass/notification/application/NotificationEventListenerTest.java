@@ -18,6 +18,7 @@ import com.yourapp.ticketpass.shared.event.TicketEscrowPaidEvent;
 import com.yourapp.ticketpass.shared.event.TicketExpiredEvent;
 import com.yourapp.ticketpass.shared.event.TicketReceivedEvent;
 import com.yourapp.ticketpass.shared.event.TicketTransactionCompletedEvent;
+import com.yourapp.ticketpass.shared.event.TicketUpcomingReminderEvent;
 import com.yourapp.ticketpass.user.domain.StarredTicketRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -282,6 +283,50 @@ class NotificationEventListenerTest {
                 contains("không còn khả dụng trên sàn"),
                 eq(NotificationType.STARRED_TICKET_EXPIRED),
                 eq("/tickets/88")
+        );
+    }
+
+    @Test
+    @DisplayName("onTicketUpcomingReminder: Gửi UPCOMING_EVENT_REMINDER trước 24h cho Buyer")
+    void testOnTicketUpcomingReminder_Normal24h() {
+        TicketUpcomingReminderEvent event = new TicketUpcomingReminderEvent(
+                90L, 10L, 20L, "Concert Anh Trai", "Mỹ Đình",
+                Instant.parse("2026-11-16T00:14:00+07:00"),
+                Instant.parse("2026-11-16T03:14:00+07:00"),
+                false,
+                Instant.parse("2026-11-15T00:14:00+07:00")
+        );
+
+        listener.onTicketUpcomingReminder(event);
+
+        verify(notificationService).sendNotification(
+                eq(20L),
+                eq("Nhắc lịch sử dụng vé trong 24 giờ tới!"),
+                contains("00:14 ngày 16/11/2026"),
+                eq(NotificationType.UPCOMING_EVENT_REMINDER),
+                eq("/tickets/90")
+        );
+    }
+
+    @Test
+    @DisplayName("onTicketUpcomingReminder: Gửi thông điệp nhắc sớm khi mua sát giờ <= 24h")
+    void testOnTicketUpcomingReminder_LastMinute() {
+        TicketUpcomingReminderEvent event = new TicketUpcomingReminderEvent(
+                91L, 10L, 20L, "Vé Phim Đêm", "CGV",
+                Instant.parse("2026-11-15T22:00:00+07:00"),
+                Instant.parse("2026-11-16T00:00:00+07:00"),
+                true,
+                Instant.parse("2026-11-15T18:00:00+07:00")
+        );
+
+        listener.onTicketUpcomingReminder(event);
+
+        verify(notificationService).sendNotification(
+                eq(20L),
+                eq("Sự kiện sắp diễn ra — Chuẩn bị sử dụng vé!"),
+                contains("trong vòng 24 giờ tới"),
+                eq(NotificationType.UPCOMING_EVENT_REMINDER),
+                eq("/tickets/91")
         );
     }
 }

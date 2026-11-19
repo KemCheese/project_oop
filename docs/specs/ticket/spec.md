@@ -115,6 +115,34 @@ The system SHALL allow authenticated users to add or remove tickets from their p
 
 ---
 
+### Requirement: Detect Schedule Conflict with Soft Warning
+<!-- id: TicketScheduleService.findConflictingTickets -->
+<!-- entities: Ticket, TimeSlot, ConflictingTicketInfo -->
+<!-- enforced: TicketScheduleService.findConflictingTickets(), WalletPaymentController.payEscrowWithWallet(), PaymentController.buyTicket(), PaymentController.initEscrow() -->
+
+The system SHALL require `eventEndAt > eventStartAt` on new ticket listings (falling back polymorphically to `TicketAdapter.defaultEventDuration()` for legacy tickets without `eventEndAt`), detect half-open `[start, end)` overlaps across the buyer's 6 active ownership statuses (`PAYMENT_ESCROWED`, `DEPOSIT_LOCKED`, `TRANSFERRED`, `AWAITING_USE`, `AUTO_COMPLETE`, `RESOLVED_SELLER_WINS`), trigger a 2-mode Pop-up Modal (`#overlapConfirmModal`) on ticket detail, and require explicit `confirmOverlap=true` at checkout endpoints.
+
+#### Scenario: Overlapping Active Ticket Triggers Soft Warning & Guard
+<!-- test: ScheduleConflictAndReminderFlowTest.testScheduleOverlapSoftWarningAndGuards() -->
+- **WHEN** a buyer owns an active ticket `[13:00, 15:00)` and requests checkout on an overlapping ticket `[14:00, 16:00)` without `confirmOverlap=true`
+- **THEN** the detail view omits static banners and sets `data-has-conflict="true"` on `#overlapConfirmModal`, Wallet/VietQR checkout redirects with `?overlapWarning=true` without charging, JSON API returns HTTP 400, and checkout with `confirmOverlap=true` succeeds while adjacent `[15:00, 19:00)` triggers no warning
+
+---
+
+### Requirement: 24-Hour Idempotent Event Reminder & Expired QR Box Hiding
+<!-- id: TicketReminderService.claimAndNotify -->
+<!-- entities: Ticket, TicketUpcomingReminderEvent, TicketResponse -->
+<!-- enforced: TicketReminderScheduler.scanAndSendUpcomingReminders(), TransferTicketService.markDepositLocked(), TicketController.detail() -->
+
+The system SHALL run a scheduled job dispatching `TicketUpcomingReminderEvent` at most once per ticket when `0 < eventStartAt - now <= leadHours` (updating `reminded_24h_at` atomically), trigger immediate early reminder for last-minute purchases when seller locks deposit, and hide `.qr-unlocked-box` / `.qr-locked-box` on `ticket/detail.html` for event-expired, terminal, or 30-minute QR-expired tickets.
+
+#### Scenario: Idempotent 24h Reminder and Expired QR Hiding
+<!-- test: ScheduleConflictAndReminderFlowTest.test24hReminderSchedulerAndLastMinuteDepositTrigger(), ScheduleConflictAndReminderFlowTest.testExpiredTicketHidesGreenQrBox() -->
+- **WHEN** `TicketReminderScheduler` scans twice or `markDepositLocked` executes within 24h of `eventStartAt`, and when an expired `AUTO_COMPLETE` ticket is rendered
+- **THEN** exactly one `UPCOMING_EVENT_REMINDER` notification is dispatched per ticket and the rendered detail page contains neither `class="qr-unlocked-box"` nor `class="qr-locked-box"`
+
+---
+
 ### Invariant: Allowed State Transition Closure
 <!-- entities: Ticket, TicketStatus -->
 <!-- enforced: TicketStateMachineService.ALLOWED -->

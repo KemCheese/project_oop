@@ -43,6 +43,7 @@ public interface TicketAdapter {
     TicketType supportedType();
     Duration disputeWindowAfterTransfer();
     Duration autoCompleteDelay();
+    Duration defaultEventDuration();
     boolean requiresSeatInfo();
     boolean requiresEmailForwardProof();
     ValidationResult validateListing(Ticket ticket);
@@ -123,6 +124,11 @@ Sử dụng `ApplicationEventPublisher` để phát Event. Nơi nhận Event dù
   - Báo Người bán (Seller) vé đã hết hạn và đã được tự động gỡ khỏi sàn (`TICKET_EXPIRED`).
   - Báo tất cả người dùng đang theo dõi (đánh sao) vé này biết vé đã quá hạn không còn khả dụng (`STARRED_TICKET_EXPIRED`).
 
+### 3.9. `TicketUpcomingReminderEvent`
+- **Khi nào phát:** Module `ticket` (`TicketReminderService.claimAndNotify(...)`) phát ra khi `TicketReminderScheduler` quét vé trong cửa sổ `(now, now + leadHours]` hoặc khi `TransferTicketService.markDepositLocked(...)` phát hiện vé mua sát giờ (`0 < eventStartAt - now <= leadHours`).
+- **Ai lắng nghe:** Module `notification` (`NotificationEventListener.onTicketUpcomingReminder`) ở phase `AFTER_COMMIT` (`fallbackExecution = true`).
+- **Hiệu quả thông báo:** Tạo thông báo in-app `UPCOMING_EVENT_REMINDER` cho Người mua (`buyerId`) kèm thời gian bắt đầu (giờ Việt Nam `Asia/Ho_Chi_Minh`) và `targetUrl` trỏ về `/tickets/{ticketId}`.
+
 ---
 
 ## 4. DTO và Config (Data Transfer Object) dùng chung
@@ -148,6 +154,24 @@ public class ForfeitBreakdown {
     private BigDecimal originalDeposit;
     private BigDecimal founderCut;
     private BigDecimal buyerCompensation;
+}
+```
+
+### 4.3. `ConflictingTicketInfo`
+DTO dùng chung đặt tại `com.yourapp.ticketpass.shared.dto`, mô tả vé hiệu lực của người mua bị trùng khung giờ khi kiểm tra lịch qua `TicketScheduleService`.
+
+```java
+public class ConflictingTicketInfo {
+    private Long ticketId;
+    private String title;
+    private String eventName;
+    private String venue;
+    private String statusCode;
+    private String statusLabel;
+    private Instant eventStartAt;
+    private Instant eventEndAt;
+    private boolean estimatedEndTime;
+    private String formattedTimeRange;
 }
 ```
 
@@ -543,5 +567,32 @@ Các quy chuẩn và cơ chế bảo vệ sau đây đã được Dev C hoàn th
      * Client / HTML5: Ô nhập thiết lập `min="10000"` và `step="1"`.
      * DTO: [`TopUpRequest.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/wallet/web/dto/TopUpRequest.java) áp dụng `@DecimalMin(value = "10000", message = "Số tiền nạp tối thiểu là 10.000 VNĐ")`.
      * Application Service: [`WalletService.java`](file:///d:/lam%20viec/FORK/project_oop/src/main/java/com/yourapp/ticketpass/wallet/application/WalletService.java) kiểm tra hằng số `MIN_TOP_UP_AMOUNT = 10000` và ném `BusinessRuleViolationException` nếu vi phạm.
+
+---
+
+### 6.22. 🛡️ QUY CHUẨN ĐÃ KÍCH HOẠT (ACTIVE CONTRACT): Check Trùng Khung Giờ, Nhắc Nhở 24h & Hiển Thị QR Vé Hết Hạn (Task C15)
+
+> **ĐÃ KÍCH HOẠT HOÀN TOÀN (2026-11-17):** Toàn sàn chuẩn hóa kiểm soát trùng khung giờ mua vé, nhắc nhở sử dụng vé trước 24 giờ và quy tắc ẩn khung QR đối với vé hết hạn.
+
+1. **Hợp đồng dữ liệu & Khung giờ nửa mở (`TimeSlot` & `Ticket`):**
+   - Schema `V7__add_event_end_at_and_reminder_fields.sql` bổ sung `event_end_at`, `reminded_24h_at` và 2 composite indexes trên bảng `tickets`.
+   - Đăng vé mới bắt buộc có `eventEndAt > eventStartAt` (`1.PA B`). Vé cũ thiếu `eventEndAt` tự suy đoán theo `TicketAdapter.defaultEventDuration()`.
+   - Đối chiếu trùng giờ qua `TicketScheduleService.findConflictingTickets(buyerId, targetTicket)` trên 6 trạng thái sở hữu hiệu lực (`PAYMENT_ESCROWED`, `DEPOSIT_LOCKED`, `TRANSFERRED`, `AWAITING_USE`, `AUTO_COMPLETE`, `RESOLVED_SELLER_WINS`), loại trừ `excludeTicketId`.
+
+2. **Quy chuẩn Cảnh báo mềm 2 lớp & Backend Guard:**
+   - **Frontend (`ticket/detail.html`):** Không hiển thị khung cảnh báo tĩnh trên nền card giá vé; toàn bộ cảnh báo dùng Pop-up Modal `#overlapConfirmModal` với 2 chế độ (`notice` tự bật khi mở trang vé trùng giờ + `confirm` bật khi nhấn nút Mua hoặc khi redirect `?overlapWarning=true`).
+   - **Backend Guard:** `WalletPaymentController.payEscrowWithWallet`, `PaymentController.buyTicket`, và `PaymentController.initEscrow` bắt buộc kiểm tra cờ `confirmOverlap` trước khi trừ tiền ví hoặc khởi tạo `EscrowTransaction`.
+
+3. **Nhắc nhở 24h Idempotent & Quy tắc hiển thị QR vé hết hạn:**
+   - `TicketReminderService` dùng `Propagation.REQUIRED` + `@Modifying(flushAutomatically = true, clearAutomatically = true)` cập nhật nguyên tử `reminded_24h_at` (chống deadlock InnoDB với `markDepositLocked` và chống gửi trùng).
+   - `TicketResponse` đóng gói `isEligibleForUnlockedQrBox()` và `isEligibleForLockedQrBox()`: đối với vé hết hạn sự kiện (`eventExpired`), vé ở trạng thái kết thúc/hủy (`AUTO_COMPLETE`, `CANCELLED`, `RESOLVED_BUYER_WINS`, `RESOLVED_SELLER_WINS`), hoặc mã QR đã quá 30 phút (`qrExpired`), ẩn hoàn toàn khung viền xanh `.qr-unlocked-box` và khung khóa `.qr-locked-box`, đồng thời giữ nút mở khiếu nại BR-09 tại sidebar phải cho vé đang `AWAITING_USE`.
+
+---
+
+### 6.23. ⚠️ CẢNH BÁO RỦI RO TỒN ĐỌNG (Chờ Task Bảo Mật Tiếp Theo)
+
+1. **`WalletPaymentController.payFromTransfer`:** Luồng phụ `/payment/wallet/pay-from-transfer` thanh toán trực tiếp từ trang QR chưa áp dụng lại backend guard kiểm tra trùng giờ như luồng chính.
+2. **`PaymentController` (Phạm vi Dev B):** Các route `GET /payment/escrow/buy`, `GET /payment/deposit/lock` vẫn hỗ trợ HTTP `GET`, và `/payment/transfer{,/confirm,/fail}` cần siết chặt kiểm tra quyền sở hữu `principal` với `ref` (chống IDOR).
+3. **CSRF & XSS trên luồng thông báo cũ:** `SecurityConfig` đang miễn CSRF cho `/api/notifications/**` và JS dropdown thông báo ở `layout/base.html` cần đảm bảo escape an toàn thuộc tính `data-url`. Nên gộp xử lý dứt điểm ở một task Security Hardening riêng.
 
 

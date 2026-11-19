@@ -3,11 +3,14 @@ package com.yourapp.ticketpass.ticket.infrastructure;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
+import com.yourapp.ticketpass.ticket.domain.TicketTypeStatusCount;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -126,4 +129,66 @@ public interface TicketJpaRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findTopSuggestions(@Param("status") TicketStatus status,
                                     @Param("keyword") String keyword,
                                     Pageable pageable);
+
+    /**
+     * Tim cac ve ma nguoi mua dang so huu hieu luc trong khoang thoi gian co kha nang trung lich.
+     * Giu lai ca ve cu co {@code eventEndAt IS NULL} neu {@code eventStartAt < targetEnd}.
+     */
+    @Query("SELECT t FROM Ticket t WHERE t.buyerId = :buyerId AND t.status IN :statuses " +
+           "AND (:excludeTicketId IS NULL OR t.id <> :excludeTicketId) " +
+           "AND t.eventStartAt IS NOT NULL AND t.eventStartAt < :targetEnd " +
+           "AND (t.eventEndAt IS NULL OR t.eventEndAt > :targetStart) " +
+           "ORDER BY t.eventStartAt ASC, t.id ASC")
+    List<Ticket> findPotentialScheduleConflicts(@Param("buyerId") Long buyerId,
+                                                @Param("statuses") Collection<TicketStatus> statuses,
+                                                @Param("targetEnd") Instant targetEnd,
+                                                @Param("targetStart") Instant targetStart,
+                                                @Param("excludeTicketId") Long excludeTicketId);
+
+    /**
+     * Lay theo batch cac ve can gui nhac lich su dung trong cua so (now, windowEnd].
+     */
+    @Query("SELECT t FROM Ticket t WHERE t.status IN :statuses " +
+           "AND t.reminded24hAt IS NULL " +
+           "AND t.buyerId IS NOT NULL " +
+           "AND t.eventStartAt IS NOT NULL " +
+           "AND t.eventStartAt > :now AND t.eventStartAt <= :windowEnd " +
+           "ORDER BY t.eventStartAt ASC, t.id ASC")
+    List<Ticket> findTicketsDueFor24hReminder(@Param("statuses") Collection<TicketStatus> statuses,
+                                              @Param("now") Instant now,
+                                              @Param("windowEnd") Instant windowEnd,
+                                              Pageable pageable);
+
+    /**
+     * Danh dau nguyen tu mot ve da duoc nhac lich 24h (idempotent).
+     * flushAutomatically + clearAutomatically giup dong bo Hibernate L1 cache khi goi trong transaction cha.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Ticket t SET t.reminded24hAt = :remindedAt " +
+           "WHERE t.id = :ticketId AND t.reminded24hAt IS NULL")
+    int markReminded24hIfUnset(@Param("ticketId") Long ticketId,
+                               @Param("remindedAt") Instant remindedAt);
+
+    /**
+     * Tai hang loat ve theo tap ID phuc vu bao cao Admin.
+     */
+    List<Ticket> findByIdIn(Collection<Long> ids);
+
+    /**
+     * Thong ke so ve ket thuc theo loai ve va trang thai trong ky [startInclusive, endExclusive).
+     */
+    @Query("SELECT new com.yourapp.ticketpass.ticket.domain.TicketTypeStatusCount(t.ticketType, t.status, COUNT(t)) " +
+           "FROM Ticket t " +
+           "WHERE t.completedAt IS NOT NULL AND t.completedAt >= :startInclusive AND t.completedAt < :endExclusive " +
+           "GROUP BY t.ticketType, t.status")
+    List<TicketTypeStatusCount> countCompletedGroupedByTypeAndStatus(@Param("startInclusive") Instant startInclusive,
+                                                                     @Param("endExclusive") Instant endExclusive);
+
+    /**
+     * Thong ke snapshot tuc thoi (live) toan bo ve theo loai ve va trang thai.
+     */
+    @Query("SELECT new com.yourapp.ticketpass.ticket.domain.TicketTypeStatusCount(t.ticketType, t.status, COUNT(t)) " +
+           "FROM Ticket t " +
+           "GROUP BY t.ticketType, t.status")
+    List<TicketTypeStatusCount> countLiveGroupedByTypeAndStatus();
 }

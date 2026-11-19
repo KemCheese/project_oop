@@ -65,4 +65,13 @@ public interface UserRepository {
      * @return danh sách tài khoản có vai trò đó
      */
     List<User> findByRole(UserRole role);
+
+    /**
+     * Tìm kiếm và lọc tài khoản phục vụ màn hình quản trị người dùng của Admin.
+     *
+     * @param keyword từ khóa tìm không phân biệt hoa thường theo email, họ tên hoặc SĐT (có thể null)
+     * @param status trạng thái cần lọc (có thể null nếu lấy mọi trạng thái)
+     * @return danh sách tài khoản khớp điều kiện, mới nhất xếp trước
+     */
+    List<User> searchForAdmin(String keyword, UserStatus status);
 }

@@ -168,6 +168,18 @@ class RegisterUserUseCaseTest {
     }
 
     @Test
+    void verifyEmail_SuspendedUser_ThrowsException() {
+        User user = new User();
+        user.setId(1L);
+        user.setStatus(UserStatus.SUSPENDED);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        assertThrows(BusinessRuleViolationException.class,
+                () -> registerUserUseCase.verifyEmail(1L, "any_token"));
+    }
+
+    @Test
     void verifyEmail_UserNotFound_ThrowsException() {
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 

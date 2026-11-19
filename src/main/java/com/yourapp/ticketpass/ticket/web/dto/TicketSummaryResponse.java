@@ -35,6 +35,8 @@ public class TicketSummaryResponse {
 
     private Instant eventStartAt;
 
+    private Instant eventEndAt;
+
     private BigDecimal salePrice;
 
     /** URL anh thu nho cua ve, sinh tu ticketImageStorageKey. */

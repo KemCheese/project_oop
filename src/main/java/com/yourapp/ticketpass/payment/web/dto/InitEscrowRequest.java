@@ -29,4 +29,7 @@ public class InitEscrowRequest {
     /** Phương thức thanh toán người mua chọn, dùng để chọn adapter cổng thanh toán tương ứng. */
     @NotBlank
     private String paymentMethod;
+
+    /** Xác nhận người mua đã hiểu cảnh báo trùng giờ nhưng vẫn muốn tiếp tục thanh toán. */
+    private boolean confirmOverlap;
 }

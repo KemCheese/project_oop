@@ -1,11 +1,14 @@
 package com.yourapp.ticketpass.ticket.web;
 
+import com.yourapp.ticketpass.shared.dto.ConflictingTicketInfo;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
 import com.yourapp.ticketpass.shared.storage.StoredFileRef;
+import com.yourapp.ticketpass.ticket.application.TicketScheduleService;
 import com.yourapp.ticketpass.ticket.application.TransferTicketService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
+import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest;
 import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
@@ -76,6 +79,8 @@ public class TicketController {
     private final UserRepository userRepository;
 
     private final StarredTicketUseCase starredTicketUseCase;
+
+    private final TicketScheduleService ticketScheduleService;
 
     /**
      * Lấy danh sách 3 loại vé khả dụng trên sàn (MOVIE, CONCERT, BUS).
@@ -240,14 +245,25 @@ public class TicketController {
         model.addAttribute("seller", sellerSummary);
 
         // Xac dinh vai tro cua nguoi dang xem de hien thi nut hanh dong phu hop
+        List<ConflictingTicketInfo> scheduleConflicts = Collections.emptyList();
+        boolean hasScheduleConflict = false;
         if (principal != null) {
             Long currentUserId = resolveUserId(principal);
+            boolean viewerIsSeller = ticket.getSellerId().equals(currentUserId);
             model.addAttribute("currentUserId", currentUserId);
-            model.addAttribute("isSeller", ticket.getSellerId().equals(currentUserId));
+            model.addAttribute("isSeller", viewerIsSeller);
             model.addAttribute("isBuyer",
                     ticket.getBuyerId() != null && ticket.getBuyerId().equals(currentUserId));
             model.addAttribute("isStarred", starredTicketUseCase.isStarred(currentUserId, id));
+
+            // Chi kiem tra trung gio cho nguoi mua tiem nang khi ve con dang rao ban (LISTED)
+            if (!viewerIsSeller && ticket.getStatus() == TicketStatus.LISTED && ticketScheduleService != null) {
+                scheduleConflicts = ticketScheduleService.findConflictingTickets(currentUserId, ticket);
+                hasScheduleConflict = scheduleConflicts != null && !scheduleConflicts.isEmpty();
+            }
         }
+        model.addAttribute("scheduleConflicts", scheduleConflicts != null ? scheduleConflicts : Collections.emptyList());
+        model.addAttribute("hasScheduleConflict", hasScheduleConflict);
 
         return "ticket/detail";
     }
@@ -291,6 +307,11 @@ public class TicketController {
         if (qrImage == null || qrImage.isEmpty()) {
             bindingResult.rejectValue("qrImageStorageKey", "required",
                     "Phai upload anh QR an (anh check-in bi mat).");
+        }
+        if (request.getEventStartAt() != null && request.getEventEndAt() != null
+                && !request.getEventEndAt().isAfter(request.getEventStartAt())) {
+            bindingResult.rejectValue("eventEndAt", "invalidRange",
+                    "Thời gian kết thúc sự kiện phải nằm sau thời gian bắt đầu.");
         }
 
         if (bindingResult.hasErrors()) {
@@ -429,6 +450,11 @@ public class TicketController {
         summary.setTitle(ticket.getTitle());
         summary.setEventName(ticket.getEventName());
         summary.setEventStartAt(ticket.getEventStartAt());
+        if (ticket.getEventEndAt() != null) {
+            summary.setEventEndAt(ticket.getEventEndAt());
+        } else if (ticketScheduleService != null) {
+            ticketScheduleService.resolveTimeSlot(ticket).ifPresent(slot -> summary.setEventEndAt(slot.end()));
+        }
         summary.setSalePrice(ticket.getSalePrice());
         if (ticket.getTicketImageStorageKey() != null
                 && !ticket.getTicketImageStorageKey().isBlank()) {
@@ -451,6 +477,15 @@ public class TicketController {
         response.setVenue(ticket.getVenue());
         response.setSeatInfo(ticket.getSeatInfo());
         response.setEventStartAt(ticket.getEventStartAt());
+        if (ticket.getEventEndAt() != null) {
+            response.setEventEndAt(ticket.getEventEndAt());
+            response.setEstimatedEndTime(false);
+        } else if (ticketScheduleService != null) {
+            ticketScheduleService.resolveTimeSlot(ticket).ifPresent(slot -> {
+                response.setEventEndAt(slot.end());
+                response.setEstimatedEndTime(true);
+            });
+        }
         response.setOriginalPrice(ticket.getOriginalPrice());
         response.setSalePrice(ticket.getSalePrice());
         response.setTransferInstruction(ticket.getTransferInstruction());
@@ -462,12 +497,18 @@ public class TicketController {
         response.setCreatedAt(ticket.getCreatedAt());
         response.setReceivedAt(ticket.getReceivedAt());
         
+        java.time.Instant now = java.time.Instant.now();
         if (ticket.getReceivedAt() != null) {
             java.time.Instant expiredAt = ticket.getReceivedAt().plus(java.time.Duration.ofMinutes(30));
             response.setQrExpired(expiredAt.isBefore(java.time.Instant.now()));
+            response.setQrExpired(expiredAt.isBefore(now));
         } else {
             response.setQrExpired(false);
         }
+        java.time.Instant effectiveEnd = response.getEventEndAt() != null
+                ? response.getEventEndAt()
+                : response.getEventStartAt();
+        response.setEventExpired(effectiveEnd != null && effectiveEnd.isBefore(now));
         if (ticket.getTicketImageStorageKey() != null
                 && !ticket.getTicketImageStorageKey().isBlank()) {
             response.setTicketImageUrl(

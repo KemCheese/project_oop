@@ -34,9 +34,18 @@ public class ConcertTicketAdapter implements TicketAdapter {
     @Value("${app.dispute.window.concert-hours:24}")
     private int disputeWindowHours;
 
+    @Value("${app.ticket.default-duration.concert-minutes:180}")
+    private long defaultDurationMinutes = 180L;
+
     @Override
     public TicketType supportedType() {
         return TicketType.CONCERT;
+    }
+
+    @Override
+    public Duration defaultEventDuration() {
+        long minutes = defaultDurationMinutes > 0 ? defaultDurationMinutes : 180L;
+        return Duration.ofMinutes(minutes);
     }
 
     @Override

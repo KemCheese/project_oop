@@ -986,6 +986,7 @@
                 transform: translateY(0);
             }
         }
+
         /* ==========================================================================
            NOTIFICATION SYSTEM (Anti-Slop Design Taste Popover)
            ========================================================================== */
@@ -1051,9 +1052,12 @@
         }
 
         @keyframes notifPulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(1);
             }
+
             50% {
                 transform: scale(1.12);
             }
@@ -1308,6 +1312,50 @@
         .notif-dropdown-footer a:hover {
             color: var(--color-primary);
         }
+
+        /* Admin Top-Bar Dropdown Menu */
+        .admin-dropdown-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .admin-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 220px;
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.15);
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            z-index: 120;
+        }
+
+        .admin-dropdown-menu.is-open {
+            display: flex;
+        }
+
+        .admin-dropdown-menu a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-main);
+            white-space: nowrap;
+        }
+
+        .admin-dropdown-menu a:hover {
+            background-color: #f8fafc;
+            color: var(--color-primary);
+        }
     </style>
 </head>
 
@@ -1340,13 +1388,26 @@
                 <a th:href="@{/reputation/top}"><i class="fa-solid fa-trophy"></i> Bảng xếp hạng</a>
 
                 <th:block th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
-                    <a th:href="@{/admin/disputes}"><i class="fa-solid fa-shield-halved"></i> Quản trị tranh chấp</a>
+                    <div class="admin-dropdown-wrapper" id="adminDropdownWrapper">
+                        <button type="button" id="adminMenuBtn" aria-expanded="false" aria-haspopup="true">
+                            <i class="fa-solid fa-shield-halved"></i> Quản trị
+                            <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i>
+                        </button>
+                        <div class="admin-dropdown-menu" id="adminMenuDropdown" aria-hidden="true">
+                            <a th:href="@{/admin/dashboard}"><i class="fa-solid fa-chart-line"></i> Dashboard tài
+                                chính</a>
+                            <a th:href="@{/admin/users}"><i class="fa-solid fa-users-gear"></i> Quản lý người dùng</a>
+                            <a th:href="@{/admin/disputes}"><i class="fa-solid fa-shield-halved"></i> Quản trị tranh
+                                chấp</a>
+                        </div>
+                    </div>
                 </th:block>
 
                 <th:block th:if="${#authorization.expression('isAuthenticated()')}">
                     <!-- Notification Bell & Dropdown Popover -->
                     <div class="notif-wrapper" id="notifWrapper">
-                        <button type="button" class="notif-bell-btn" id="notifBellBtn" aria-expanded="false" aria-label="Thông báo" title="Thông báo">
+                        <button type="button" class="notif-bell-btn" id="notifBellBtn" aria-expanded="false"
+                            aria-label="Thông báo" title="Thông báo">
                             <span class="notif-bell-icon-wrap">
                                 <i class="fa-regular fa-bell"></i>
                                 <span class="notif-badge" id="notifBadge" style="display: none;">0</span>
@@ -1359,7 +1420,8 @@
                                     <span>Thông báo</span>
                                     <span class="notif-header-count" id="notifHeaderCount">0</span>
                                 </div>
-                                <button type="button" class="notif-mark-all-btn" id="notifMarkAllBtn" title="Đánh dấu tất cả đã đọc">
+                                <button type="button" class="notif-mark-all-btn" id="notifMarkAllBtn"
+                                    title="Đánh dấu tất cả đã đọc">
                                     <i class="fa-solid fa-check-double"></i> Đã đọc tất cả
                                 </button>
                             </div>
@@ -1381,7 +1443,8 @@
                         </div>
                     </div>
 
-                    <a th:href="@{/wallet}"><i class="fa-solid fa-wallet" style="color: var(--color-primary);"></i> Ví điện tử</a>
+                    <a th:href="@{/wallet}"><i class="fa-solid fa-wallet" style="color: var(--color-primary);"></i> Ví
+                        điện tử</a>
                     <a th:href="@{/profile}"><i class="fa-solid fa-user-circle"></i> Hồ sơ của tôi</a>
                     <form th:action="@{/logout}" method="post" style="display:inline; margin:0;">
                         <button type="submit"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</button>
@@ -1683,13 +1746,13 @@
                 fetch('/api/notifications/unread-count', {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 })
-                .then(res => res.ok ? res.json() : null)
-                .then(data => {
-                    if (data && typeof data.unreadCount === 'number') {
-                        renderBadge(data.unreadCount);
-                    }
-                })
-                .catch(() => {});
+                    .then(res => res.ok ? res.json() : null)
+                    .then(data => {
+                        if (data && typeof data.unreadCount === 'number') {
+                            renderBadge(data.unreadCount);
+                        }
+                    })
+                    .catch(() => { });
             }
 
             function renderBadge(count) {
@@ -1712,18 +1775,18 @@
                 fetch('/api/notifications/recent?limit=10', {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 })
-                .then(res => res.ok ? res.json() : null)
-                .then(data => {
-                    if (!data) return;
-                    renderBadge(data.unreadCount);
-                    cachedNotifications = data.notifications || [];
-                    renderList();
-                })
-                .catch(() => {
-                    if (dropdownBody) {
-                        dropdownBody.innerHTML = '<div class="notif-empty"><div class="notif-empty-text">Không thể nạp thông báo. Vui lòng thử lại.</div></div>';
-                    }
-                });
+                    .then(res => res.ok ? res.json() : null)
+                    .then(data => {
+                        if (!data) return;
+                        renderBadge(data.unreadCount);
+                        cachedNotifications = data.notifications || [];
+                        renderList();
+                    })
+                    .catch(() => {
+                        if (dropdownBody) {
+                            dropdownBody.innerHTML = '<div class="notif-empty"><div class="notif-empty-text">Không thể nạp thông báo. Vui lòng thử lại.</div></div>';
+                        }
+                    });
             }
 
             function getIconConfig(type) {
@@ -1752,6 +1815,8 @@
                         return { icon: 'fa-solid fa-star', styleClass: 'ticket' };
                     case 'STARRED_TICKET_EXPIRED':
                         return { icon: 'fa-solid fa-clock-rotate-left', styleClass: 'system' };
+                    case 'UPCOMING_EVENT_REMINDER':
+                        return { icon: 'fa-solid fa-clock', styleClass: 'escrow' };
                     default:
                         return { icon: 'fa-solid fa-bell', styleClass: 'system' };
                 }
@@ -1874,19 +1939,56 @@
                         method: 'POST',
                         headers: { 'X-Requested-With': 'XMLHttpRequest' }
                     })
-                    .then(res => res.ok ? res.json() : null)
-                    .then(data => {
-                        if (data && data.success) {
-                            renderBadge(0);
-                            cachedNotifications.forEach(n => n.isRead = true);
-                            renderList();
-                        }
-                    });
+                        .then(res => res.ok ? res.json() : null)
+                        .then(data => {
+                            if (data && data.success) {
+                                renderBadge(0);
+                                cachedNotifications.forEach(n => n.isRead = true);
+                                renderList();
+                            }
+                        });
                 });
             }
 
             updateUnreadCount();
             setInterval(updateUnreadCount, 25000);
+        })();
+
+        (function initAdminMenuDropdown() {
+            const wrapper = document.getElementById('adminDropdownWrapper');
+            const btn = document.getElementById('adminMenuBtn');
+            const menu = document.getElementById('adminMenuDropdown');
+            if (!wrapper || !btn || !menu) return;
+
+            function closeAdminMenu() {
+                menu.classList.remove('is-open');
+                btn.setAttribute('aria-expanded', 'false');
+                menu.setAttribute('aria-hidden', 'true');
+            }
+
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const isOpen = menu.classList.contains('is-open');
+                if (isOpen) {
+                    closeAdminMenu();
+                } else {
+                    menu.classList.add('is-open');
+                    btn.setAttribute('aria-expanded', 'true');
+                    menu.setAttribute('aria-hidden', 'false');
+                }
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!wrapper.contains(e.target)) {
+                    closeAdminMenu();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closeAdminMenu();
+                }
+            });
         })();
     </script>
 

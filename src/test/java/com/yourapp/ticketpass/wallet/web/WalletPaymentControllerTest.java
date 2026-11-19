@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.security.Principal;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,10 @@ import com.yourapp.ticketpass.payment.domain.DepositStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
 import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
+import com.yourapp.ticketpass.payment.domain.PaymentResult;
+import com.yourapp.ticketpass.shared.dto.ConflictingTicketInfo;
+import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
+import com.yourapp.ticketpass.ticket.application.TicketScheduleService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
@@ -74,6 +80,9 @@ class WalletPaymentControllerTest {
 
     @Mock
     private DepositRepository depositRepository;
+
+    @Mock
+    private TicketScheduleService ticketScheduleService;
 
     @InjectMocks
     private WalletPaymentController controller;
@@ -323,6 +332,54 @@ class WalletPaymentControllerTest {
             assertThat(viewName).isEqualTo("redirect:/payment/transfer?ref=101&type=escrow");
             assertThat(redirectAttributes.getFlashAttributes().get("errorMessage").toString())
                     .contains("Bạn không phải người mua");
+        }
+    }
+
+    @Nested
+    @DisplayName("Guard kiểm tra trùng khung giờ khi mua bằng Ví")
+    class ScheduleOverlapGuardTests {
+
+        @Test
+        @DisplayName("Trùng giờ và confirmOverlap=false: redirect kèm ?overlapWarning=true và KHÔNG trừ tiền ví")
+        void testPayEscrowBlockedOnUnconfirmedOverlap() {
+            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
+
+            ConflictingTicketInfo conflict = new ConflictingTicketInfo(
+                    99L, "Vé phim cũ", "Dune", "CGV", "AWAITING_USE", "Đang giữ vé",
+                    Instant.now(), Instant.now().plusSeconds(7200), false, "13:00 - 15:00 18/11/2026"
+            );
+            when(ticketScheduleService.findConflictingTickets(10L, ticket)).thenReturn(List.of(conflict));
+
+            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
+            String viewName = controller.payEscrowWithWallet(100L, false, buyerPrincipal, redirectAttributes);
+
+            assertThat(viewName).isEqualTo("redirect:/tickets/100?overlapWarning=true&method=wallet");
+            assertThat(redirectAttributes.getFlashAttributes().get("overlapWarning")).isEqualTo(true);
+            verify(walletService, never()).debit(anyLong(), any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("Trùng giờ nhưng confirmOverlap=true: cho phép tiếp tục trừ ví và giữ ký quỹ")
+        void testPayEscrowProceedsWhenOverlapConfirmed() {
+            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
+
+            Wallet buyerWallet = new Wallet(10L, new BigDecimal("1000000.00"));
+            when(walletService.getOrCreateWallet(10L)).thenReturn(buyerWallet);
+
+            EscrowTransaction pendingEscrow = new EscrowTransaction();
+            pendingEscrow.setId(555L);
+            pendingEscrow.setStatus(EscrowStatus.PENDING);
+            when(escrowTransactionRepository.findByTicketId(100L)).thenReturn(Optional.of(pendingEscrow));
+
+            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
+            String viewName = controller.payEscrowWithWallet(100L, true, buyerPrincipal, redirectAttributes);
+
+            assertThat(viewName).isEqualTo("redirect:/tickets/100");
+            verify(walletService).debit(eq(10L), eq(new BigDecimal("1000000.00")),
+                    eq(WalletTransactionType.ESCROW_PAY), eq("ESCROW_555"), any());
+            verify(ticketScheduleService, never()).findConflictingTickets(anyLong(), any());
         }
     }
 }

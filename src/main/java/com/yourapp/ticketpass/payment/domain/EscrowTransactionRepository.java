@@ -1,5 +1,7 @@
 package com.yourapp.ticketpass.payment.domain;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -75,4 +77,21 @@ public interface EscrowTransactionRepository {
      * @return giao dịch tương ứng, hoặc {@link Optional#empty()} nếu không tìm thấy
      */
     Optional<EscrowTransaction> findByGatewayTransactionId(String gatewayTransactionId);
+
+    /**
+     * Lấy danh sách giao dịch ký quỹ đã giải ngân ({@link EscrowStatus#RELEASED}) trong khoảng
+     * nửa khoảng {@code [startInclusive, endExclusive)} tính theo {@code releasedAt}.
+     *
+     * @param startInclusive mốc bắt đầu (bao gồm)
+     * @param endExclusive mốc kết thúc (không bao gồm)
+     * @return danh sách giao dịch sắp xếp mới nhất trước
+     */
+    List<EscrowTransaction> findReleasedBetween(Instant startInclusive, Instant endExclusive);
+
+    /**
+     * Tính tổng số tiền ký quỹ đang thực giữ hộ ({@link EscrowStatus#HELD}) toàn sàn.
+     *
+     * @return tổng số tiền đang giữ, trả về {@link BigDecimal#ZERO} nếu không có giao dịch HELD
+     */
+    BigDecimal sumHeldAmount();
 }

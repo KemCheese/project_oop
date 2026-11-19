@@ -24,16 +24,25 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Use case đăng ký tài khoản mới và xác minh email.
  *
- * <p><b>Bảo mật:</b> mật khẩu luôn được lưu dưới dạng băm BCrypt thông qua
- * {@link PasswordEncoder} (bean do {@code shared.config.SecurityConfig} cung cấp).
- * Tuyệt đối KHÔNG bao giờ lưu mật khẩu dạng plaintext, không log mật khẩu, và không
- * trả mật khẩu ra bất kỳ DTO nào.</p>
+ * <p>
+ * <b>Bảo mật:</b> mật khẩu luôn được lưu dưới dạng băm BCrypt thông qua
+ * {@link PasswordEncoder} (bean do {@code shared.config.SecurityConfig} cung
+ * cấp).
+ * Tuyệt đối KHÔNG bao giờ lưu mật khẩu dạng plaintext, không log mật khẩu, và
+ * không
+ * trả mật khẩu ra bất kỳ DTO nào.
+ * </p>
  *
- * <p>Tài khoản mới được tạo với vai trò {@code UserRole.USER} và trạng thái
- * {@code UserStatus.PENDING_VERIFICATION}; chỉ sau khi {@link #verifyEmail} thành công
- * thì trạng thái mới chuyển sang {@code ACTIVE} và người dùng đăng nhập được.</p>
+ * <p>
+ * Tài khoản mới được tạo với vai trò {@code UserRole.USER} và trạng thái
+ * {@code UserStatus.PENDING_VERIFICATION}; chỉ sau khi {@link #verifyEmail}
+ * thành công
+ * thì trạng thái mới chuyển sang {@code ACTIVE} và người dùng đăng nhập được.
+ * </p>
  *
- * <p>Module: user</p>
+ * <p>
+ * Module: user
+ * </p>
  *
  * Chủ sở hữu: Người C
  */
@@ -44,7 +53,7 @@ public class RegisterUserUseCase {
     private final UserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
-    
+
     private final ReputationRepository reputationRepository;
 
     @Value("${app.user.auto-active:true}")
@@ -76,7 +85,7 @@ public class RegisterUserUseCase {
         user.setFullName(request.getFullName() != null ? request.getFullName().trim() : null);
         user.setPhoneNumber(request.getPhoneNumber() != null ? request.getPhoneNumber().trim() : null);
         user.setRole(UserRole.USER);
-        
+
         if (autoActive) {
             user.setStatus(UserStatus.ACTIVE);
             user.setEmailVerified(true);
@@ -119,8 +128,8 @@ public class RegisterUserUseCase {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
-        if (user.getStatus() == UserStatus.BANNED) {
-            throw new BusinessRuleViolationException("Tài khoản đã bị cấm, không thể kích hoạt.");
+        if (user.getStatus() == UserStatus.BANNED || user.getStatus() == UserStatus.SUSPENDED) {
+            throw new BusinessRuleViolationException("Tài khoản đã bị khóa hoặc cấm, không thể kích hoạt.");
         }
 
         if (user.getStatus() == UserStatus.ACTIVE && user.isEmailVerified()) {

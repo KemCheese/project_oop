@@ -33,9 +33,18 @@ public class MovieTicketAdapter implements TicketAdapter {
     @Value("${app.dispute.window.movie-hours:2}")
     private int disputeWindowHours;
 
+    @Value("${app.ticket.default-duration.movie-minutes:120}")
+    private long defaultDurationMinutes = 120L;
+
     @Override
     public TicketType supportedType() {
         return TicketType.MOVIE;
+    }
+
+    @Override
+    public Duration defaultEventDuration() {
+        long minutes = defaultDurationMinutes > 0 ? defaultDurationMinutes : 120L;
+        return Duration.ofMinutes(minutes);
     }
 
     @Override

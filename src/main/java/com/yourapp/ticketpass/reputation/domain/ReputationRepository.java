@@ -1,5 +1,6 @@
 package com.yourapp.ticketpass.reputation.domain;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,4 +47,12 @@ public interface ReputationRepository {
      * @return danh sách bản ghi điểm sắp xếp giảm dần theo điểm
      */
     List<UserReputationScore> findTopSellers(int limit);
+
+    /**
+     * Tải hàng loạt bản ghi điểm uy tín theo tập {@code userIds} để tránh N+1 query.
+     *
+     * @param userIds tập ID người dùng cần tra cứu
+     * @return danh sách bản ghi điểm tương ứng (rỗng nếu đầu vào rỗng)
+     */
+    List<UserReputationScore> findByUserIdIn(Collection<Long> userIds);
 }

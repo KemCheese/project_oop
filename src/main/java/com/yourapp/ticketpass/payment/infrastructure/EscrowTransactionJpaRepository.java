@@ -1,9 +1,13 @@
 package com.yourapp.ticketpass.payment.infrastructure;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.yourapp.ticketpass.payment.domain.EscrowStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
@@ -61,4 +65,21 @@ public interface EscrowTransactionJpaRepository extends JpaRepository<EscrowTran
      * @return giao dịch tương ứng nếu có
      */
     Optional<EscrowTransaction> findByGatewayTransactionId(String gatewayTransactionId);
+
+    /**
+     * Truy vấn các giao dịch đã giải ngân trong khoảng nửa khoảng [startInclusive, endExclusive).
+     */
+    @Query("SELECT e FROM EscrowTransaction e " +
+           "WHERE e.status = com.yourapp.ticketpass.payment.domain.EscrowStatus.RELEASED " +
+           "AND e.releasedAt >= :startInclusive AND e.releasedAt < :endExclusive " +
+           "ORDER BY e.releasedAt DESC, e.id DESC")
+    List<EscrowTransaction> findReleasedBetween(@Param("startInclusive") Instant startInclusive,
+                                                @Param("endExclusive") Instant endExclusive);
+
+    /**
+     * Tổng số tiền đang thực giữ ở trạng thái HELD (loại trừ RELEASED để tránh amountHeld còn lưu snapshot).
+     */
+    @Query("SELECT COALESCE(SUM(e.amountHeld), 0.00) FROM EscrowTransaction e " +
+           "WHERE e.status = com.yourapp.ticketpass.payment.domain.EscrowStatus.HELD")
+    BigDecimal sumHeldAmount();
 }

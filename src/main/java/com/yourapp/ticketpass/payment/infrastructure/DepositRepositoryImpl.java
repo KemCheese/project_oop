@@ -1,5 +1,6 @@
 package com.yourapp.ticketpass.payment.infrastructure;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,5 +52,13 @@ public class DepositRepositoryImpl implements DepositRepository {
     @Override
     public List<Deposit> findByStatus(DepositStatus status) {
         return jpaRepository.findByStatus(status);
+    }
+
+    @Override
+    public List<Deposit> findForfeitedBetween(Instant startInclusive, Instant endExclusive) {
+        if (startInclusive == null || endExclusive == null) {
+            return List.of();
+        }
+        return jpaRepository.findForfeitedBetween(startInclusive, endExclusive);
     }
 }

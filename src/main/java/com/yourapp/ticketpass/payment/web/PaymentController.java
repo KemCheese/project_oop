@@ -2,6 +2,7 @@ package com.yourapp.ticketpass.payment.web;
 
 import java.security.Principal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,8 +31,10 @@ import com.yourapp.ticketpass.payment.web.dto.InitDepositRequest;
 import com.yourapp.ticketpass.payment.web.dto.InitEscrowRequest;
 import com.yourapp.ticketpass.payment.web.dto.PaymentInitResponse;
 import com.yourapp.ticketpass.shared.config.PaymentGatewayConfig;
+import com.yourapp.ticketpass.shared.dto.ConflictingTicketInfo;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
+import com.yourapp.ticketpass.ticket.application.TicketScheduleService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.user.domain.User;
@@ -64,6 +67,7 @@ public class PaymentController {
     private final EscrowTransactionRepository escrowTransactionRepository;
     private final DepositRepository depositRepository;
     private final PaymentGatewayConfig paymentGatewayConfig;
+    private final TicketScheduleService ticketScheduleService;
 
     /**
      * Tra cứu userId từ phiên đăng nhập hiện tại.
@@ -98,6 +102,17 @@ public class PaymentController {
         Long buyerId = resolveUserId(principal);
         Ticket ticket = ticketRepository.findById(request.getTicketId())
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", request.getTicketId()));
+
+        if (!request.isConfirmOverlap() && ticketScheduleService != null) {
+            List<ConflictingTicketInfo> conflicts = ticketScheduleService.findConflictingTickets(buyerId, ticket);
+            if (conflicts != null && !conflicts.isEmpty()) {
+                ConflictingTicketInfo first = conflicts.get(0);
+                throw new BusinessRuleViolationException(
+                        "Vé này bị trùng khung giờ sử dụng với vé \"" + first.getTitle()
+                        + "\" (" + first.getFormattedTimeRange() + "). "
+                        + "Gửi confirmOverlap=true để xác nhận tiếp tục mua.");
+            }
+        }
 
         PaymentResult result = holdFundsUseCase.initEscrowPayment(
                 ticket.getId(), buyerId, ticket.getSellerId(), ticket.getSalePrice());
@@ -149,10 +164,25 @@ public class PaymentController {
      * @return chuyển hướng sang trang QR chuyển khoản (/payment/transfer?ref=...&type=escrow)
      */
     @PostMapping("/escrow/buy")
-    public String buyTicket(@RequestParam Long ticketId, Principal principal) {
+    public String buyTicket(@RequestParam Long ticketId,
+                            @RequestParam(defaultValue = "false") boolean confirmOverlap,
+                            Principal principal,
+                            RedirectAttributes redirectAttributes) {
         Long buyerId = resolveUserId(principal);
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
+
+        if (!confirmOverlap && ticketScheduleService != null) {
+            List<ConflictingTicketInfo> conflicts = ticketScheduleService.findConflictingTickets(buyerId, ticket);
+            if (conflicts != null && !conflicts.isEmpty()) {
+                if (redirectAttributes != null) {
+                    redirectAttributes.addFlashAttribute("overlapWarning", true);
+                    redirectAttributes.addFlashAttribute("overlapConflicts", conflicts);
+                    redirectAttributes.addFlashAttribute("pendingPaymentMethod", "VIETQR");
+                }
+                return "redirect:/tickets/" + ticketId + "?overlapWarning=true&method=vietqr";
+            }
+        }
 
         // Nếu đã có escrow PENDING của chính buyer này, chuyển hướng luôn sang trang QR
         Optional<EscrowTransaction> existingOpt = escrowTransactionRepository.findByTicketId(ticket.getId());
@@ -170,6 +200,11 @@ public class PaymentController {
             throw new BusinessRuleViolationException(
                     result.getMessage() != null ? result.getMessage() : "Không thể khởi tạo thanh toán.");
         }
+    }
+
+    /** Overload giữ tương thích GET fallback và unit test cũ. */
+    public String buyTicket(Long ticketId, Principal principal) {
+        return buyTicket(ticketId, false, principal, null);
     }
 
     @GetMapping("/escrow/buy")

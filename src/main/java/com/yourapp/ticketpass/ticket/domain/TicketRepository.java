@@ -1,6 +1,7 @@
 package com.yourapp.ticketpass.ticket.domain;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -131,6 +132,72 @@ public interface TicketRepository {
      * @return danh sach ve LISTED da qua gio su kien can tu dong go
      */
     List<Ticket> findExpiredListedTickets(Instant now);
+
+    /**
+     * Lay danh sach ve ma nguoi mua dang so huu hieu luc trong khung thoi gian co kha nang giao thoa.
+     * Van lay cac ve cu co {@code eventEndAt IS NULL} neu {@code eventStartAt < targetEnd}
+     * de service ap dung thoi luong mac dinh theo loai ve va doi chieu chuan xac.
+     *
+     * @param buyerId id nguoi mua
+     * @param statuses tap trang thai so huu hieu luc
+     * @param targetEnd thoi diem ket thuc cua ve dang xem
+     * @param targetStart thoi diem bat dau cua ve dang xem
+     * @param excludeTicketId id ve can loai tru (hoac null)
+     * @return danh sach ve ung vien co kha nang trung gio
+     */
+    List<Ticket> findPotentialScheduleConflicts(Long buyerId,
+                                                Collection<TicketStatus> statuses,
+                                                Instant targetEnd,
+                                                Instant targetStart,
+                                                Long excludeTicketId);
+
+    /**
+     * Lay theo batch cac ve den han nhac lich su dung truoc gio su kien.
+     *
+     * @param statuses cac trang thai hop le (da khoa coc / da giao ve)
+     * @param now moc thoi gian hien tai
+     * @param windowEnd moc gioi han tren ({@code now + leadHours})
+     * @param pageable gioi han so ban ghi moi luot quet
+     * @return danh sach ve chua nhac lich trong cua so thoi gian
+     */
+    List<Ticket> findTicketsDueFor24hReminder(Collection<TicketStatus> statuses,
+                                              Instant now,
+                                              Instant windowEnd,
+                                              Pageable pageable);
+
+    /**
+     * Danh dau nguyen tu mot ve da duoc nhac lich 24h neu truoc do chua gui.
+     *
+     * @param ticketId id cua ve
+     * @param remindedAt thoi diem danh dau
+     * @return {@code 1} neu claim thanh cong, {@code 0} neu da duoc nhac truoc do
+     */
+    int markReminded24hIfUnset(Long ticketId, Instant remindedAt);
+
+    /**
+     * Tai hang loat ve theo tap ID phuc vu hien thi thong tin ve tren bao cao Admin (tranh N+1).
+     *
+     * @param ids tap ID ve can tra cuu
+     * @return danh sach ve tim thay (rong neu dau vao rong)
+     */
+    List<Ticket> findByIdIn(Collection<Long> ids);
+
+    /**
+     * Dem so luong ve ket thuc theo loai ve va trang thai trong khoang thoi gian {@code [startInclusive, endExclusive)}
+     * tinh theo {@code completedAt}.
+     *
+     * @param startInclusive moc bat dau (bao gom)
+     * @param endExclusive moc ket thuc (khong bao gom)
+     * @return danh sach thong ke gom (ticketType, status, count)
+     */
+    List<TicketTypeStatusCount> countCompletedGroupedByTypeAndStatus(Instant startInclusive, Instant endExclusive);
+
+    /**
+     * Dem snapshot tuc thoi (live) toan bo ve hien tai theo loai ve va trang thai.
+     *
+     * @return danh sach thong ke gom (ticketType, status, count)
+     */
+    List<TicketTypeStatusCount> countLiveGroupedByTypeAndStatus();
 
     /**
      * Xoa mot ve theo id.

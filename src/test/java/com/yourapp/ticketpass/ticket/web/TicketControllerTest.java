@@ -6,19 +6,24 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.yourapp.ticketpass.shared.dto.ConflictingTicketInfo;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
+import com.yourapp.ticketpass.ticket.application.TicketScheduleService;
 import com.yourapp.ticketpass.ticket.application.TransferTicketService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
+import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
 import com.yourapp.ticketpass.ticket.web.dto.TicketSummaryResponse;
 import com.yourapp.ticketpass.user.application.StarredTicketUseCase;
 import com.yourapp.ticketpass.user.domain.UserRepository;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,6 +61,9 @@ class TicketControllerTest {
 
     @Mock
     private StarredTicketUseCase starredTicketUseCase;
+
+    @Mock
+    private TicketScheduleService ticketScheduleService;
 
     @InjectMocks
     private TicketController controller;
@@ -249,6 +257,151 @@ class TicketControllerTest {
             assertThat(item.getThumbnailUrl()).isEqualTo("/files/tickets/anh-trai.jpg");
             assertThat(item.getDetailUrl()).isEqualTo("/tickets/1");
             assertThat(item.getVenue()).isEqualTo("Sân vận động Mỹ Đình");
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /tickets/{id} & POST /tickets - Guard trùng giờ và validate eventEndAt")
+    class ScheduleConflictAndValidationTests {
+
+        @Test
+        @DisplayName("detail(): Chỉ check trùng giờ khi người xem là Buyer tiềm năng và vé đang LISTED")
+        void testDetailChecksScheduleForPotentialBuyerOnListedTicket() {
+            Ticket t = buildTicket(10L, "MOVIE", "Vé mới", "Dune");
+            com.yourapp.ticketpass.user.domain.User seller = new com.yourapp.ticketpass.user.domain.User();
+            seller.setId(10L);
+            seller.setEmail("seller@test.com");
+
+            com.yourapp.ticketpass.user.domain.User buyer = new com.yourapp.ticketpass.user.domain.User();
+            buyer.setId(20L);
+            buyer.setEmail("buyer@test.com");
+
+            when(ticketRepository.findById(10L)).thenReturn(Optional.of(t));
+            when(userRepository.findById(10L)).thenReturn(Optional.of(seller));
+            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            when(starredTicketUseCase.isStarred(20L, 10L)).thenReturn(false);
+
+            ConflictingTicketInfo conflict = new ConflictingTicketInfo(
+                    5L, "Vé cũ", "Concert", "Mỹ Đình", "AWAITING_USE", "Đang giữ vé",
+                    Instant.now(), Instant.now().plusSeconds(3600), false, "13:00 - 15:00"
+            );
+            when(ticketScheduleService.findConflictingTickets(20L, t)).thenReturn(List.of(conflict));
+
+            java.security.Principal buyerPrincipal = () -> "buyer@test.com";
+            Model model = new ConcurrentModel();
+            String view = controller.detail(10L, model, buyerPrincipal);
+
+            assertThat(view).isEqualTo("ticket/detail");
+            assertThat(model.getAttribute("hasScheduleConflict")).isEqualTo(true);
+            verify(ticketScheduleService).findConflictingTickets(20L, t);
+        }
+
+        @Test
+        @DisplayName("detail(): Seller xem vé của chính mình không bị cảnh báo trùng giờ")
+        void testDetailSkipsConflictCheckForSeller() {
+            Ticket t = buildTicket(11L, "MOVIE", "Vé của mình", "Dune");
+            com.yourapp.ticketpass.user.domain.User seller = new com.yourapp.ticketpass.user.domain.User();
+            seller.setId(10L);
+            seller.setEmail("seller@test.com");
+
+            when(ticketRepository.findById(11L)).thenReturn(Optional.of(t));
+            when(userRepository.findById(10L)).thenReturn(Optional.of(seller));
+            when(userRepository.findByEmail("seller@test.com")).thenReturn(Optional.of(seller));
+            when(starredTicketUseCase.isStarred(10L, 11L)).thenReturn(false);
+
+            java.security.Principal sellerPrincipal = () -> "seller@test.com";
+            Model model = new ConcurrentModel();
+            controller.detail(11L, model, sellerPrincipal);
+
+            assertThat(model.getAttribute("hasScheduleConflict")).isEqualTo(false);
+        }
+
+        @Test
+        @DisplayName("create(): Từ chối inline khi eventEndAt <= eventStartAt")
+        void testCreateRejectsInvalidEventEndRange() {
+            com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest req =
+                    new com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest();
+            java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(2);
+            req.setEventStartAt(start);
+            req.setEventEndAt(start); // bằng nhau -> sai
+
+            org.springframework.validation.BeanPropertyBindingResult binding =
+                    new org.springframework.validation.BeanPropertyBindingResult(req, "createTicketRequest");
+            org.springframework.mock.web.MockMultipartFile dummyImg =
+                    new org.springframework.mock.web.MockMultipartFile("f", "a.png", "image/png", new byte[] {1});
+
+            Model model = new ConcurrentModel();
+            String view = controller.create(req, binding, dummyImg, dummyImg, () -> "s@test.com", model);
+
+            assertThat(view).isEqualTo("ticket/create");
+            assertThat(binding.hasFieldErrors("eventEndAt")).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /tickets/{id} - Ẩn khung QR màu xanh với vé đã hết hạn")
+    class QrBoxExpirationVisibilityTests {
+
+        private TicketResponse loadDetailResponse(Ticket ticket) {
+            com.yourapp.ticketpass.user.domain.User seller = new com.yourapp.ticketpass.user.domain.User();
+            seller.setId(10L);
+            seller.setEmail("seller@test.com");
+            when(ticketRepository.findById(ticket.getId())).thenReturn(Optional.of(ticket));
+            when(userRepository.findById(10L)).thenReturn(Optional.of(seller));
+
+            Model model = new ConcurrentModel();
+            controller.detail(ticket.getId(), model, null);
+            return (TicketResponse) model.getAttribute("ticket");
+        }
+
+        @Test
+        @DisplayName("Vé AWAITING_USE còn hạn sự kiện và mới mở QR < 30p -> eligibleForUnlockedQrBox = true")
+        void testDetailActiveAwaitingUseShowsUnlockedQrBox() {
+            Ticket t = buildTicket(20L, "BUS", "Vé còn hạn", "Sài Gòn - Đà Lạt");
+            t.setStatus(TicketStatus.AWAITING_USE);
+            t.setBuyerId(20L);
+            t.setEventStartAt(Instant.now().plus(Duration.ofHours(5)));
+            t.setEventEndAt(Instant.now().plus(Duration.ofHours(9)));
+            t.setReceivedAt(Instant.now().minus(Duration.ofMinutes(5)));
+
+            TicketResponse response = loadDetailResponse(t);
+            assertThat(response.isEventExpired()).isFalse();
+            assertThat(response.isQrExpired()).isFalse();
+            assertThat(response.isEligibleForUnlockedQrBox()).isTrue();
+            assertThat(response.isEligibleForLockedQrBox()).isFalse();
+        }
+
+        @Test
+        @DisplayName("Vé đã qua thời gian sự kiện -> eventExpired = true, ẩn cả khung xanh lẫn khung khóa")
+        void testDetailExpiredEventHidesAllQrBoxes() {
+            Ticket t = buildTicket(21L, "BUS", "Vé hết hạn sự kiện", "Cần Thơ - Rạch Giá");
+            t.setStatus(TicketStatus.AWAITING_USE);
+            t.setBuyerId(20L);
+            t.setEventStartAt(Instant.now().minus(Duration.ofDays(5)));
+            t.setEventEndAt(Instant.now().minus(Duration.ofDays(5)).plus(Duration.ofHours(4)));
+            t.setReceivedAt(Instant.now().minus(Duration.ofMinutes(5)));
+
+            TicketResponse response = loadDetailResponse(t);
+            assertThat(response.isEventExpired()).isTrue();
+            assertThat(response.isEligibleForUnlockedQrBox()).isFalse();
+            assertThat(response.isEligibleForLockedQrBox()).isFalse();
+        }
+
+        @Test
+        @DisplayName("Vé AUTO_COMPLETE hoặc đã quá 30p mở QR -> không hiển thị khung xanh hay khung khóa")
+        void testDetailTerminalOrQrExpiredHidesAllQrBoxes() {
+            Ticket autoComplete = buildTicket(22L, "BUS", "Vé hoàn tất cũ", "Cần Thơ - Rạch Giá");
+            autoComplete.setStatus(TicketStatus.AUTO_COMPLETE);
+            autoComplete.setBuyerId(20L);
+            autoComplete.setEventStartAt(Instant.now().plus(Duration.ofHours(3)));
+            autoComplete.setEventEndAt(Instant.now().plus(Duration.ofHours(7)));
+            autoComplete.setReceivedAt(Instant.now().minus(Duration.ofMinutes(45)));
+
+            TicketResponse response = loadDetailResponse(autoComplete);
+            assertThat(response.isTerminalState()).isTrue();
+            assertThat(response.isQrExpired()).isTrue();
+            assertThat(response.isEligibleForUnlockedQrBox()).isFalse();
+            assertThat(response.isEligibleForLockedQrBox()).isFalse();
         }
     }
 }

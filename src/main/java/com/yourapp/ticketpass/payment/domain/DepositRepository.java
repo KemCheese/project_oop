@@ -1,5 +1,6 @@
 package com.yourapp.ticketpass.payment.domain;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,4 +56,14 @@ public interface DepositRepository {
      * @return danh sách khoản cọc, rỗng nếu không có
      */
     List<Deposit> findByStatus(DepositStatus status);
+
+    /**
+     * Lấy danh sách khoản cọc đã bị tịch thu ({@link DepositStatus#FORFEITED}) trong khoảng
+     * nửa khoảng {@code [startInclusive, endExclusive)} tính theo {@code forfeitedAt}.
+     *
+     * @param startInclusive mốc bắt đầu (bao gồm)
+     * @param endExclusive mốc kết thúc (không bao gồm)
+     * @return danh sách khoản cọc sắp xếp mới nhất trước
+     */
+    List<Deposit> findForfeitedBetween(Instant startInclusive, Instant endExclusive);
 }
