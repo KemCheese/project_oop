@@ -40,3 +40,5 @@ cloudflared.exe
 ./cloudflared.exe
 .claude/
 data/
+docs/
+design-note/
