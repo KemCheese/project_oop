@@ -43,3 +43,5 @@ data/
 .reports/
 docs/prompts/
 docs/adr/
+docs/
+design-note/
