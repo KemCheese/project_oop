@@ -39,3 +39,6 @@ cloudflared.exe
 .gitignore
 ./cloudflared.exe
 .claude/
+
+docs/
+design-note/
