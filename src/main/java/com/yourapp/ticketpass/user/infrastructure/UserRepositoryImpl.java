@@ -9,17 +9,6 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-/**
- * Hiện thực port {@link UserRepository} bằng Spring Data JPA.
- *
- * <p>Lớp adapter này chỉ chuyển tiếp lời gọi sang {@link UserJpaRepository}, không chứa
- * business logic. Đây là chỗ duy nhất trong module {@code user} biết đến sự tồn tại của
- * Spring Data; nhờ vậy muốn đổi công nghệ lưu trữ chỉ cần viết một adapter khác.</p>
- *
- * <p>Module: user</p>
- *
- * Chủ sở hữu: Người C
- */
 @Repository
 @RequiredArgsConstructor
 public class UserRepositoryImpl implements UserRepository {

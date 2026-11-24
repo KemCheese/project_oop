@@ -18,7 +18,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,11 +36,12 @@ class RegisterUserUseCaseTest {
     @Mock
     private ReputationRepository reputationRepository;
 
-    @InjectMocks
     private RegisterUserUseCase registerUserUseCase;
 
     @BeforeEach
     void setUp() {
+        registerUserUseCase = new RegisterUserUseCase(
+                userRepository, passwordEncoder, reputationRepository);
         ReflectionTestUtils.setField(registerUserUseCase, "autoActive", true);
         ReflectionTestUtils.setField(registerUserUseCase, "activationSecret", "TEST_SECRET");
     }
@@ -65,13 +66,17 @@ class RegisterUserUseCaseTest {
         UserProfileResponse response = registerUserUseCase.register(request);
 
         verify(userRepository).save(any(User.class));
-        verify(reputationRepository).save(any(UserReputationScore.class));
+        ArgumentCaptor<UserReputationScore> scoreCaptor = ArgumentCaptor.forClass(UserReputationScore.class);
+        verify(reputationRepository).save(scoreCaptor.capture());
+        assertEquals(10L, scoreCaptor.getValue().getUserId());
+        assertEquals(new BigDecimal("3.00"), scoreCaptor.getValue().getScore());
+        assertEquals(0, scoreCaptor.getValue().getTotalTransactions());
 
         assertEquals(10L, response.getId());
         assertEquals("test@gmail.com", response.getEmail());
         assertEquals(UserStatus.ACTIVE, response.getStatus());
         assertTrue(response.isEmailVerified());
-        assertEquals(new BigDecimal("100.00"), response.getReputationScore());
+        assertEquals(new BigDecimal("3.00"), response.getReputationScore());
     }
 
     @Test
@@ -168,10 +173,11 @@ class RegisterUserUseCaseTest {
     }
 
     @Test
-    void verifyEmail_SuspendedUser_ThrowsException() {
+    void verifyEmail_PermanentlyBannedUser_ThrowsException() {
         User user = new User();
         user.setId(1L);
-        user.setStatus(UserStatus.SUSPENDED);
+        user.setStatus(UserStatus.PENDING_VERIFICATION);
+        user.setPermanentlyBanned(true);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 

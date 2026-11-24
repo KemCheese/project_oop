@@ -13,16 +13,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Kiểm thử tích hợp cấu hình Spring Security cho các endpoint công khai và bảo vệ.
- *
- * <p>Đặc biệt xác minh:
- * - GET /payment/transfer yêu cầu xác thực (chưa login bị redirect về /login).
- * - Các tuyến đường quản trị (/admin/**) hoặc cần xác thực (/tickets/new) vẫn bắt buộc đăng nhập.</p>
- *
- * <p>Module sở hữu: shared (Security hạ tầng).</p>
- * <p>Chủ sở hữu theo phân công: Người C.</p>
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")

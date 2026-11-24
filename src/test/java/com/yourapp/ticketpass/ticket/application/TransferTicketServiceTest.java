@@ -63,62 +63,22 @@ class TransferTicketServiceTest {
     }
 
     @Test
-    @DisplayName("autoConfirmReceipt: Bỏ qua nếu vé không còn ở trạng thái TRANSFERRED (ví dụ TECHNICAL_ISSUE)")
+    @DisplayName("autoConfirmReceipt: Bỏ qua nếu vé không còn ở trạng thái TRANSFERRED (AWAITING_USE / CANCELLED)")
     void testAutoConfirmReceiptIgnoresNonTransferredTicket() {
-        Ticket ticket = new Ticket();
-        ticket.setId(402L);
-        ticket.setStatus(TicketStatus.TECHNICAL_ISSUE);
+        Ticket awaitingTicket = new Ticket();
+        awaitingTicket.setId(402L);
+        awaitingTicket.setStatus(TicketStatus.AWAITING_USE);
+        when(ticketRepository.findById(402L)).thenReturn(Optional.of(awaitingTicket));
 
-        when(ticketRepository.findById(402L)).thenReturn(Optional.of(ticket));
+        Ticket cancelledTicket = new Ticket();
+        cancelledTicket.setId(403L);
+        cancelledTicket.setStatus(TicketStatus.CANCELLED);
+        when(ticketRepository.findById(403L)).thenReturn(Optional.of(cancelledTicket));
 
         transferTicketService.autoConfirmReceipt(402L);
+        transferTicketService.autoConfirmReceipt(403L);
 
         verify(stateMachineService, never()).transition(anyLong(), any());
-    }
-
-    @Test
-    @DisplayName("reportTechnicalIssue: Chuyển TRANSFERRED sang TECHNICAL_ISSUE để dừng timeout (AC-02.3)")
-    void testReportTechnicalIssueSuccess() {
-        Ticket ticket = new Ticket();
-        ticket.setId(403L);
-        ticket.setBuyerId(501L);
-        ticket.setStatus(TicketStatus.TRANSFERRED);
-        ticket.setTransferredAt(Instant.now().minus(Duration.ofMinutes(10))); // trong vòng 30m
-
-        when(ticketRepository.findById(403L)).thenReturn(Optional.of(ticket));
-
-        transferTicketService.reportTechnicalIssue(403L, 501L, "Ảnh QR bị nhòe");
-
-        verify(stateMachineService).transition(403L, TicketStatus.TECHNICAL_ISSUE);
-    }
-
-    @Test
-    @DisplayName("reportTechnicalIssue: Ném ngoại lệ nếu người báo không phải buyer của vé")
-    void testReportTechnicalIssueWrongBuyer() {
-        Ticket ticket = new Ticket();
-        ticket.setId(404L);
-        ticket.setBuyerId(501L);
-        ticket.setStatus(TicketStatus.TRANSFERRED);
-
-        when(ticketRepository.findById(404L)).thenReturn(Optional.of(ticket));
-
-        assertThrows(BusinessRuleViolationException.class, () ->
-                transferTicketService.reportTechnicalIssue(404L, 999L, "Lỗi"));
-    }
-
-    @Test
-    @DisplayName("reportTechnicalIssue: Ném ngoại lệ nếu đã quá hạn 30 phút")
-    void testReportTechnicalIssueOverdue() {
-        Ticket ticket = new Ticket();
-        ticket.setId(405L);
-        ticket.setBuyerId(501L);
-        ticket.setStatus(TicketStatus.TRANSFERRED);
-        ticket.setTransferredAt(Instant.now().minus(Duration.ofMinutes(35))); // quá 30m
-
-        when(ticketRepository.findById(405L)).thenReturn(Optional.of(ticket));
-
-        assertThrows(BusinessRuleViolationException.class, () ->
-                transferTicketService.reportTechnicalIssue(405L, 501L, "Lỗi ảnh"));
     }
 
     @Test

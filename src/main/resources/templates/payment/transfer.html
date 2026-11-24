@@ -15,7 +15,6 @@
                     padding: 0 16px;
                 }
 
-                /* Header */
                 .transfer-header {
                     text-align: center;
                     margin-bottom: 28px;
@@ -75,7 +74,6 @@
                     line-height: 1.5;
                 }
 
-                /* Main Card */
                 .payment-terminal-card {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
@@ -93,7 +91,6 @@
                     }
                 }
 
-                /* Column 1: QR Terminal */
                 .terminal-qr-col {
                     background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
                     border-right: 1px solid var(--color-border);
@@ -135,7 +132,6 @@
                     letter-spacing: 0.5px;
                 }
 
-                /* Scanner Viewfinder Box */
                 .scanner-frame {
                     position: relative;
                     width: 236px;
@@ -150,7 +146,6 @@
                     justify-content: center;
                 }
 
-                /* 4 Viewfinder Bracket Corners */
                 .bracket {
                     position: absolute;
                     width: 16px;
@@ -195,7 +190,6 @@
                     border-radius: 4px;
                 }
 
-                /* Session Countdown */
                 .session-timer {
                     display: inline-flex;
                     align-items: center;
@@ -225,7 +219,6 @@
                     gap: 6px;
                 }
 
-                /* Column 2: Bank Information & Actions */
                 .terminal-info-col {
                     padding: 32px 30px;
                     display: flex;
@@ -264,7 +257,6 @@
                     gap: 4px;
                 }
 
-                /* Bank detail rows */
                 .bank-rows-container {
                     display: flex;
                     flex-direction: column;
@@ -332,7 +324,6 @@
                     border: 1px solid #fecaca;
                 }
 
-                /* Tactile Copy Button */
                 .btn-copy {
                     background-color: #ffffff;
                     border: 1px solid var(--color-border);
@@ -364,7 +355,6 @@
                     border-color: var(--color-success-border);
                 }
 
-                /* Notice Box */
                 .transfer-notice {
                     background-color: #fffbeb;
                     border: 1px solid #fef3c7;
@@ -386,7 +376,6 @@
                     flex-shrink: 0;
                 }
 
-                /* Sandbox Simulation Console */
                 .sandbox-console {
                     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
                     border: 1px solid #e2e8f0;
@@ -498,7 +487,6 @@
                     transform: scale(0.98);
                 }
 
-                /* Cancel Back Link */
                 .cancel-wrap {
                     text-align: center;
                     margin-top: 14px;
@@ -518,58 +506,6 @@
                     color: var(--color-brand);
                 }
 
-                /* Trust Pillars */
-                .trust-pillars-grid {
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 16px;
-                    margin-top: 28px;
-                }
-
-                @media (max-width: 768px) {
-                    .trust-pillars-grid {
-                        grid-template-columns: 1fr;
-                    }
-                }
-
-                .trust-pillar-card {
-                    background-color: #ffffff;
-                    border: 1px solid var(--color-border);
-                    border-radius: var(--radius-md);
-                    padding: 14px 16px;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .trust-pillar-icon {
-                    width: 38px;
-                    height: 38px;
-                    border-radius: 50%;
-                    background-color: var(--color-brand-surface);
-                    color: var(--color-brand);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 16px;
-                    flex-shrink: 0;
-                }
-
-                .trust-pillar-text h4 {
-                    font-size: 13px;
-                    font-weight: 700;
-                    color: var(--color-brand);
-                    margin-bottom: 2px;
-                }
-
-                .trust-pillar-text p {
-                    font-size: 12px;
-                    color: var(--color-text-secondary);
-                    margin: 0;
-                    line-height: 1.4;
-                }
-
-                /* Toast Copied */
                 .toast-copied {
                     position: fixed;
                     bottom: 24px;
@@ -598,7 +534,7 @@
             </style>
 
             <div class="transfer-wrapper">
-                <!-- Page Header -->
+
                 <div class="transfer-header">
                     <div class="transfer-status-badge">
                         <span class="pulse-dot"></span>
@@ -615,16 +551,19 @@
                     </p>
                 </div>
 
-                <!-- Payment Terminal Card -->
+                <div class="alert alert-danger" th:if="${errorMessage != null}" style="margin-bottom: 20px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span th:text="${errorMessage}">Không thể thanh toán</span>
+                </div>
+
                 <div class="payment-terminal-card">
-                    <!-- Column 1: QR Code Viewfinder Terminal -->
+
                     <div class="terminal-qr-col">
                         <div class="qr-terminal-brand">
                             <span class="brand-badge">VIETQR</span>
                             <span>Napas 247 Siêu Tốc</span>
                         </div>
 
-                        <!-- Scanner Viewfinder Frame -->
                         <div class="scanner-frame">
                             <span class="bracket bracket-top-left"></span>
                             <span class="bracket bracket-top-right"></span>
@@ -635,7 +574,6 @@
                                  alt="Mã QR Chuyển khoản VietQR" />
                         </div>
 
-                        <!-- Countdown Timer -->
                         <div class="session-timer">
                             <i class="fa-regular fa-clock"></i>
                             <span>Hiệu lực giao dịch:</span>
@@ -648,7 +586,6 @@
                         </div>
                     </div>
 
-                    <!-- Column 2: Bank Information & Sandbox Console -->
                     <div class="terminal-info-col">
                         <div>
                             <div class="info-section-title">
@@ -662,7 +599,7 @@
                             </div>
 
                             <div class="bank-rows-container">
-                                <!-- Bank Name -->
+
                                 <div class="bank-row">
                                     <span class="bank-row-label">Ngân hàng</span>
                                     <div class="bank-row-val-group">
@@ -670,7 +607,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Account Holder -->
                                 <div class="bank-row">
                                     <span class="bank-row-label">Chủ tài khoản</span>
                                     <div class="bank-row-val-group">
@@ -678,7 +614,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Account Number -->
                                 <div class="bank-row">
                                     <span class="bank-row-label">Số tài khoản</span>
                                     <div class="bank-row-val-group">
@@ -690,7 +625,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Amount to Transfer -->
                                 <div class="bank-row highlight-amount">
                                     <span class="bank-row-label">Số tiền thanh toán</span>
                                     <div class="bank-row-val-group">
@@ -706,7 +640,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Transfer Syntax Note -->
                                 <div class="bank-row highlight-syntax">
                                     <span class="bank-row-label">Nội dung chuyển khoản</span>
                                     <div class="bank-row-val-group">
@@ -723,7 +656,6 @@
                                 </div>
                             </div>
 
-                            <!-- Notice Alert -->
                             <div class="transfer-notice">
                                 <i class="fa-solid fa-triangle-exclamation"></i>
                                 <div>
@@ -732,7 +664,6 @@
                             </div>
                         </div>
 
-                        <!-- Sandbox Developer Console -->
                         <div class="sandbox-console">
                             <div class="sandbox-header">
                                 <div class="sandbox-title">
@@ -745,7 +676,7 @@
                                 Chưa cần quét QR thật: Bạn hãy bấm <strong>"Thanh toán thành công"</strong> để chuyển sang các bước tiếp theo của vé, hoặc <strong>"Thanh toán thất bại"</strong> để thử luồng báo lỗi.
                             </div>
                             <div class="sandbox-actions">
-                                <!-- Button 1: Success -->
+
                                 <form th:action="@{/payment/transfer/confirm}" method="post">
                                     <input type="hidden" name="ref" th:value="${ref}" />
                                     <input type="hidden" name="type" th:value="${type}" />
@@ -755,7 +686,6 @@
                                     </button>
                                 </form>
 
-                                <!-- Button 2: Fail -->
                                 <form th:action="@{/payment/transfer/fail}" method="post">
                                     <input type="hidden" name="ref" th:value="${ref}" />
                                     <input type="hidden" name="type" th:value="${type}" />
@@ -766,7 +696,6 @@
                                 </form>
                             </div>
 
-                            <!-- Button 3: Instant Pay via Wallet -->
                             <form th:action="@{/payment/wallet/pay-from-transfer}" method="post" style="margin-top: 12px;">
                                 <input type="hidden" name="ref" th:value="${ref}" />
                                 <input type="hidden" name="type" th:value="${type}" />
@@ -776,7 +705,6 @@
                                 </button>
                             </form>
 
-                            <!-- Cancel Button Form -->
                             <div class="cancel-wrap">
                                 <form th:action="@{/payment/transfer/cancel}" method="post">
                                     <input type="hidden" name="ref" th:value="${ref}" />
@@ -789,49 +717,15 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- 3 Pillars of Escrow Protection -->
-                <div class="trust-pillars-grid">
-                    <div class="trust-pillar-card">
-                        <div class="trust-pillar-icon">
-                            <i class="fa-solid fa-lock" style="color: var(--color-success);"></i>
-                        </div>
-                        <div class="trust-pillar-text">
-                            <h4>Ký Quỹ An Toàn 100%</h4>
-                            <p>Tiền được sàn giữ an toàn, người bán chỉ nhận tiền khi bạn xác nhận vé hợp lệ.</p>
-                        </div>
-                    </div>
-
-                    <div class="trust-pillar-card">
-                        <div class="trust-pillar-icon">
-                            <i class="fa-solid fa-shield-halved" style="color: var(--color-info);"></i>
-                        </div>
-                        <div class="trust-pillar-text">
-                            <h4>Người Bán Đóng Cọc 50%</h4>
-                            <p>Ràng buộc kinh tế triệt tiêu hoàn toàn động cơ lừa đảo hoặc bùng vé của người bán.</p>
-                        </div>
-                    </div>
-
-                    <div class="trust-pillar-card">
-                        <div class="trust-pillar-icon">
-                            <i class="fa-solid fa-scale-balanced" style="color: var(--color-warning);"></i>
-                        </div>
-                        <div class="trust-pillar-text">
-                            <h4>Bảo Hiểm Tranh Chấp 24/7</h4>
-                            <p>Hỗ trợ khiếu nại tại cổng soát vé, hoàn tiền 100% nếu phát hiện vé không dùng được.</p>
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            <!-- Toast notification -->
             <div id="toastCopied" class="toast-copied">
                 <i class="fa-solid fa-circle-check" style="color: #4ade80;"></i>
                 <span id="toastCopiedMsg">Đã sao chép vào bộ nhớ tạm!</span>
             </div>
 
             <script>
-                // Tactile copy functionality
+
                 function copyText(elementId, btnElement) {
                     const el = document.getElementById(elementId);
                     if (el) {
@@ -860,7 +754,7 @@
                 }
 
                 function handleCopiedFeedback(btnElement, label) {
-                    // Button tactile state
+
                     if (btnElement) {
                         const originalHtml = btnElement.innerHTML;
                         btnElement.classList.add('copied');
@@ -871,7 +765,6 @@
                         }, 1600);
                     }
 
-                    // Toast message
                     const toast = document.getElementById('toastCopied');
                     const toastMsg = document.getElementById('toastCopiedMsg');
                     if (toast && toastMsg) {
@@ -883,7 +776,6 @@
                     }
                 }
 
-                // 15:00 Countdown Timer
                 (function startCountdown() {
                     let totalSeconds = 15 * 60;
                     const timerEl = document.getElementById('countdownTimer');

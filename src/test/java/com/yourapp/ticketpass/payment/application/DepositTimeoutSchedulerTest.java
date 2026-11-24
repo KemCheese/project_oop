@@ -38,27 +38,24 @@ class DepositTimeoutSchedulerTest {
     private DepositTimeoutScheduler depositTimeoutScheduler;
 
     @Test
-    @DisplayName("scanDepositTimeouts: Hoàn tiền 100%, huỷ vé CANCELLED và phạt Seller -15đ uy tín khi quá 30 phút (UC-04b)")
+    @DisplayName("scanDepositTimeouts: Hoàn tiền 100%, huỷ vé CANCELLED và phạt Seller -1đ uy tín kèm ticketId (UC-04b)")
     void testScanDepositTimeoutsTriggersRefundCancelAndPenalty() {
         Ticket ticket = new Ticket();
         ticket.setId(101L);
         ticket.setSellerId(202L);
         ticket.setStatus(TicketStatus.PAYMENT_ESCROWED);
-        ticket.setEscrowedAt(Instant.now().minusSeconds(1900)); // 31 phút trước
+        ticket.setEscrowedAt(Instant.now().minusSeconds(1900));
 
         when(ticketRepository.findOverdueDepositTickets(any(Instant.class)))
                 .thenReturn(List.of(ticket));
 
         depositTimeoutScheduler.scanDepositTimeouts();
 
-        // 1. Hoàn 100% tiền vé + phí sàn
         verify(refundBuyerUseCase).refundFull(eq(101L), contains("Quá hạn nạp cọc"));
 
-        // 2. Chuyển vé sang CANCELLED (không quay lại LISTED)
         verify(ticketStateMachineService).transition(eq(101L), eq(TicketStatus.CANCELLED));
 
-        // 3. Phạt trừ -15 điểm uy tín của Seller
-        verify(updateReputationUseCase).recordDepositTimeout(eq(202L));
+        verify(updateReputationUseCase).recordDepositTimeout(eq(202L), eq(101L));
     }
 
     @Test

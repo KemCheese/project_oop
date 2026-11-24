@@ -14,30 +14,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit test cho {@link CommissionCalculatorService}.
- *
- * <p>Không cần Spring context — khởi tạo {@link CommissionConfig} thủ công với
- * đúng cấu hình đã chốt trong {@code application.properties} để test nhanh, độc lập.</p>
- *
- * <p>Module: payment (test).</p>
- * <p>Chủ sở hữu theo phân công: Người B.</p>
- */
 class CommissionCalculatorServiceTest {
 
     private CommissionCalculatorService service;
 
-    /**
-     * Dựng CommissionConfig khớp với application.properties đã chốt:
-     * <pre>
-     * UNDER_1M  : 7%, upper=1_000_000, max=null
-     * UNDER_5M  : 5%, upper=5_000_000, max=null
-     * UNDER_10M : 3%, upper=10_000_000, max=null
-     * FROM_10M  : 2%, upper=null,       max=400_000
-     * min-fee   : 5_000
-     * buyer/seller ratio : 0.5 / 0.5
-     * </pre>
-     */
     @BeforeEach
     void setUp() {
         CommissionConfig config = new CommissionConfig();
@@ -70,7 +50,7 @@ class CommissionCalculatorServiceTest {
 
         CommissionConfig.TierProperties t4 = new CommissionConfig.TierProperties();
         t4.setCode("FROM_10M");
-        t4.setExclusiveUpperBound(null);   // bậc cao nhất
+        t4.setExclusiveUpperBound(null);
         t4.setRatePercent(new BigDecimal("2"));
         t4.setMaxCommission(new BigDecimal("400000"));
         tiers.add(t4);
@@ -79,9 +59,6 @@ class CommissionCalculatorServiceTest {
         service = new CommissionCalculatorService(config);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // resolveTier
-    // ─────────────────────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("resolveTier — tra bảng bậc hoa hồng")
@@ -99,7 +76,6 @@ class CommissionCalculatorServiceTest {
         @Test
         @DisplayName("Giá đúng bằng 1_000_000đ (exclusive boundary) → bậc UNDER_5M (5%)")
         void priceExactly1M_shouldBeUnder5M() {
-            // biên trên là exclusive: 1_000_000 không thuộc UNDER_1M nữa
             CommissionConfig.TierProperties tier =
                     service.resolveTier(new BigDecimal("1000000"));
             assertEquals("UNDER_5M", tier.getCode());
@@ -159,9 +135,6 @@ class CommissionCalculatorServiceTest {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // calculate — bảng phí bình thường
-    // ─────────────────────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("calculate — hoa hồng bình thường (không sàn, không trần)")
@@ -196,7 +169,6 @@ class CommissionCalculatorServiceTest {
             CommissionBreakdown bd = service.calculate(new BigDecimal("6000000"));
 
             assertEquals("UNDER_10M", bd.getTierCode());
-            // 3% * 6_000_000 = 180_000 (KHÔNG phải 7%*1M + 5%*4M + 3%*1M)
             assertEquals(0, bd.getTotalCommission().compareTo(new BigDecimal("180000.00")));
             assertFalse(bd.isMinFeeApplied());
             assertFalse(bd.isCapApplied());
@@ -214,9 +186,6 @@ class CommissionCalculatorServiceTest {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // calculate — áp sàn tối thiểu
-    // ─────────────────────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("calculate — áp sàn tối thiểu 5_000đ")
@@ -236,10 +205,6 @@ class CommissionCalculatorServiceTest {
         @Test
         @DisplayName("Vé 71_429đ (7% → ~5_000.03đ ≥ 5_000đ) → không áp sàn")
         void ticketJustAboveMinFeeThreshold_noMinFee() {
-            // 71_429 * 7% = 4_999.03 → < 5_000 → phải áp sàn
-            // Nhưng với 71_429đ: 7% = 5_000.03đ → không áp sàn
-            // Thực ra: 71_428 * 7% = 4_999.96 < 5_000 → áp sàn
-            //          71_429 * 7% = 5_000.03 ≥ 5_000 → không áp sàn
             CommissionBreakdown bd = service.calculate(new BigDecimal("71429"));
             assertFalse(bd.isMinFeeApplied(),
                     "71429 * 7% = 5000.03 ≥ 5000 nên không phải áp sàn");
@@ -255,9 +220,6 @@ class CommissionCalculatorServiceTest {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // calculate — chặn trần FROM_10M
-    // ─────────────────────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("calculate — chặn trần 400_000đ (bậc FROM_10M)")
@@ -268,7 +230,6 @@ class CommissionCalculatorServiceTest {
         void priceAtCapBoundary_noCap() {
             CommissionBreakdown bd = service.calculate(new BigDecimal("20000000"));
 
-            // 2% * 20_000_000 = 400_000 = max → không "vượt" trần nên capApplied = false
             assertEquals(0, bd.getTotalCommission().compareTo(new BigDecimal("400000.00")));
             assertFalse(bd.isCapApplied(),
                     "Đúng bằng trần thì không được đặt capApplied = true");
@@ -296,15 +257,11 @@ class CommissionCalculatorServiceTest {
         @Test
         @DisplayName("Bậc UNDER_1M/5M/10M không có trần → không capApplied dù hoa hồng cao")
         void otherTiersHaveNoCap() {
-            // 999_999đ * 7% = 69_999.93đ → không có trần cho bậc UNDER_1M
             CommissionBreakdown bd = service.calculate(new BigDecimal("999999"));
             assertFalse(bd.isCapApplied());
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // calculate — bất biến buyerShare + sellerShare == totalCommission
-    // ─────────────────────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("calculate — bất biến buyerShare + sellerShare == totalCommission")
@@ -313,7 +270,7 @@ class CommissionCalculatorServiceTest {
         @Test
         @DisplayName("Chia đôi chẵn: 100_000đ → buyer = seller = 50_000đ")
         void evenSplit() {
-            CommissionBreakdown bd = service.calculate(new BigDecimal("2000000")); // 100_000đ
+            CommissionBreakdown bd = service.calculate(new BigDecimal("2000000"));
 
             assertEquals(0, bd.getBuyerShare().compareTo(new BigDecimal("50000.00")));
             assertEquals(0, bd.getSellerShare().compareTo(new BigDecimal("50000.00")));
@@ -324,12 +281,10 @@ class CommissionCalculatorServiceTest {
         @Test
         @DisplayName("Chia đôi số lẻ: sàn 5_000đ → buyer = 2_500đ, seller = 2_500đ")
         void splitMinFee5000() {
-            CommissionBreakdown bd = service.calculate(new BigDecimal("50000")); // raw 3_500 → áp sàn 5_000
+            CommissionBreakdown bd = service.calculate(new BigDecimal("50000"));
 
-            // 5_000 * 0.5 = 2_500.00 (tròn)
             assertEquals(0, bd.getBuyerShare().compareTo(new BigDecimal("2500.00")));
             assertEquals(0, bd.getSellerShare().compareTo(new BigDecimal("2500.00")));
-            // bất biến tuyệt đối
             assertEquals(0, bd.getBuyerShare().add(bd.getSellerShare())
                     .compareTo(bd.getTotalCommission()),
                     "buyerShare + sellerShare phải luôn bằng đúng totalCommission");
@@ -352,9 +307,6 @@ class CommissionCalculatorServiceTest {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // calculate — tierCode và tierRatePercent trong breakdown
-    // ─────────────────────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("calculate — tierCode và salePrice được lưu vào breakdown")
@@ -381,14 +333,11 @@ class CommissionCalculatorServiceTest {
         @Test
         @DisplayName("tierRatePercent khớp với bậc được chọn")
         void tierRatePercentMatchesTier() {
-            CommissionBreakdown bd = service.calculate(new BigDecimal("6000000")); // UNDER_10M, 3%
+            CommissionBreakdown bd = service.calculate(new BigDecimal("6000000"));
             assertEquals(0, bd.getTierRatePercent().compareTo(new BigDecimal("3")));
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // buyerShareOf / sellerShareOf — null guard
-    // ─────────────────────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("buyerShareOf / sellerShareOf — null guard")

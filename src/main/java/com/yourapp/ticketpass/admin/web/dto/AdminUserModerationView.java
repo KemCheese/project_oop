@@ -7,13 +7,6 @@ import java.time.Instant;
 import lombok.Builder;
 import lombok.Getter;
 
-/**
- * View DTO hiển thị một tài khoản người dùng trên màn hình quản trị {@code /admin/users},
- * ghép thông tin từ {@code user} và điểm uy tín từ {@code reputation}.
- *
- * <p>Module: admin</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @Builder
 public class AdminUserModerationView {
@@ -27,10 +20,14 @@ public class AdminUserModerationView {
     private final boolean emailVerified;
 
     private final BigDecimal reputationScore;
+    private final int reputationScoreInt;
+    private final String reputationTierName;
+    private final String reputationTierColor;
     private final int totalTransactions;
     private final int disputesLost;
     private final int cancelledListings;
 
+    private final boolean permanentlyBanned;
     private final boolean flaggedRisk;
     private final String riskReason;
 
@@ -39,4 +36,3 @@ public class AdminUserModerationView {
     private final Long moderatedByAdminId;
     private final Instant createdAt;
 }
-

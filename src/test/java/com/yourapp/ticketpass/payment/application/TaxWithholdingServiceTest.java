@@ -10,9 +10,6 @@ import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit test cho {@link TaxWithholdingService}.
- */
 class TaxWithholdingServiceTest {
 
     private TaxConfig taxConfig;
@@ -83,7 +80,6 @@ class TaxWithholdingServiceTest {
     @Test
     @DisplayName("Làm tròn HALF_UP khi tính thuế")
     void testWithhold_RoundingHalfUp() {
-        // 5.000.001 * 1.5% = 75000.015 -> làm tròn HALF_UP = 75000.02
         BigDecimal gross = new BigDecimal("5000001");
         TaxWithholding result = service.withhold(gross, 4L);
 

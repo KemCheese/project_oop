@@ -161,7 +161,7 @@ class AccountSecurityServiceTest {
     @Test
     @DisplayName("Kiểm duyệt Admin: từ chối tự khóa chính mình và từ chối khóa Admin khác")
     void moderateUserStatus_ShouldBlockSelfLockAndOtherAdminLock() {
-        assertThatThrownBy(() -> service.moderateUserStatus(1L, 1L, UserStatus.SUSPENDED, "Lý do đủ dài"))
+        assertThatThrownBy(() -> service.moderateUserStatus(1L, 1L, UserStatus.BANNED, "Lý do đủ dài"))
                 .isInstanceOf(BusinessRuleViolationException.class);
 
         User otherAdmin = buildUser(2L, "admin2@ticketpass.vn", UserRole.ADMIN, UserStatus.ACTIVE);
@@ -173,32 +173,34 @@ class AccountSecurityServiceTest {
     }
 
     @Test
-    @DisplayName("Kiểm duyệt Admin: tạm khóa bắt buộc lý do >= 5 ký tự và phát UserAccountModeratedEvent(SUSPENDED)")
-    void moderateUserStatus_WhenSuspend_ShouldValidateReasonAndPublishEvent() {
+    @DisplayName("Kiểm duyệt Admin: khóa tài khoản bắt buộc lý do >= 5 ký tự và phát UserAccountModeratedEvent(BANNED)")
+    void moderateUserStatus_WhenBan_ShouldValidateReasonAndPublishEvent() {
         User user = buildUser(10L, "fraud@ticketpass.vn", UserRole.USER, UserStatus.ACTIVE);
         when(userRepository.findById(10L)).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> service.moderateUserStatus(10L, 1L, UserStatus.SUSPENDED, "abc"))
+        assertThatThrownBy(() -> service.moderateUserStatus(10L, 1L, UserStatus.BANNED, "abc"))
                 .isInstanceOf(BusinessRuleViolationException.class);
 
-        service.moderateUserStatus(10L, 1L, UserStatus.SUSPENDED, "Bán vé trùng nhiều lần");
+        service.moderateUserStatus(10L, 1L, UserStatus.BANNED, "Bán vé trùng nhiều lần");
 
-        assertThat(user.getStatus()).isEqualTo(UserStatus.SUSPENDED);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.BANNED);
+        assertThat(user.isPermanentlyBanned()).isFalse();
         assertThat(user.getModerationReason()).isEqualTo("Bán vé trùng nhiều lần");
         assertThat(user.getModeratedByAdminId()).isEqualTo(1L);
         assertThat(user.getModeratedAt()).isEqualTo(Instant.parse("2026-11-17T10:00:00Z"));
 
         ArgumentCaptor<UserAccountModeratedEvent> captor = ArgumentCaptor.forClass(UserAccountModeratedEvent.class);
         verify(eventPublisher).publishEvent(captor.capture());
-        assertThat(captor.getValue().getTargetStatusName()).isEqualTo("SUSPENDED");
+        assertThat(captor.getValue().getTargetStatusName()).isEqualTo("BANNED");
         assertThat(captor.getValue().getUserEmail()).isEqualTo("fraud@ticketpass.vn");
     }
 
     @Test
-    @DisplayName("Kiểm duyệt Admin: kích hoạt lại từ SUSPENDED/PENDING chưa verified bật emailVerified=true")
-    void moderateUserStatus_WhenActivateUnverifiedSuspended_ShouldMarkVerifiedAndPublishEvent() {
-        User user = buildUser(15L, "pending@ticketpass.vn", UserRole.USER, UserStatus.SUSPENDED);
+    @DisplayName("Kiểm duyệt Admin: mở khóa từ BANNED (khóa thủ công) chưa verified bật emailVerified=true")
+    void moderateUserStatus_WhenActivateUnverifiedBanned_ShouldMarkVerifiedAndPublishEvent() {
+        User user = buildUser(15L, "pending@ticketpass.vn", UserRole.USER, UserStatus.BANNED);
         user.setEmailVerified(false);
+        user.setPermanentlyBanned(false);
         when(userRepository.findById(15L)).thenReturn(Optional.of(user));
 
         service.moderateUserStatus(15L, 1L, UserStatus.ACTIVE, "Xác minh thủ công");
@@ -211,5 +213,30 @@ class AccountSecurityServiceTest {
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().getUserId()).isEqualTo(15L);
         assertThat(eventCaptor.getValue().getTargetStatusName()).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    @DisplayName("Khóa vĩnh viễn do uy tín về 0: đặt permanentlyBanned=true, adminId=null và CHẶN MỌI thao tác mở khóa/đổi trạng thái từ Admin")
+    void permanentlyBannedUser_CannotBeModifiedOrUnlockedByAdmin() {
+        User user = buildUser(20L, "zero@ticketpass.vn", UserRole.USER, UserStatus.ACTIVE);
+        when(userRepository.findById(20L)).thenReturn(Optional.of(user));
+
+        service.permanentlyBanForZeroReputation(20L, "Điểm uy tín giảm về 0");
+
+        assertThat(user.getStatus()).isEqualTo(UserStatus.BANNED);
+        assertThat(user.isPermanentlyBanned()).isTrue();
+        assertThat(user.getModeratedByAdminId()).isNull();
+
+        ArgumentCaptor<UserAccountModeratedEvent> captor = ArgumentCaptor.forClass(UserAccountModeratedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().getAdminId()).isNull();
+        assertThat(captor.getValue().getTargetStatusName()).isEqualTo("BANNED");
+
+        assertThatThrownBy(() -> service.moderateUserStatus(20L, 1L, UserStatus.ACTIVE, "Thử mở khóa"))
+                .isInstanceOf(BusinessRuleViolationException.class)
+                .hasMessageContaining("khóa vĩnh viễn");
+        assertThatThrownBy(() -> service.moderateUserStatus(20L, 1L, UserStatus.BANNED, "Thử ghi đè khóa"))
+                .isInstanceOf(BusinessRuleViolationException.class)
+                .hasMessageContaining("khóa vĩnh viễn");
     }
 }

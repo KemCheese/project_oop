@@ -6,17 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Dữ liệu form khai báo tài khoản ngân hàng nhận tiền bán vé.
- *
- * <p>Thông tin này được module {@code payment} dùng khi giải ngân khoản
- * {@code sellerNetPayout} lúc giao dịch hoàn tất. Module {@code payment} không đọc thẳng
- * entity {@code User} mà lấy qua {@code UserQueryService}.</p>
- *
- * <p>Module: user</p>
- *
- * Chủ sở hữu: Người C
- */
 @Getter
 @Setter
 @NoArgsConstructor

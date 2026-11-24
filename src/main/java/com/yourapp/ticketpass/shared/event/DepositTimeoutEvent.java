@@ -4,13 +4,6 @@ import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/**
- * Sự kiện: Quá hạn nộp cọc 50%, vé bị hủy.
- * Cả người mua (được hoàn tiền) và người bán (bị phạt điểm) cần nhận thông báo.
- *
- * <p>Module: shared</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @AllArgsConstructor
 public class DepositTimeoutEvent {

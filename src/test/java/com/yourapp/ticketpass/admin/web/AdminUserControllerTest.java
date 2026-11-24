@@ -62,36 +62,36 @@ class AdminUserControllerTest {
                 AdminUserStatsDto.builder().totalUsers(2).activeUsers(1).lockedUsers(1).warningUsers(1).build(),
                 List.of()
         );
-        when(queryService.loadModerationOverview("alice", UserStatus.SUSPENDED, true)).thenReturn(overview);
+        when(queryService.loadModerationOverview("alice", UserStatus.BANNED, true)).thenReturn(overview);
 
         Model model = new ConcurrentModel();
-        String view = controller.listUsers("alice", "SUSPENDED", "true", principal, model);
+        String view = controller.listUsers("alice", "BANNED", "true", principal, model);
 
         assertThat(view).isEqualTo("admin/users");
         assertThat(model.getAttribute("currentAdminId")).isEqualTo(1L);
-        assertThat(model.getAttribute("selectedStatus")).isEqualTo(UserStatus.SUSPENDED);
+        assertThat(model.getAttribute("selectedStatus")).isEqualTo(UserStatus.BANNED);
         assertThat(model.getAttribute("warningOnly")).isEqualTo(true);
 
         Model badStatusModel = new ConcurrentModel();
         when(queryService.loadModerationOverview(null, null, false)).thenReturn(overview);
-        controller.listUsers(null, "INVALID_STATUS", "garbage", principal, badStatusModel);
+        controller.listUsers(null, "SUSPENDED", "garbage", principal, badStatusModel);
         assertThat(badStatusModel.getAttribute("warningOnly")).isEqualTo(false);
         assertThat(badStatusModel.getAttribute("errorMessage")).isNotNull();
     }
 
     @Test
-    @DisplayName("POST /admin/users/{id}/suspend thành công: gọi service và đặt flash successMessage")
-    void suspendUser_WhenValid_ShouldRedirectWithSuccessFlash() {
+    @DisplayName("POST /admin/users/{id}/ban thành công: gọi service khóa (BANNED), giữ filter và đặt flash successMessage")
+    void banUser_WhenValid_ShouldRedirectWithSuccessFlash() {
         Principal principal = () -> "admin@ticketpass.vn";
         when(userQueryService.findByEmail("admin@ticketpass.vn")).thenReturn(Optional.of(adminUser()));
 
         RedirectAttributesModelMap redirect = new RedirectAttributesModelMap();
-        String view = controller.suspendUser(
+        String view = controller.banUser(
                 10L, "Gian lận bán vé", "alice", "ACTIVE", true, principal, redirect);
 
         assertThat(view).isEqualTo("redirect:/admin/users");
-        verify(accountSecurityService).moderateUserStatus(10L, 1L, UserStatus.SUSPENDED, "Gian lận bán vé");
-        assertThat(redirect.getFlashAttributes()).containsKey("successMessage");
+        verify(accountSecurityService).moderateUserStatus(10L, 1L, UserStatus.BANNED, "Gian lận bán vé");
+        assertThat(redirect.getFlashAttributes().get("successMessage").toString()).contains("Đã khóa tài khoản #10");
         assertThat(redirect.asMap()).containsEntry("keyword", "alice");
         assertThat(redirect.asMap()).containsEntry("status", "ACTIVE");
         assertThat(redirect.asMap()).containsEntry("warningOnly", "true");

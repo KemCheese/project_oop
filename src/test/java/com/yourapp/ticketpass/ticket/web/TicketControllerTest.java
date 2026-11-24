@@ -39,11 +39,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.ui.ConcurrentModel;
 import org.springframework.ui.Model;
 
-/**
- * Unit test cho {@link TicketController} - Tính năng tìm kiếm vé theo tên sự kiện và lọc theo loại vé.
- *
- * <p>Sử dụng Mockito thuần để kiểm thử độc lập tầng Controller.</p>
- */
 @ExtendWith(MockitoExtension.class)
 class TicketControllerTest {
 
@@ -323,7 +318,7 @@ class TicketControllerTest {
                     new com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest();
             java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(2);
             req.setEventStartAt(start);
-            req.setEventEndAt(start); // bằng nhau -> sai
+            req.setEventEndAt(start);
 
             org.springframework.validation.BeanPropertyBindingResult binding =
                     new org.springframework.validation.BeanPropertyBindingResult(req, "createTicketRequest");

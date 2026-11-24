@@ -38,13 +38,13 @@ class AdminUserModerationQueryServiceTest {
     @BeforeEach
     void setUp() {
         moderationConfig = new ModerationConfig();
-        moderationConfig.setLowReputationThreshold(new BigDecimal("60.00"));
+        moderationConfig.setLowReputationThreshold(new BigDecimal("2.00"));
         moderationConfig.setMaxDisputesLostWarning(2);
         service = new AdminUserModerationQueryService(userRepository, reputationRepository, moderationConfig);
     }
 
     @Test
-    @DisplayName("Gắn cờ cảnh báo khi điểm < 60 hoặc thua >= 2 tranh chấp, miễn cảnh báo cho ADMIN")
+    @DisplayName("Gắn cờ cảnh báo khi điểm <= 2 hoặc thua >= 2 tranh chấp, miễn cảnh báo cho ADMIN và nhận diện permanentlyBanned")
     void loadModerationOverview_ShouldFlagRiskyUsersAndBuildStats() {
         User admin = new User();
         admin.setId(1L);
@@ -62,18 +62,19 @@ class AdminUserModerationQueryServiceTest {
         riskySeller.setId(3L);
         riskySeller.setEmail("risk@ticketpass.vn");
         riskySeller.setRole(UserRole.USER);
-        riskySeller.setStatus(UserStatus.SUSPENDED);
-        riskySeller.setModerationReason("Gian lận");
+        riskySeller.setStatus(UserStatus.BANNED);
+        riskySeller.setPermanentlyBanned(true);
+        riskySeller.setModerationReason("Uy tín giảm về 0");
 
         UserReputationScore goodScore = new UserReputationScore();
         goodScore.setUserId(2L);
-        goodScore.setScore(new BigDecimal("95.00"));
+        goodScore.setScore(new BigDecimal("4.00"));
         goodScore.setDisputesLost(0);
         goodScore.setTotalTransactions(5);
 
         UserReputationScore riskyScore = new UserReputationScore();
         riskyScore.setUserId(3L);
-        riskyScore.setScore(new BigDecimal("48.00"));
+        riskyScore.setScore(new BigDecimal("0.00"));
         riskyScore.setDisputesLost(3);
         riskyScore.setTotalTransactions(4);
 
@@ -90,8 +91,10 @@ class AdminUserModerationQueryServiceTest {
         assertThat(overview.users()).hasSize(1);
         AdminUserModerationView flagged = overview.users().get(0);
         assertThat(flagged.getId()).isEqualTo(3L);
+        assertThat(flagged.getReputationScoreInt()).isEqualTo(0);
+        assertThat(flagged.isPermanentlyBanned()).isTrue();
         assertThat(flagged.isFlaggedRisk()).isTrue();
-        assertThat(flagged.getRiskReason()).contains("60").contains("2");
+        assertThat(flagged.getRiskReason()).contains("<= 2").contains("2");
     }
 }
 

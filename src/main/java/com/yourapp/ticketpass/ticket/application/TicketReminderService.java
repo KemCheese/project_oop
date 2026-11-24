@@ -14,16 +14,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Service đảm nhận việc đánh dấu nhắc lịch nguyên tử (idempotent) và phát {@link TicketUpcomingReminderEvent}.
- *
- * <p>Tách thành bean riêng so với {@link TicketReminderScheduler} để bảo toàn ranh giới proxy
- * {@code @Transactional} (tránh lỗi AOP self-invocation) và sử dụng mặc định {@code Propagation.REQUIRED}
- * nhằm tham gia cùng transaction khi được gọi từ {@code markDepositLocked} (tránh deadlock InnoDB).</p>
- *
- * <p>Module: ticket</p>
- * <p>Chủ sở hữu: Người A (phối hợp Dev C)</p>
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -37,13 +27,6 @@ public class TicketReminderService {
     @Value("${app.reminder.lead-hours:24}")
     private long leadHours = 24L;
 
-    /**
-     * Đánh dấu và phát sự kiện nhắc lịch nếu vé đủ điều kiện và chưa từng được nhắc trước đó.
-     *
-     * @param ticket vé cần nhắc
-     * @param lastMinutePurchase {@code true} nếu đây là thông báo nhắc sớm ngay lúc mua sát giờ (&lt;= 24h)
-     * @return {@code true} nếu claim và phát event thành công, {@code false} nếu bỏ qua hoặc đã nhắc trước đó
-     */
     @Transactional
     public boolean triggerReminderIfDue(Ticket ticket, boolean lastMinutePurchase) {
         if (ticket == null || ticket.getId() == null || ticket.getBuyerId() == null
@@ -54,12 +37,10 @@ public class TicketReminderService {
         Instant now = resolveNow();
         Instant windowEnd = now.plus(Duration.ofHours(resolveLeadHours()));
 
-        // Chỉ nhắc nếu sự kiện vẫn còn ở tương lai và nằm trong cửa sổ nhắc lịch
         if (!ticket.getEventStartAt().isAfter(now) || ticket.getEventStartAt().isAfter(windowEnd)) {
             return false;
         }
 
-        // Đọc đầy đủ dữ liệu trước khi markReminded24hIfUnset (clearAutomatically = true) xóa L1 cache
         Long ticketId = ticket.getId();
         Long sellerId = ticket.getSellerId();
         Long buyerId = ticket.getBuyerId();
@@ -74,7 +55,6 @@ public class TicketReminderService {
         if (updatedRows != 1) {
             return false;
         }
-        // Đồng bộ lại trạng thái trong bộ nhớ cho entity caller đang giữ
         ticket.setReminded24hAt(now);
 
         if (eventPublisher != null) {
@@ -96,16 +76,11 @@ public class TicketReminderService {
         return true;
     }
 
-    /**
-     * Gọi ngay sau khi người bán hoàn tất khóa cọc 50%: nếu sự kiện bắt đầu trong vòng
-     * {@code <= leadHours}, nhắc sớm cho người mua ngay 1 lần.
-     */
     @Transactional
     public boolean triggerEarlyReminderIfWithinLeadWindow(Ticket ticket) {
         return triggerReminderIfDue(ticket, true);
     }
 
-    /** Cho phép test cấu hình leadHours không cần Spring context. */
     void setLeadHours(long leadHours) {
         this.leadHours = leadHours;
     }

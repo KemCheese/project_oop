@@ -13,18 +13,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 
-/**
- * DTO request: du lieu nguoi ban nhap o form dang ve.
- *
- * <p>Thuoc tang {@code web} mong, chi mang du lieu tho tu form sang service; KHONG chua entity
- * va khong duoc dung truc tiep lam tham so JPA. Cac rang buoc Bean Validation o day chi kiem tra
- * dinh dang co ban, con luat rieng theo tung loai ve do
- * {@code com.yourapp.ticketpass.ticket.domain.TicketAdapter#validateListing} dam nhiem.</p>
- *
- * <p>Module: ticket</p>
- *
- * Chu so huu: Nguoi A
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -71,9 +59,7 @@ public class CreateTicketRequest {
     @Size(max = 120)
     private String providerOrderCode;
 
-    /** Khoa file anh ve da duoc upload truoc do qua FileStorageService. */
     private String ticketImageStorageKey;
 
-    /** Khoa file anh QR da duoc upload truoc do qua FileStorageService. */
     private String qrImageStorageKey;
 }

@@ -97,7 +97,6 @@ class NotificationServiceTest {
     void testMarkAsReadIdorProtection() {
         when(notificationRepository.findById(100L)).thenReturn(Optional.of(testNotification));
 
-        // User 99L cố tình đọc trộm/đánh dấu thông báo của User 10L
         assertThrows(AccessDeniedException.class, () -> {
             notificationService.markAsRead(100L, 99L);
         });

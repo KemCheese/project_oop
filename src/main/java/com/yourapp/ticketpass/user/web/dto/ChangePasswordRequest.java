@@ -7,16 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Dữ liệu form đổi mật khẩu tài khoản trong trang hồ sơ cá nhân.
- *
- * <p>Kiểm tra độ dài tương thích BCrypt (8–72 ký tự) và độ mạnh tối thiểu (chữ thường,
- * chữ hoa, chữ số). Việc xác thực khớp mật khẩu cũ và không trùng mật khẩu cũ được xử lý ở
- * {@code AccountSecurityService}.</p>
- *
- * <p>Module: user</p>
- * <p>Chủ sở hữu: Người C</p>
- */
 @Getter
 @Setter
 @NoArgsConstructor

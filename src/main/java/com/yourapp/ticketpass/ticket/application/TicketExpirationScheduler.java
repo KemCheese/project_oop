@@ -12,20 +12,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/**
- * Scheduler tự động gỡ các vé đang rao bán (LISTED) đã quá hạn thời gian sự kiện (eventStartAt <= now).
- *
- * <p><b>Hành động khi quá hạn:</b></p>
- * <ol>
- *   <li>Chuyển trạng thái vé từ {@link TicketStatus#LISTED} sang {@link TicketStatus#CANCELLED}
- *       qua {@link TicketStateMachineService}.</li>
- *   <li>Bắn sự kiện {@link TicketExpiredEvent} để module notification thông báo cho Người bán (Seller)
- *       và tất cả những người dùng đã theo dõi (đánh sao) vé này.</li>
- * </ol>
- *
- * <p>Module: ticket</p>
- * <p>Chủ sở hữu: Dev C / Người A</p>
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -35,9 +21,6 @@ public class TicketExpirationScheduler {
     private final TicketStateMachineService ticketStateMachineService;
     private final ApplicationEventPublisher eventPublisher;
 
-    /**
-     * Quét định kỳ mỗi phút các vé LISTED mà thời gian sự kiện đã quá hạn (eventStartAt <= now).
-     */
     @Scheduled(cron = "${app.scheduler.ticket-expiration-cron:0 */1 * * * *}")
     public void scanExpiredListedTickets() {
         Instant now = Instant.now();

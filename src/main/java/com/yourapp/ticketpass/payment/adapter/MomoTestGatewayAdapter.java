@@ -7,17 +7,6 @@ import com.yourapp.ticketpass.payment.domain.PaymentGateway;
 import com.yourapp.ticketpass.payment.domain.PaymentRequest;
 import com.yourapp.ticketpass.payment.domain.PaymentResult;
 
-/**
- * Adapter nối sàn với cổng thanh toán MoMo ở môi trường thử nghiệm (MoMo Test Environment).
- *
- * <p><b>LƯU Ý — ĐÃ BỊ VÔ HIỆU HÓA:</b> Hệ thống đã chuyển đổi sang cơ chế chuyển khoản QR
- * trung gian thủ công qua {@link ManualTransferGatewayAdapter}. Lớp này không còn được gắn
- * {@code @Component} và các phương thức ném {@link UnsupportedOperationException}.
- * Giữ lại làm tài liệu tham khảo kiến trúc Adapter pattern khi mở rộng tích hợp cổng API tự động sau này.</p>
- *
- * <p>Module: payment</p>
- * <p>Chủ sở hữu: Người B</p>
- */
 @Deprecated
 public class MomoTestGatewayAdapter implements PaymentGateway {
 

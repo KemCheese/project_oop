@@ -4,13 +4,6 @@ import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/**
- * Sự kiện: Người mua mở khiếu nại vé.
- * Người bán cần nhận thông báo để vào nộp giải trình trong 24 giờ.
- *
- * <p>Module: shared</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @AllArgsConstructor
 public class DisputeOpenedEvent {

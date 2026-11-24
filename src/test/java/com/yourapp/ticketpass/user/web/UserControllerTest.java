@@ -46,17 +46,6 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Unit test cho {@link UserController} — Task C10.
- *
- * <p>Kiểm thử toàn diện các route xác thực (login, register) và quản lý hồ sơ cá nhân
- * (profile, updateProfile, updateAvatar, updateBankAccount). Xác minh việc che dấu số tài
- * khoản ngân hàng (RR-1 & RR-5), phân luồng lỗi validation, và chống lỗ hổng IDOR (RR-4).</p>
- *
- * <p>Module: user</p>
- *
- * Chủ sở hữu: Người C
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserController Test - Controller quản lý hồ sơ và xác thực")
 class UserControllerTest {
@@ -114,7 +103,6 @@ class UserControllerTest {
         return s;
     }
 
-    // ═══════════════════════════ AUTHENTICATION ROUTES ════════════════════════
 
     @Nested
     @DisplayName("1. GET /login")
@@ -222,7 +210,6 @@ class UserControllerTest {
         }
     }
 
-    // ═══════════════════════════ PROFILE ROUTES ════════════════════════
 
     @Nested
     @DisplayName("4. GET /profile")
@@ -250,7 +237,6 @@ class UserControllerTest {
             assertThat(modelProfile.getReputationScore()).isEqualTo(new BigDecimal("98.50"));
             assertThat(modelProfile.getTotalTransactions()).isEqualTo(15);
 
-            // RR-1 & RR-5: Số tài khoản ngân hàng phải được che dấu dạng ******6789
             String masked = (String) model.getAttribute("maskedBankAccount");
             assertThat(masked).isEqualTo("******6789");
 
@@ -266,7 +252,7 @@ class UserControllerTest {
             assertThat(bankReq).isNotNull();
             assertThat(bankReq.getBankName()).isEqualTo(profileResponse.getBankName());
             assertThat(bankReq.getBankAccountHolder()).isEqualTo(profileResponse.getBankAccountHolder());
-            assertThat(bankReq.getBankAccountNumber()).isNull(); // RR-5
+            assertThat(bankReq.getBankAccountNumber()).isNull();
         }
 
         @Test

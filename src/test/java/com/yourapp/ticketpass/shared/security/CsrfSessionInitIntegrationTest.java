@@ -13,17 +13,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Kiểm thử tích hợp xác minh tính năng khởi tạo sớm CSRF Token và Session.
- *
- * <p>Kiểm tra kịch bản khách vãng lai (Anonymous / Incognito) truy cập trực tiếp
- * vào các trang chứa form POST (như /login và /register). Đảm bảo giao diện Thymeleaf
- * render trọn vẹn toàn bộ thẻ form và input hidden CSRF mà không gặp ngoại lệ
- * {@code IllegalStateException: Cannot create a session after the response has been committed}.</p>
- *
- * <p>Module sở hữu: shared (Security hạ tầng).</p>
- * <p>Chủ sở hữu theo phân công: Người C.</p>
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")

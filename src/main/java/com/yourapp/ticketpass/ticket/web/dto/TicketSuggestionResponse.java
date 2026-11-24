@@ -7,13 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * DTO phuc vu menu goi y tim kiem nhanh (live autocomplete).
- *
- * <p>Cung cap du lieu gon nhe cho client render danh sach 5 goi y hang dau.</p>
- *
- * <p>Module: ticket</p>
- */
 @Getter
 @Setter
 @NoArgsConstructor

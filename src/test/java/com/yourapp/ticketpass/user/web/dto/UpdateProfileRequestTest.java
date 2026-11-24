@@ -11,9 +11,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * Kiểm thử validation Bean Validation cho {@link UpdateProfileRequest}.
- */
 class UpdateProfileRequestTest {
 
     private static Validator validator;

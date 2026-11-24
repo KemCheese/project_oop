@@ -13,8 +13,8 @@ class TimeSlotTest {
     @Test
     @DisplayName("Từ chối khi start hoặc end bị null hoặc end <= start")
     void testInvalidBoundsThrowException() {
-        Instant t1 = Instant.parse("2026-11-18T06:00:00Z"); // 13:00 VN
-        Instant t2 = Instant.parse("2026-11-18T08:00:00Z"); // 15:00 VN
+        Instant t1 = Instant.parse("2026-11-18T06:00:00Z");
+        Instant t2 = Instant.parse("2026-11-18T08:00:00Z");
 
         assertThatThrownBy(() -> new TimeSlot(null, t2)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new TimeSlot(t1, null)).isInstanceOf(IllegalArgumentException.class);

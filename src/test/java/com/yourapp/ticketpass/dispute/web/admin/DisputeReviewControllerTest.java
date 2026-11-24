@@ -33,10 +33,6 @@ import com.yourapp.ticketpass.user.application.UserQueryService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-/**
- * Kiểm thử đơn vị cho DisputeReviewController - xác minh đóng gói DTO an toàn cho View.
- * Đảm bảo khắc phục triệt để lỗi rò rỉ JPA Entity (BUG-MED-01 / Leaky Abstraction).
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DisputeReviewController Unit Tests")
 class DisputeReviewControllerTest {
@@ -112,7 +108,6 @@ class DisputeReviewControllerTest {
 
         assertThat(viewName).isEqualTo("admin/dispute/detail");
 
-        // Khẳng định 1: Escrow được map sang DisputeEscrowDto
         Object escrowAttr = model.getAttribute("escrow");
         assertThat(escrowAttr).isNotNull();
         assertThat(escrowAttr).isInstanceOf(DisputeEscrowDto.class);
@@ -121,7 +116,6 @@ class DisputeReviewControllerTest {
         assertThat(escrowDto.getAmount()).isEqualByComparingTo("500000.00");
         assertThat(escrowDto.getStatus()).isEqualTo(EscrowStatus.HELD);
 
-        // Khẳng định 2: Deposit được map sang DisputeDepositDto
         Object depositAttr = model.getAttribute("deposit");
         assertThat(depositAttr).isNotNull();
         assertThat(depositAttr).isInstanceOf(DisputeDepositDto.class);
@@ -130,7 +124,6 @@ class DisputeReviewControllerTest {
         assertThat(depositDto.getDepositAmount()).isEqualByComparingTo("250000.00");
         assertThat(depositDto.getStatus()).isEqualTo(DepositStatus.LOCKED);
 
-        // Khẳng định 3: Không có raw ticket entity nào bị rò rỉ vào model
         assertThat(model.getAttribute("ticket")).isNull();
     }
 

@@ -1,13 +1,23 @@
 package com.yourapp.ticketpass.system.flow;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
+import com.yourapp.ticketpass.dispute.application.FileDisputeUseCase;
+import com.yourapp.ticketpass.dispute.application.ReviewDisputeUseCase;
+import com.yourapp.ticketpass.dispute.domain.Dispute;
+import com.yourapp.ticketpass.dispute.domain.DisputeReason;
+import com.yourapp.ticketpass.payment.domain.Deposit;
+import com.yourapp.ticketpass.payment.domain.DepositStatus;
+import com.yourapp.ticketpass.payment.domain.EscrowStatus;
+import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
+import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.system.base.AbstractSystemIntegrationTest;
 import com.yourapp.ticketpass.ticket.application.DeliveryTimeoutScheduler;
 import com.yourapp.ticketpass.ticket.application.TransferTicketService;
@@ -16,10 +26,17 @@ import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.user.domain.User;
 import com.yourapp.ticketpass.user.domain.UserRole;
+import com.yourapp.ticketpass.wallet.application.WalletService;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.web.servlet.MvcResult;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@DisplayName("Hệ Thống - Luồng 5: Quản Lý Giao Nhận & Sự Cố QR (UC-06b Auto-Confirm 30p & Báo Lỗi TECHNICAL_ISSUE)")
+@DisplayName("Hệ Thống - Luồng 5: Auto-Confirm 30p & Lộ Trình Khiếu Nại Tranh Chấp Sau Khi Mở QR")
 class DeliveryTimeoutAndQrIssueFlowTest extends AbstractSystemIntegrationTest {
 
     @Autowired
@@ -28,55 +45,127 @@ class DeliveryTimeoutAndQrIssueFlowTest extends AbstractSystemIntegrationTest {
     @Autowired
     private TransferTicketService transferTicketService;
 
-    @Test
-    @DisplayName("Nhánh 1 (Auto-Confirm): Sau 30p Buyer không phản hồi -> Scheduler tự chuyển sang AWAITING_USE")
-    void shouldAutoConfirmDeliveryAfterThirtyMinutesTimeout() {
-        // 1. Arrange
-        User seller = createAndSaveUser("seller_deliv1@test.com", "Password123@", UserRole.USER);
-        User buyer = createAndSaveUser("buyer_deliv1@test.com", "Password123@", UserRole.USER);
+    @Autowired
+    private FileDisputeUseCase fileDisputeUseCase;
 
-        Ticket ticket = createAndSaveTicket(seller.getId(), "Vé Xem Phim Avatar 3", TicketType.MOVIE, new BigDecimal("200000.00"), TicketStatus.TRANSFERRED);
-        ticket.setBuyerId(buyer.getId());
-        // Giả lập transferredAt cách đây 35 phút
-        ticket.setTransferredAt(Instant.now().minus(35, ChronoUnit.MINUTES));
-        ticket = ticketRepository.save(ticket);
+    @Autowired
+    private ReviewDisputeUseCase reviewDisputeUseCase;
 
-        // 2. Kích hoạt Scheduler
-        deliveryTimeoutScheduler.scanDeliveryTimeouts();
+    @Autowired
+    private WalletService walletService;
 
-        // 3. Assert: Vé tự chuyển sang AWAITING_USE, ghi nhận receivedAt
-        Ticket finalTicket = ticketRepository.findById(ticket.getId()).orElseThrow();
-        assertThat(finalTicket.getStatus()).isEqualTo(TicketStatus.AWAITING_USE);
-        assertThat(finalTicket.getReceivedAt()).isNotNull();
-        assertThat(finalTicket.getDisputeWindowClosesAt()).isNotNull();
+    private MockHttpSession loginAs(String email, String rawPassword) throws Exception {
+        MvcResult result = mockMvc.perform(post("/login")
+                        .param("username", email)
+                        .param("password", rawPassword)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+        assertThat(result.getResponse().getRedirectedUrl()).doesNotContain("error");
+        return (MockHttpSession) result.getRequest().getSession(false);
     }
 
     @Test
-    @DisplayName("Nhánh 2 (Báo lỗi kỹ thuật QR): Trong 30p Buyer báo ảnh QR hỏng -> Vé chuyển TECHNICAL_ISSUE & đóng băng Scheduler")
-    void shouldFreezeTimeoutWhenBuyerReportsQrTechnicalIssue() {
-        // 1. Arrange
-        User seller = createAndSaveUser("seller_deliv2@test.com", "Password123@", UserRole.USER);
-        User buyer = createAndSaveUser("buyer_deliv2@test.com", "Password123@", UserRole.USER);
+    @DisplayName("Nhánh 1 (Auto-Confirm 30p): Sau 30p Buyer không phản hồi -> Scheduler tự chuyển AWAITING_USE đúng hạn BR-09 1B")
+    void shouldAutoConfirmDeliveryAfterThirtyMinutesTimeout() {
+        User seller = createAndSaveUser("seller_deliv1_" + System.nanoTime() + "@test.com", "Password123@", UserRole.USER);
+        User buyer = createAndSaveUser("buyer_deliv1_" + System.nanoTime() + "@test.com", "Password123@", UserRole.USER);
 
-        Ticket ticket = createAndSaveTicket(seller.getId(), "Vé Xe Khách Đi Đà Lạt", TicketType.BUS, new BigDecimal("350000.00"), TicketStatus.TRANSFERRED);
+        Instant eventStart = Instant.now().plus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+        Ticket ticket = createAndSaveTicket(seller.getId(), "Vé Xem Phim Avatar 3", TicketType.MOVIE,
+                new BigDecimal("200000.00"), TicketStatus.TRANSFERRED);
         ticket.setBuyerId(buyer.getId());
-        ticket.setTransferredAt(Instant.now().minus(10, ChronoUnit.MINUTES)); // Đang trong cửa sổ 30 phút
+        ticket.setEventStartAt(eventStart);
+        ticket.setTransferredAt(Instant.now().minus(35, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS));
         ticket = ticketRepository.save(ticket);
-
-        // 2. Buyer báo lỗi kỹ thuật ảnh QR không quét được
-        transferTicketService.reportTechnicalIssue(ticket.getId(), buyer.getId(), "Ảnh QR bị mờ nét, không thể trích xuất mã vạch.");
-
-        // 3. Assert: Vé chuyển sang TECHNICAL_ISSUE
-        Ticket issueTicket = ticketRepository.findById(ticket.getId()).orElseThrow();
-        assertThat(issueTicket.getStatus()).isEqualTo(TicketStatus.TECHNICAL_ISSUE);
-
-        // 4. Giả lập thời gian trôi qua 40 phút và Scheduler quét -> Không được tự động chuyển AWAITING_USE
-        issueTicket.setTransferredAt(Instant.now().minus(40, ChronoUnit.MINUTES));
-        ticketRepository.save(issueTicket);
 
         deliveryTimeoutScheduler.scanDeliveryTimeouts();
 
-        Ticket frozenTicket = ticketRepository.findById(ticket.getId()).orElseThrow();
-        assertThat(frozenTicket.getStatus()).isEqualTo(TicketStatus.TECHNICAL_ISSUE);
+        Ticket finalTicket = ticketRepository.findById(ticket.getId()).orElseThrow();
+        assertThat(finalTicket.getStatus()).isEqualTo(TicketStatus.AWAITING_USE);
+        assertThat(finalTicket.getReceivedAt()).isNotNull();
+        assertThat(finalTicket.getDisputeWindowClosesAt())
+                .isEqualTo(eventStart.plus(30, ChronoUnit.MINUTES));
+    }
+
+    @Test
+    @DisplayName("Nhánh 2 (Lộ trình khiếu nại thay thế không dead-end): TRANSFERRED -> Xác nhận (AWAITING_USE + thấy QR) -> Mở tranh chấp TICKET_INVALID -> Admin xử BUYER_WINS hoàn tiền & phạt Seller")
+    void shouldAllowBuyerToConfirmAndFileDisputeEndToEndWithoutTechnicalIssuePath() throws Exception {
+        String sellerEmail = "seller_alt_disp_" + System.nanoTime() + "@test.com";
+        String buyerEmail = "buyer_alt_disp_" + System.nanoTime() + "@test.com";
+        User seller = createAndSaveUser(sellerEmail, "Password123@", UserRole.USER);
+        User buyer = createAndSaveUser(buyerEmail, "Password123@", UserRole.USER);
+        User admin = createAndSaveUser("admin_alt_disp_" + System.nanoTime() + "@test.com", "Admin123@", UserRole.ADMIN);
+
+        walletService.getOrCreateWallet(buyer.getId());
+        walletService.getOrCreateWallet(seller.getId());
+
+        BigDecimal salePrice = new BigDecimal("400000.00");
+        BigDecimal depositAmount = new BigDecimal("200000.00");
+        Instant eventStart = Instant.now().plus(12, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
+        Ticket ticket = createAndSaveTicket(seller.getId(), "Vé Concert Tranh Chấp E2E", TicketType.CONCERT,
+                salePrice, TicketStatus.TRANSFERRED);
+        ticket.setBuyerId(buyer.getId());
+        ticket.setEventStartAt(eventStart);
+        ticket.setTransferredAt(Instant.now().minus(5, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS));
+        ticket.setQrImageStorageKey("tickets-qr/e2e-sample-qr.png");
+        ticket = ticketRepository.save(ticket);
+
+        EscrowTransaction escrow = createAndSaveEscrow(ticket.getId(), buyer.getId(), salePrice, EscrowStatus.HELD);
+        Deposit deposit = createAndSaveDeposit(ticket.getId(), seller.getId(), depositAmount, DepositStatus.LOCKED);
+        ticket.setEscrowTransactionId(escrow.getId());
+        ticket.setDepositId(deposit.getId());
+        ticketRepository.save(ticket);
+
+        MockHttpSession buyerSession = loginAs(buyerEmail, "Password123@");
+        mockMvc.perform(get("/tickets/" + ticket.getId()).session(buyerSession))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Xác nhận vé hợp lệ")))
+                .andExpect(content().string(not(containsString("Báo lỗi vé không hợp lệ"))));
+
+        mockMvc.perform(post("/tickets/" + ticket.getId() + "/received")
+                        .session(buyerSession)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        Ticket awaitingTicket = ticketRepository.findById(ticket.getId()).orElseThrow();
+        assertThat(awaitingTicket.getStatus()).isEqualTo(TicketStatus.AWAITING_USE);
+        assertThat(awaitingTicket.getReceivedAt()).isNotNull();
+        assertThat(awaitingTicket.getDisputeWindowClosesAt())
+                .isEqualTo(awaitingTicket.getEventStartAt().plus(30, ChronoUnit.MINUTES));
+
+        mockMvc.perform(get("/tickets/" + ticket.getId()).session(buyerSession))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Mã QR đang hiển thị")))
+                .andExpect(content().string(containsString("e2e-sample-qr.png")));
+
+        Dispute dispute = fileDisputeUseCase.fileDispute(
+                ticket.getId(), buyer.getId(), DisputeReason.TICKET_INVALID,
+                "Mã QR bị mờ/sai thông tin ghế so với bài đăng, yêu cầu hoàn tiền.");
+        createdDisputeIds.add(dispute.getId());
+        assertThat(ticketRepository.findById(ticket.getId()).orElseThrow().getStatus())
+                .isEqualTo(TicketStatus.DISPUTE_UNDER_REVIEW);
+
+        reviewDisputeUseCase.resolveBuyerWins(dispute.getId(), admin.getId(),
+                "Xác minh ảnh QR không hợp lệ so với vé đăng bán.");
+
+        assertThat(ticketRepository.findById(ticket.getId()).orElseThrow().getStatus())
+                .isEqualTo(TicketStatus.RESOLVED_BUYER_WINS);
+        assertThat(escrowTransactionRepository.findById(escrow.getId()).orElseThrow().getStatus())
+                .isEqualTo(EscrowStatus.REFUNDED);
+        Deposit forfeited = depositRepository.findById(deposit.getId()).orElseThrow();
+        assertThat(forfeited.getStatus()).isEqualTo(DepositStatus.FORFEITED);
+        assertThat(forfeited.getFounderCut()).isEqualByComparingTo("14000.00");
+        assertThat(forfeited.getBuyerCompensation()).isEqualByComparingTo("186000.00");
+
+        assertThat(walletRepository.findByUserId(buyer.getId()).orElseThrow().getBalance())
+                .isEqualByComparingTo("586000.00");
+
+        UserReputationScore sellerRep = reputationRepository.findByUserId(seller.getId()).orElseThrow();
+        assertThat(sellerRep.getScore()).isEqualByComparingTo("1.00");
+        assertThat(sellerRep.getDisputesLost()).isEqualTo(1);
+
+        UserReputationScore buyerRep = reputationRepository.findByUserId(buyer.getId()).orElseThrow();
+        assertThat(buyerRep.getScore()).isEqualByComparingTo("3.00");
+        assertThat(buyerRep.getDisputesWon()).isEqualTo(1);
     }
 }

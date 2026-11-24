@@ -11,12 +11,6 @@ import com.yourapp.ticketpass.wallet.domain.WalletTransactionType;
 import lombok.Builder;
 import lombok.Getter;
 
-/**
- * DTO phản hồi lịch sử giao dịch sổ cái biến động số dư.
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @Builder
 public class WalletTransactionResponse {

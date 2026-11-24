@@ -110,7 +110,7 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/admin/users").session(userSession))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(post("/admin/users/999/suspend")
+        mockMvc.perform(post("/admin/users/999/ban")
                         .param("reason", "test access")
                         .session(userSession)
                         .with(csrf()))
@@ -120,7 +120,7 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
         User admin = createAndSaveUser(adminEmail, "Admin1234", UserRole.ADMIN);
         MockHttpSession adminSession = loginAs(adminEmail, "Admin1234");
 
-        mockMvc.perform(post("/admin/users/" + admin.getId() + "/suspend")
+        mockMvc.perform(post("/admin/users/" + admin.getId() + "/ban")
                         .param("reason", "missing csrf")
                         .session(adminSession))
                 .andExpect(status().isForbidden());
@@ -148,11 +148,9 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/profile?passwordUpdated#password-section"));
 
-        // Phiên 1 vẫn truy cập bình thường
         mockMvc.perform(get("/profile").session(session1))
                 .andExpect(status().isOk());
 
-        // Phiên 2 bị thu hồi ngay và điều hướng về /login?expired
         mockMvc.perform(get("/profile").session(session2))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login?expired"));
@@ -161,7 +159,6 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("hết hạn hoặc bị thu hồi")));
 
-        // Mật khẩu cũ không thể đăng nhập, mật khẩu mới đăng nhập thành công
         mockMvc.perform(post("/login")
                         .param("username", email)
                         .param("password", "OldPass123")
@@ -183,14 +180,13 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
         User target = createAndSaveUser(targetEmail, "User1234", UserRole.USER);
 
         UserReputationScore rep = reputationRepository.findByUserId(target.getId()).orElseThrow();
-        rep.setScore(new BigDecimal("45.00"));
+        rep.setScore(new BigDecimal("1.00"));
         rep.setDisputesLost(3);
         reputationRepository.save(rep);
 
         MockHttpSession adminSession = loginAs(adminEmail, "Admin1234");
         MockHttpSession targetSession = loginAs(targetEmail, "User1234");
 
-        // Màn hình /admin/users?warningOnly=true và lọc kết hợp keyword + status hiển thị đúng user vi phạm
         mockMvc.perform(get("/admin/users")
                         .param("warningOnly", "true")
                         .session(adminSession))
@@ -207,41 +203,38 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
                 .andExpect(view().name("admin/users"))
                 .andExpect(content().string(containsString(targetEmail)));
 
-        // Tự khóa mình -> flash errorMessage
-        mockMvc.perform(post("/admin/users/" + admin.getId() + "/suspend")
+        mockMvc.perform(post("/admin/users/" + admin.getId() + "/ban")
                         .param("reason", "Tự khóa thử nghiệm")
                         .session(adminSession)
                         .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(flash().attributeExists("errorMessage"));
 
-        // Khóa lý do < 5 ký tự -> flash errorMessage, không đổi trạng thái
-        mockMvc.perform(post("/admin/users/" + target.getId() + "/suspend")
+        mockMvc.perform(post("/admin/users/" + target.getId() + "/ban")
                         .param("reason", "abc")
                         .session(adminSession)
                         .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(flash().attributeExists("errorMessage"));
+        assertThat(userRepository.findById(target.getId()).orElseThrow().getStatus()).isEqualTo(UserStatus.ACTIVE);
 
-        // Tạm khóa hợp lệ -> thành công, đá phiên targetSession
-        mockMvc.perform(post("/admin/users/" + target.getId() + "/suspend")
+        mockMvc.perform(post("/admin/users/" + target.getId() + "/ban")
                         .param("reason", "Nghi vấn bán vé trùng nhiều lần")
                         .session(adminSession)
                         .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(flash().attributeExists("successMessage"));
 
-        User suspended = userRepository.findById(target.getId()).orElseThrow();
-        assertThat(suspended.getStatus()).isEqualTo(UserStatus.SUSPENDED);
-        assertThat(suspended.getModerationReason()).isEqualTo("Nghi vấn bán vé trùng nhiều lần");
-        assertThat(suspended.getModeratedByAdminId()).isEqualTo(admin.getId());
+        User locked = userRepository.findById(target.getId()).orElseThrow();
+        assertThat(locked.getStatus()).isEqualTo(UserStatus.BANNED);
+        assertThat(locked.isPermanentlyBanned()).isFalse();
+        assertThat(locked.getModerationReason()).isEqualTo("Nghi vấn bán vé trùng nhiều lần");
+        assertThat(locked.getModeratedByAdminId()).isEqualTo(admin.getId());
 
-        // Phiên cũ bị đá ngay về /login?expired
         mockMvc.perform(get("/profile").session(targetSession))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login?expired"));
 
-        // Không thể đăng nhập lại khi đang bị SUSPENDED
         mockMvc.perform(post("/login")
                         .param("username", targetEmail)
                         .param("password", "User1234")
@@ -249,12 +242,10 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login?error"));
 
-        // Link verifyEmail cũng phải bị chặn khi đang SUSPENDED
         String token = registerUserUseCase.generateVerificationToken(target.getId(), targetEmail);
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> registerUserUseCase.verifyEmail(target.getId(), token))
                 .isInstanceOf(BusinessRuleViolationException.class);
 
-        // Mở khóa lại -> ACTIVE + nhận NotificationType.SYSTEM + đăng nhập lại OK
         mockMvc.perform(post("/admin/users/" + target.getId() + "/activate")
                         .param("reason", "Đã đối soát hoàn tất")
                         .session(adminSession)
@@ -299,7 +290,7 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
                 releasedTicket.getId(), buyer.getId(), new BigDecimal("1000000"), EscrowStatus.RELEASED);
         releasedEscrow.setTotalCommission(new BigDecimal("50000"));
         releasedEscrow.setTaxWithheld(new BigDecimal("15000"));
-        releasedEscrow.setAmountHeld(new BigDecimal("1000000")); // vẫn giữ nguyên snapshot để test lọc HELD
+        releasedEscrow.setAmountHeld(new BigDecimal("1000000"));
         releasedEscrow.setReleasedAt(now);
         escrowTransactionRepository.save(releasedEscrow);
 
@@ -327,7 +318,6 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
 
         MockHttpSession adminSession = loginAs(adminEmail, "Admin1234");
 
-        // Kiểm tra dashboard hiển thị đúng số liệu cộng thêm và tách biệt HELD / Tax
         MvcResult dashResult = mockMvc.perform(get("/admin/dashboard")
                         .param("fromDate", today.toString())
                         .param("toDate", today.toString())
@@ -346,7 +336,6 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
         assertThat(actual.getTotalTaxWithheld()).isEqualByComparingTo(baseline.getTotalTaxWithheld().add(new BigDecimal("15000")));
         assertThat(actual.getLiveHeldEscrowAmount()).isEqualByComparingTo(baseline.getLiveHeldEscrowAmount().add(new BigDecimal("450000")));
 
-        // Lỗi fromDate > toDate trả 200 OK kèm inline dateError (không ra trang error)
         mockMvc.perform(get("/admin/dashboard")
                         .param("fromDate", "2026-12-31")
                         .param("toDate", "2026-01-01")
@@ -357,7 +346,6 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
                 .andExpect(content().string(containsString("Ngày bắt đầu không được lớn hơn ngày kết thúc")))
                 .andExpect(content().string(not(containsString("Whitelabel Error Page"))));
 
-        // Xuất CSV trả UTF-8 BOM + anti-formula-injection + GMV=0 cho DEPOSIT_FORFEITED
         MvcResult csvResult = mockMvc.perform(get("/admin/dashboard/export.csv")
                         .param("fromDate", today.toString())
                         .param("toDate", today.toString())

@@ -29,11 +29,9 @@ class DepositTimeoutSchedulerIntegrationTest extends AbstractSystemIntegrationTe
     @Test
     @DisplayName("Tính Idempotent: Quét nhiều lần không gây lỗi và không quét lại vé đã bị hủy")
     void shouldBeIdempotentWhenRunningMultipleTimes() {
-        // Arrange
         User seller = createAndSaveUser("sched_seller@test.com", "Password123@", UserRole.USER);
         User buyer = createAndSaveUser("sched_buyer@test.com", "Password123@", UserRole.USER);
 
-        // Vé 1: Đã quá hạn 35 phút
         Ticket overdueTicket = createAndSaveTicket(seller.getId(), "Vé Quá Hạn Cọc", TicketType.CONCERT, new BigDecimal("400000.00"), TicketStatus.PAYMENT_ESCROWED);
         EscrowTransaction escrow1 = createAndSaveEscrow(overdueTicket.getId(), buyer.getId(), new BigDecimal("400000.00"), EscrowStatus.HELD);
         overdueTicket.setBuyerId(buyer.getId());
@@ -41,7 +39,6 @@ class DepositTimeoutSchedulerIntegrationTest extends AbstractSystemIntegrationTe
         overdueTicket.setEscrowedAt(Instant.now().minus(35, ChronoUnit.MINUTES));
         ticketRepository.save(overdueTicket);
 
-        // Vé 2: Mới nạp tiền 10 phút trước (Chưa quá hạn 30p)
         Ticket freshTicket = createAndSaveTicket(seller.getId(), "Vé Mới Nạp Escrow", TicketType.CONCERT, new BigDecimal("400000.00"), TicketStatus.PAYMENT_ESCROWED);
         EscrowTransaction escrow2 = createAndSaveEscrow(freshTicket.getId(), buyer.getId(), new BigDecimal("400000.00"), EscrowStatus.HELD);
         freshTicket.setBuyerId(buyer.getId());
@@ -49,20 +46,16 @@ class DepositTimeoutSchedulerIntegrationTest extends AbstractSystemIntegrationTe
         freshTicket.setEscrowedAt(Instant.now().minus(10, ChronoUnit.MINUTES));
         ticketRepository.save(freshTicket);
 
-        // Act 1: Lần quét đầu tiên
         depositTimeoutScheduler.scanDepositTimeouts();
 
-        // Assert 1: Vé 1 bị hủy, Vé 2 giữ nguyên PAYMENT_ESCROWED
         Ticket ticket1AfterFirstRun = ticketRepository.findById(overdueTicket.getId()).orElseThrow();
         assertThat(ticket1AfterFirstRun.getStatus()).isEqualTo(TicketStatus.CANCELLED);
 
         Ticket ticket2AfterFirstRun = ticketRepository.findById(freshTicket.getId()).orElseThrow();
         assertThat(ticket2AfterFirstRun.getStatus()).isEqualTo(TicketStatus.PAYMENT_ESCROWED);
 
-        // Act 2: Chạy lại lần quét thứ hai ngay lập tức (Test Idempotency)
         depositTimeoutScheduler.scanDepositTimeouts();
 
-        // Assert 2: Trạng thái không đổi, không có lỗi RuntimeException nào xảy ra
         Ticket ticket1AfterSecondRun = ticketRepository.findById(overdueTicket.getId()).orElseThrow();
         assertThat(ticket1AfterSecondRun.getStatus()).isEqualTo(TicketStatus.CANCELLED);
     }

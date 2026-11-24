@@ -97,7 +97,6 @@ class HoldFundsUseCaseTest {
             assertTrue(result.isSuccess());
             assertEquals("https://test-payment.momo.vn/pay/123", result.getPayUrl());
 
-            // Kiểm tra PaymentRequest gửi sang cổng thanh toán
             ArgumentCaptor<PaymentRequest> reqCaptor = ArgumentCaptor.forClass(PaymentRequest.class);
             verify(paymentGateway).initPayment(reqCaptor.capture());
             PaymentRequest sentReq = reqCaptor.getValue();
@@ -106,7 +105,6 @@ class HoldFundsUseCaseTest {
             assertEquals(salePrice, sentReq.getAmount());
             assertTrue(sentReq.getOrderInfo().contains(String.valueOf(ticketId)));
 
-            // Kiểm tra EscrowTransaction được lưu với đầy đủ snapshot
             ArgumentCaptor<EscrowTransaction> txCaptor = ArgumentCaptor.forClass(EscrowTransaction.class);
             verify(escrowTransactionRepository, atLeastOnce()).save(txCaptor.capture());
             EscrowTransaction savedTx = txCaptor.getValue();
@@ -293,7 +291,6 @@ class HoldFundsUseCaseTest {
             assertEquals("momo_tx_999", result.getGatewayTransactionId());
             assertNotNull(result.getHeldAt());
 
-            // Kiểm tra gọi đồng bộ sang module ticket
             verify(transferTicketService).markPaymentEscrowed(ticketId, buyerId, 1L);
             verify(escrowTransactionRepository).save(tx);
         }

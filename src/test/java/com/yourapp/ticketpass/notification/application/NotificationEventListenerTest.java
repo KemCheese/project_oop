@@ -13,12 +13,14 @@ import com.yourapp.ticketpass.shared.event.DisputeOpenedEvent;
 import com.yourapp.ticketpass.shared.event.DisputeOutcome;
 import com.yourapp.ticketpass.shared.event.DisputeResolvedEvent;
 import com.yourapp.ticketpass.shared.event.DisputeRespondedEvent;
+import com.yourapp.ticketpass.shared.event.TicketAutoCancelledDueToBanEvent;
 import com.yourapp.ticketpass.shared.event.TicketDepositLockedEvent;
 import com.yourapp.ticketpass.shared.event.TicketEscrowPaidEvent;
 import com.yourapp.ticketpass.shared.event.TicketExpiredEvent;
 import com.yourapp.ticketpass.shared.event.TicketReceivedEvent;
 import com.yourapp.ticketpass.shared.event.TicketTransactionCompletedEvent;
 import com.yourapp.ticketpass.shared.event.TicketUpcomingReminderEvent;
+import com.yourapp.ticketpass.shared.event.UserAccountModeratedEvent;
 import com.yourapp.ticketpass.user.domain.StarredTicketRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -128,21 +130,21 @@ class NotificationEventListenerTest {
         verify(notificationService).sendNotification(
                 eq(20L),
                 contains("BẠN THẮNG"),
-                any(),
+                contains("giữ nguyên điểm uy tín"),
                 eq(NotificationType.DISPUTE_RESOLVED),
                 eq("/disputes/5")
         );
         verify(notificationService).sendNotification(
                 eq(10L),
                 contains("NGƯỜI MUA THẮNG"),
-                any(),
+                contains("bị trừ 2 điểm"),
                 eq(NotificationType.DISPUTE_RESOLVED),
                 eq("/disputes/5")
         );
     }
 
     @Test
-    @DisplayName("onDepositTimeout: Bắn thông báo DEPOSIT_TIMEOUT cho cả 2 bên")
+    @DisplayName("onDepositTimeout: Bắn thông báo DEPOSIT_TIMEOUT cho cả 2 bên (-1 điểm uy tín)")
     void testOnDepositTimeout() {
         DepositTimeoutEvent event = new DepositTimeoutEvent(
                 7L, 10L, 20L, "Vé Concert Anh Trai", Instant.now()
@@ -160,7 +162,7 @@ class NotificationEventListenerTest {
         verify(notificationService).sendNotification(
                 eq(10L),
                 contains("quá hạn nộp cọc"),
-                contains("bị trừ 10 điểm"),
+                contains("bị trừ 1 điểm"),
                 eq(NotificationType.DEPOSIT_TIMEOUT),
                 eq("/profile")
         );
@@ -206,14 +208,14 @@ class NotificationEventListenerTest {
         verify(notificationService).sendNotification(
                 eq(10L),
                 contains("thành công!"),
-                contains("+2 điểm uy tín"),
+                contains("+1 điểm uy tín"),
                 eq(NotificationType.TRANSACTION_COMPLETED),
                 eq("/profile")
         );
         verify(notificationService).sendNotification(
                 eq(20L),
                 contains("thành công!"),
-                contains("+2 điểm uy tín"),
+                contains("+1 điểm uy tín"),
                 eq(NotificationType.TRANSACTION_COMPLETED),
                 eq("/profile")
         );
@@ -230,7 +232,6 @@ class NotificationEventListenerTest {
 
         listener.onTicketEscrowPaid(event);
 
-        // Seller nhận ESCROW_PAID
         verify(notificationService).sendNotification(
                 eq(10L),
                 eq("Có người mua vé của bạn!"),
@@ -239,7 +240,6 @@ class NotificationEventListenerTest {
                 eq("/tickets/15")
         );
 
-        // Watchers 30L và 40L nhận STARRED_TICKET_BOUGHT
         verify(notificationService).sendNotification(
                 eq(30L),
                 eq("Vé theo dõi đã có người mua!"),
@@ -267,7 +267,6 @@ class NotificationEventListenerTest {
 
         listener.onTicketExpired(event);
 
-        // Seller nhận TICKET_EXPIRED
         verify(notificationService).sendNotification(
                 eq(10L),
                 eq("Vé đăng bán đã hết hạn!"),
@@ -276,7 +275,6 @@ class NotificationEventListenerTest {
                 eq("/tickets/88")
         );
 
-        // Watcher 50L nhận STARRED_TICKET_EXPIRED (loại trừ 10L là seller)
         verify(notificationService).sendNotification(
                 eq(50L),
                 eq("Vé theo dõi đã hết hạn!"),
@@ -327,6 +325,37 @@ class NotificationEventListenerTest {
                 contains("trong vòng 24 giờ tới"),
                 eq(NotificationType.UPCOMING_EVENT_REMINDER),
                 eq("/tickets/91")
+        );
+    }
+
+    @Test
+    @DisplayName("onTicketAutoCancelledDueToBan & onUserAccountModerated(Auto-ban): Bắn thông báo ACCOUNT_LIQUIDATED")
+    void testOnAccountLiquidationNotifications() {
+        TicketAutoCancelledDueToBanEvent cancelEvent = new TicketAutoCancelledDueToBanEvent(
+                77L, 10L, 20L, "BUYER", "Vé Phim", true, false, Instant.now()
+        );
+        listener.onTicketAutoCancelledDueToBan(cancelEvent);
+
+        verify(notificationService).sendNotification(
+                eq(20L),
+                contains("hủy tự động"),
+                contains("100% tiền ký quỹ Escrow"),
+                eq(NotificationType.ACCOUNT_LIQUIDATED),
+                eq("/wallet")
+        );
+
+        UserAccountModeratedEvent banEvent = new UserAccountModeratedEvent(
+                10L, "risk@test.com", null, "BANNED",
+                "Điểm uy tín giảm về 0 — thanh lý ví tự động.", Instant.now()
+        );
+        listener.onUserAccountModerated(banEvent);
+
+        verify(notificationService).sendNotification(
+                eq(10L),
+                contains("khóa vĩnh viễn"),
+                contains("thanh lý ví"),
+                eq(NotificationType.ACCOUNT_LIQUIDATED),
+                eq("/wallet")
         );
     }
 }

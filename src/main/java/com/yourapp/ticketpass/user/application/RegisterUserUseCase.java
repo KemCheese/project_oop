@@ -15,40 +15,16 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Use case đăng ký tài khoản mới và xác minh email.
- *
- * <p>
- * <b>Bảo mật:</b> mật khẩu luôn được lưu dưới dạng băm BCrypt thông qua
- * {@link PasswordEncoder} (bean do {@code shared.config.SecurityConfig} cung
- * cấp).
- * Tuyệt đối KHÔNG bao giờ lưu mật khẩu dạng plaintext, không log mật khẩu, và
- * không
- * trả mật khẩu ra bất kỳ DTO nào.
- * </p>
- *
- * <p>
- * Tài khoản mới được tạo với vai trò {@code UserRole.USER} và trạng thái
- * {@code UserStatus.PENDING_VERIFICATION}; chỉ sau khi {@link #verifyEmail}
- * thành công
- * thì trạng thái mới chuyển sang {@code ACTIVE} và người dùng đăng nhập được.
- * </p>
- *
- * <p>
- * Module: user
- * </p>
- *
- * Chủ sở hữu: Người C
- */
 @Service
-@RequiredArgsConstructor
 public class RegisterUserUseCase {
+
+    private static final BigDecimal INITIAL_REPUTATION_SCORE = new BigDecimal("3.00");
 
     private final UserRepository userRepository;
 
@@ -56,18 +32,21 @@ public class RegisterUserUseCase {
 
     private final ReputationRepository reputationRepository;
 
+    @Autowired
+    public RegisterUserUseCase(UserRepository userRepository,
+                               PasswordEncoder passwordEncoder,
+                               ReputationRepository reputationRepository) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.reputationRepository = reputationRepository;
+    }
+
     @Value("${app.user.auto-active:true}")
     private boolean autoActive;
 
     @Value("${app.user.activation-secret:TICKETPASS_SECRET_KEY_2026}")
     private String activationSecret;
 
-    /**
-     * Đăng ký một tài khoản mới từ dữ liệu form.
-     *
-     * @param request dữ liệu đăng ký đã qua Bean Validation ở tầng web
-     * @return hồ sơ của tài khoản vừa tạo
-     */
     @Transactional
     public UserProfileResponse register(RegisterRequest request) {
         if (!request.getPassword().equals(request.getConfirmPassword())) {
@@ -100,7 +79,7 @@ public class RegisterUserUseCase {
 
         UserReputationScore reputationScore = new UserReputationScore();
         reputationScore.setUserId(savedUser.getId());
-        reputationScore.setScore(new BigDecimal("100.00"));
+        reputationScore.setScore(INITIAL_REPUTATION_SCORE);
         reputationScore.setTotalTransactions(0);
         reputationScore.setSuccessfulTransactions(0);
         reputationScore.setCancelledListings(0);
@@ -113,12 +92,6 @@ public class RegisterUserUseCase {
         return mapToProfileResponse(savedUser);
     }
 
-    /**
-     * Xác minh email bằng token gửi trong thư kích hoạt.
-     *
-     * @param userId id tài khoản cần xác minh
-     * @param token  token kích hoạt gửi kèm liên kết trong email
-     */
     @Transactional
     public void verifyEmail(Long userId, String token) {
         if (userId == null || token == null || token.isBlank()) {
@@ -128,12 +101,13 @@ public class RegisterUserUseCase {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
-        if (user.getStatus() == UserStatus.BANNED || user.getStatus() == UserStatus.SUSPENDED) {
-            throw new BusinessRuleViolationException("Tài khoản đã bị khóa hoặc cấm, không thể kích hoạt.");
+        if (user.isPermanentlyBanned()
+                || user.getStatus() == UserStatus.BANNED) {
+            throw new BusinessRuleViolationException("Tài khoản đã bị khóa, không thể kích hoạt.");
         }
 
         if (user.getStatus() == UserStatus.ACTIVE && user.isEmailVerified()) {
-            return; // Đã kích hoạt rồi, idempotent
+            return;
         }
 
         String expectedToken = generateVerificationToken(user.getId(), user.getEmail());
@@ -146,10 +120,6 @@ public class RegisterUserUseCase {
         userRepository.save(user);
     }
 
-    /**
-     * Hàm sinh token kích hoạt theo phương pháp Stateless (HMAC SHA-256 giả lập).
-     * Băm chuỗi userId + email + secret để chứng thực toàn vẹn.
-     */
     public String generateVerificationToken(Long userId, String email) {
         try {
             String payload = userId + ":" + email + ":" + activationSecret;
@@ -171,8 +141,7 @@ public class RegisterUserUseCase {
         response.setStatus(user.getStatus());
         response.setEmailVerified(user.isEmailVerified());
         response.setIdentityVerified(user.isIdentityVerified());
-        // avatarUrl để null vì mới tạo, chưa có
-        response.setReputationScore(new BigDecimal("100.00"));
+        response.setReputationScore(INITIAL_REPUTATION_SCORE);
         response.setTotalTransactions(0);
         response.setCreatedAt(user.getCreatedAt());
         return response;

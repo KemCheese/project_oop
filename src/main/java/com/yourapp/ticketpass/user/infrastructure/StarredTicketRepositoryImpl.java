@@ -7,14 +7,6 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-/**
- * Hiện thực port {@link StarredTicketRepository} bằng Spring Data JPA.
- *
- * <p>Adapter delegating trực tiếp sang {@link StarredTicketJpaRepository}.</p>
- *
- * <p>Module: user</p>
- * <p>Chủ sở hữu: Người C</p>
- */
 @Repository
 @RequiredArgsConstructor
 public class StarredTicketRepositoryImpl implements StarredTicketRepository {

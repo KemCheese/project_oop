@@ -25,9 +25,6 @@ import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
 import com.yourapp.ticketpass.ticket.application.TicketStateMachineService;
 
-/**
- * Unit test cho {@link RespondToDisputeUseCase}.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RespondToDisputeUseCase Unit Tests")
 class RespondToDisputeUseCaseTest {

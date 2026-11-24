@@ -7,12 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * DTO yêu cầu nạp tiền vào ví điện tử.
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @Setter
 public class TopUpRequest {

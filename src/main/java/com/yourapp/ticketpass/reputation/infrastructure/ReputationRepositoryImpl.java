@@ -9,17 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-/**
- * Hiện thực port {@link ReputationRepository} bằng Spring Data JPA.
- *
- * <p>Adapter chỉ chuyển tiếp lời gọi sang {@link ReputationJpaRepository}, không chứa
- * business logic. Riêng {@link #findTopSellers(int)} quy đổi tham số {@code limit} sang
- * {@code PageRequest} vì Spring Data giới hạn số dòng qua {@code Pageable}.</p>
- *
- * <p>Module: reputation</p>
- *
- * Chủ sở hữu: Người C
- */
 @Repository
 @RequiredArgsConstructor
 public class ReputationRepositoryImpl implements ReputationRepository {
@@ -28,7 +17,7 @@ public class ReputationRepositoryImpl implements ReputationRepository {
 
     @Override
     public UserReputationScore save(UserReputationScore score) {
-        return reputationJpaRepository.save(score);
+        return reputationJpaRepository.saveAndFlush(score);
     }
 
     @Override

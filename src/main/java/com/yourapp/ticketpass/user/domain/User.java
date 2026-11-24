@@ -16,25 +16,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Tài khoản người dùng của sàn pass vé.
- *
- * <p>Entity này thuộc quyền sở hữu của module {@code user}. Theo nguyên tắc kiến trúc số 1,
- * các module khác (ticket, payment, dispute, reputation) chỉ được tham chiếu
- * người dùng bằng ID thuần kiểu {@code Long} (ví dụ {@code sellerId}, {@code buyerId},
- * {@code userId}) và <b>KHÔNG</b> được import class này vào field entity của họ. Muốn lấy
- * thông tin người dùng, các module khác gọi
- * {@code com.yourapp.ticketpass.user.application.UserQueryService}.</p>
- *
- * <p>Entity chỉ chứa field và getter/setter, không chứa business logic. Mật khẩu luôn được
- * lưu ở dạng băm BCrypt trong {@code passwordHash}, không bao giờ lưu plaintext.
- * Ảnh đại diện chỉ lưu {@code avatarStorageKey} - khoá tệp trong
- * {@code shared.storage.FileStorageService}, không lưu đường dẫn tuyệt đối của máy chủ.</p>
- *
- * <p>Module: user</p>
- *
- * Chủ sở hữu: Người C
- */
 @Entity
 @Table(name = "users")
 @Getter
@@ -46,11 +27,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Email đăng nhập, đồng thời là định danh duy nhất của tài khoản. */
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    /** Chuỗi băm BCrypt của mật khẩu; độ dài 100 đủ chỗ cho tiền tố thuật toán. */
     @Column(nullable = false, length = 100)
     private String passwordHash;
 
@@ -68,20 +47,15 @@ public class User {
     @Column(length = 40)
     private UserStatus status;
 
-    /** Đã xác minh email qua liên kết kích hoạt hay chưa. */
     private boolean emailVerified;
 
-    /** Đã xác minh số điện thoại qua OTP hay chưa. */
     private boolean phoneVerified;
 
-    /** Đã được duyệt giấy tờ tuỳ thân hay chưa. */
     private boolean identityVerified;
 
-    /** Khoá tệp ảnh đại diện trong FileStorageService. */
     @Column(length = 500)
     private String avatarStorageKey;
 
-    /** Tên ngân hàng nhận tiền khi bán vé thành công. */
     @Column(length = 100)
     private String bankName;
 
@@ -97,17 +71,17 @@ public class User {
 
     private Instant updatedAt;
 
-    /** Lý do kiểm duyệt tài khoản gần nhất từ Quản trị viên (nếu có). */
     @Column(name = "moderation_reason", length = 500)
     private String moderationReason;
 
-    /** Thời điểm thực hiện thao tác kiểm duyệt tài khoản gần nhất. */
     @Column(name = "moderated_at")
     private Instant moderatedAt;
 
-    /** ID quản trị viên thực hiện thao tác kiểm duyệt gần nhất. */
     @Column(name = "moderated_by_admin_id")
     private Long moderatedByAdminId;
+
+    @Column(name = "permanently_banned", nullable = false)
+    private boolean permanentlyBanned;
 
     @Version
     private Long version;

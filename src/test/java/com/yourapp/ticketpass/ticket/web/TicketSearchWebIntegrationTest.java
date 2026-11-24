@@ -8,8 +8,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.yourapp.ticketpass.ticket.domain.Ticket;
+import com.yourapp.ticketpass.ticket.domain.TicketRepository;
+import com.yourapp.ticketpass.ticket.domain.TicketStatus;
+import com.yourapp.ticketpass.ticket.domain.TicketType;
+import com.yourapp.ticketpass.ticket.infrastructure.TicketJpaRepository;
+import com.yourapp.ticketpass.user.domain.User;
+import com.yourapp.ticketpass.user.domain.UserRepository;
 import jakarta.servlet.http.Cookie;
-
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,20 +29,23 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * Kiểm thử tích hợp Web End-to-End cho tính năng Tìm kiếm vé sự kiện qua HTTP GET /tickets.
- *
- * <p>Kiểm tra tích hợp từ giao diện Thymeleaf (base.html, list.html) qua Controller,
- * Repository đến cơ sở dữ liệu H2.</p>
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@DisplayName("TicketSearchWebIntegrationTest - Kiểm thử tích hợp tìm kiếm vé sự kiện trên Web")
+@DisplayName("TicketSearchWebIntegrationTest - Kiểm thử tích hợp tìm kiếm & phân trang vé trên Web")
 class TicketSearchWebIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private TicketRepository ticketRepository;
+
+    @Autowired
+    private TicketJpaRepository ticketJpaRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     @DisplayName("GET /tickets hiển thị thanh tìm kiếm trên header và các mục phân loại vé")
@@ -58,8 +72,8 @@ class TicketSearchWebIntegrationTest {
     @DisplayName("GET /tickets?keyword=Dune&ticketType=MOVIE tìm thấy vé phim phù hợp cả 2 điều kiện")
     void testSearchByKeywordAndType_found() throws Exception {
         mockMvc.perform(get("/tickets")
-                        .param("keyword", "Dune")
-                        .param("ticketType", "MOVIE"))
+                .param("keyword", "Dune")
+                .param("ticketType", "MOVIE"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Dune: Part Three")))
                 .andExpect(content().string(containsString("search-meta-bar")))
@@ -79,14 +93,21 @@ class TicketSearchWebIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /tickets/suggestions?keyword=Chông trả về JSON gợi ý vé concert")
+    @DisplayName("GET /tickets/suggestions?keyword=Chông trả về JSON gợi ý đúng vé concert đang LISTED")
     void testSuggestionsApi_returnsJson() throws Exception {
+        Ticket concertTicket = ticketRepository.findByStatus(TicketStatus.LISTED).stream()
+                .filter(t -> t.getTicketType() == TicketType.CONCERT
+                        && t.getEventName() != null
+                        && t.getEventName().contains("Chông Gai"))
+                .findFirst()
+                .orElseThrow();
+
         mockMvc.perform(get("/tickets/suggestions").param("keyword", "Chông"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].id").value(concertTicket.getId()))
                 .andExpect(jsonPath("$[0].ticketType").value("CONCERT"))
                 .andExpect(jsonPath("$[0].ticketTypeLabel").value("Concert"))
-                .andExpect(jsonPath("$[0].detailUrl").value("/tickets/1"));
+                .andExpect(jsonPath("$[0].detailUrl").value("/tickets/" + concertTicket.getId()));
     }
 
     @Test
@@ -107,18 +128,26 @@ class TicketSearchWebIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /tickets?page=0&size=2 phân trang thành công và hiển thị thanh pagination khi totalPages > 1")
+    @DisplayName("GET /tickets?page=0&size=2 phân trang đa trang thành công và hiển thị thanh pagination")
     void testPagination_rendersPaginationBarWhenMultiplePages() throws Exception {
-        mockMvc.perform(get("/tickets")
-                        .param("page", "0")
-                        .param("size", "2"))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("totalPages", 27))
-                .andExpect(model().attribute("hasPrevious", false))
-                .andExpect(model().attribute("hasNext", true))
-                .andExpect(content().string(containsString("class=\"pagination-container\"")))
-                .andExpect(content().string(containsString("class=\"pagination-nav\"")))
-                .andExpect(content().string(containsString("Hiển thị")));
+        List<Long> tempIds = seedExtraListedTickets(5);
+        try {
+            long listedCount = ticketRepository.findByStatus(TicketStatus.LISTED).size();
+            int expectedPages = (int) Math.ceil(listedCount / 2.0);
+
+            mockMvc.perform(get("/tickets")
+                    .param("page", "0")
+                    .param("size", "2"))
+                    .andExpect(status().isOk())
+                    .andExpect(model().attribute("totalPages", expectedPages))
+                    .andExpect(model().attribute("hasPrevious", false))
+                    .andExpect(model().attribute("hasNext", true))
+                    .andExpect(content().string(containsString("class=\"pagination-container\"")))
+                    .andExpect(content().string(containsString("class=\"pagination-nav\"")))
+                    .andExpect(content().string(containsString("Hiển thị")));
+        } finally {
+            ticketJpaRepository.deleteAllById(tempIds);
+        }
     }
 
     @Test
@@ -131,10 +160,46 @@ class TicketSearchWebIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /tickets?page=999 vượt quá tổng số trang được xử lý an toàn không quăng lỗi 500")
+    @DisplayName("GET /tickets?page=999 vượt quá tổng số trang được chặn an toàn về trang cuối (không lỗi 500)")
     void testPagination_pageOutOfBoundsClampedGracefully() throws Exception {
-        mockMvc.perform(get("/tickets").param("page", "999"))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("currentPage", 3));
+        List<Long> tempIds = seedExtraListedTickets(20);
+        try {
+            long listedCount = ticketRepository.findByStatus(TicketStatus.LISTED).size();
+            int expectedLastPage = (int) Math.ceil(listedCount / 16.0) - 1;
+
+            mockMvc.perform(get("/tickets").param("page", "999"))
+                    .andExpect(status().isOk())
+                    .andExpect(model().attribute("currentPage", expectedLastPage));
+        } finally {
+            ticketJpaRepository.deleteAllById(tempIds);
+        }
+    }
+
+    private List<Long> seedExtraListedTickets(int count) {
+        User seller = userRepository.findByEmail("seller@test.com").orElseThrow();
+        List<Long> ids = new ArrayList<>();
+        Instant now = Instant.now();
+        for (int i = 1; i <= count; i++) {
+            Ticket t = new Ticket();
+            t.setSellerId(seller.getId());
+            t.setTicketType(TicketType.MOVIE);
+            t.setStatus(TicketStatus.LISTED);
+            t.setTitle("Vé Kiểm Thử Phân Trang #" + i);
+            t.setEventName("Pagination Test Event #" + i);
+            t.setVenue("CGV Test");
+            t.setSeatInfo("A" + i);
+            t.setEventStartAt(now.plus(Duration.ofDays(10 + i)));
+            t.setEventEndAt(now.plus(Duration.ofDays(10 + i)).plus(Duration.ofHours(2)));
+            t.setOriginalPrice(new BigDecimal("200000.00"));
+            t.setSalePrice(new BigDecimal("150000.00"));
+            t.setProviderName("CGV");
+            t.setProviderOrderCode("PAGE-TEST-" + System.nanoTime() + "-" + i);
+            t.setTicketImageStorageKey("tickets/test-page.png");
+            t.setQrImageStorageKey("tickets/test-page-qr.png");
+            t.setTransferInstruction("Test pagination");
+            t.setListedAt(now);
+            ids.add(ticketRepository.save(t).getId());
+        }
+        return ids;
     }
 }

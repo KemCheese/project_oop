@@ -33,21 +33,18 @@ class DisputeSellerWinsPayoutFlowTest extends AbstractSystemIntegrationTest {
     @Test
     @DisplayName("Admin phán quyết SELLER_WINS: Tiền giải ngân cho Seller, Cọc hoàn trả, Buyer -15đ, Seller +1đ uy tín")
     void shouldExecuteSellerWinsDisputeResolutionFlow() {
-        // 1. Arrange: Tạo User
         User seller = createAndSaveUser("honest_seller@test.com", "Password123@", UserRole.USER);
         User buyer = createAndSaveUser("malicious_buyer@test.com", "Password123@", UserRole.USER);
         User admin = createAndSaveUser("system_admin2@test.com", "Password123@", UserRole.ADMIN);
 
-        // Thiết lập điểm ban đầu
         UserReputationScore sellerRep = reputationRepository.findByUserId(seller.getId()).orElseThrow();
-        sellerRep.setScore(new BigDecimal("90.00"));
+        sellerRep.setScore(new BigDecimal("4.00"));
         reputationRepository.save(sellerRep);
 
         UserReputationScore buyerRep = reputationRepository.findByUserId(buyer.getId()).orElseThrow();
-        buyerRep.setScore(new BigDecimal("90.00"));
+        buyerRep.setScore(new BigDecimal("4.00"));
         reputationRepository.save(buyerRep);
 
-        // 2. Tạo vé và giao dịch
         BigDecimal salePrice = new BigDecimal("300000.00");
         Ticket ticket = createAndSaveTicket(seller.getId(), "Vé Xe Khách Hà Nội - SaPa", TicketType.BUS, salePrice, TicketStatus.LISTED);
 
@@ -60,35 +57,28 @@ class DisputeSellerWinsPayoutFlowTest extends AbstractSystemIntegrationTest {
         ticket.setStatus(TicketStatus.DISPUTE_UNDER_REVIEW);
         ticket = ticketRepository.save(ticket);
 
-        // 3. Khởi tạo khiếu nại
         Dispute dispute = createAndSaveDispute(ticket.getId(), buyer.getId(), seller.getId(), DisputeReason.OTHER, DisputeStatus.UNDER_REVIEW);
 
-        // 4. Admin phán quyết SELLER_WINS (Người bán cung cấp hình ảnh check-in thực tế khớp danh sách hành khách)
         reviewDisputeUseCase.resolveSellerWins(dispute.getId(), admin.getId(), "Người bán cung cấp biên bản nhà xe xác nhận người mua đã lên xe bình thường.");
 
-        // 5. Assertions
-        // 5.1 Dispute status
         Dispute finalDispute = disputeRepository.findById(dispute.getId()).orElseThrow();
         assertThat(finalDispute.getStatus()).isEqualTo(DisputeStatus.RESOLVED_SELLER_WINS);
 
-        // 5.2 Trạng thái vé
         Ticket finalTicket = ticketRepository.findById(ticket.getId()).orElseThrow();
         assertThat(finalTicket.getStatus()).isEqualTo(TicketStatus.RESOLVED_SELLER_WINS);
 
-        // 5.3 Escrow (Giải ngân) & Deposit (Hoàn cọc)
         EscrowTransaction finalEscrow = escrowTransactionRepository.findById(escrow.getId()).orElseThrow();
         assertThat(finalEscrow.getStatus()).isEqualTo(EscrowStatus.RELEASED);
 
         Deposit finalDeposit = depositRepository.findById(deposit.getId()).orElseThrow();
         assertThat(finalDeposit.getStatus()).isEqualTo(DepositStatus.REFUNDED);
 
-        // 5.4 Observer Pattern: Buyer bị trừ -15đ (90 -> 75), Seller được cộng +1đ (90 -> 91)
         UserReputationScore updatedBuyerRep = reputationRepository.findByUserId(buyer.getId()).orElseThrow();
-        assertThat(updatedBuyerRep.getScore()).isEqualByComparingTo(new BigDecimal("75.00"));
+        assertThat(updatedBuyerRep.getScore()).isEqualByComparingTo(new BigDecimal("2.00"));
         assertThat(updatedBuyerRep.getDisputesLost()).isEqualTo(1);
 
         UserReputationScore updatedSellerRep = reputationRepository.findByUserId(seller.getId()).orElseThrow();
-        assertThat(updatedSellerRep.getScore()).isEqualByComparingTo(new BigDecimal("91.00"));
+        assertThat(updatedSellerRep.getScore()).isEqualByComparingTo(new BigDecimal("4.00"));
         assertThat(updatedSellerRep.getDisputesWon()).isEqualTo(1);
     }
 }

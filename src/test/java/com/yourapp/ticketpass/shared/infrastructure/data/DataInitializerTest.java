@@ -8,9 +8,28 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.yourapp.ticketpass.dispute.domain.Dispute;
+import com.yourapp.ticketpass.dispute.domain.DisputeEvidence;
+import com.yourapp.ticketpass.dispute.domain.DisputeEvidenceRepository;
+import com.yourapp.ticketpass.dispute.domain.DisputeRepository;
+import com.yourapp.ticketpass.payment.domain.Deposit;
+import com.yourapp.ticketpass.payment.domain.DepositRepository;
+import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
+import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
+import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
+import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
+import com.yourapp.ticketpass.ticket.domain.Ticket;
+import com.yourapp.ticketpass.ticket.domain.TicketRepository;
+import com.yourapp.ticketpass.ticket.domain.TicketStatus;
+import com.yourapp.ticketpass.ticket.domain.TicketType;
+import com.yourapp.ticketpass.user.domain.User;
+import com.yourapp.ticketpass.user.domain.UserRepository;
+import com.yourapp.ticketpass.user.domain.UserRole;
+import com.yourapp.ticketpass.user.domain.UserStatus;
+import com.yourapp.ticketpass.wallet.application.WalletService;
 import java.math.BigDecimal;
 import java.util.List;
-
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,31 +42,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
-import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
-import com.yourapp.ticketpass.ticket.domain.Ticket;
-import com.yourapp.ticketpass.ticket.domain.TicketRepository;
-import com.yourapp.ticketpass.ticket.domain.TicketStatus;
-import com.yourapp.ticketpass.ticket.domain.TicketType;
-import com.yourapp.ticketpass.user.domain.User;
-import com.yourapp.ticketpass.user.domain.UserRepository;
-import com.yourapp.ticketpass.user.domain.UserRole;
-import com.yourapp.ticketpass.user.domain.UserStatus;
-import com.yourapp.ticketpass.wallet.application.WalletService;
-
-/**
- * Bộ kiểm thử đơn vị cho {@link DataInitializer}.
- *
- * <p>Xác thực các quy tắc nghiệp vụ quan trọng:</p>
- * <ul>
- *   <li>Tính Idempotent: chỉ chạy khi dữ liệu chưa tồn tại; bỏ qua an toàn nếu đã có admin.</li>
- *   <li>Đầy đủ các tài khoản: Admin, Seller, Buyer, VIP Seller với quyền và trạng thái chuẩn.</li>
- *   <li>Mật khẩu luôn được băm qua {@link PasswordEncoder}.</li>
- *   <li>Tạo đủ 3 vé mẫu ở trạng thái {@link TicketStatus#LISTED} thuộc 3 loại CONCERT, MOVIE, BUS.</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("Kiểm thử thành phần DataInitializer")
+@DisplayName("Kiểm thử thành phần DataInitializer (Minimal Web Test Dataset)")
 class DataInitializerTest {
 
     @Mock
@@ -58,6 +54,18 @@ class DataInitializerTest {
 
     @Mock
     private TicketRepository ticketRepository;
+
+    @Mock
+    private EscrowTransactionRepository escrowTransactionRepository;
+
+    @Mock
+    private DepositRepository depositRepository;
+
+    @Mock
+    private DisputeRepository disputeRepository;
+
+    @Mock
+    private DisputeEvidenceRepository disputeEvidenceRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -84,13 +92,10 @@ class DataInitializerTest {
         @Test
         @DisplayName("Khi admin@test.com đã tồn tại trong CSDL -> Bỏ qua toàn bộ quá trình seed")
         void shouldSkipSeeding_whenAdminAlreadyExists() {
-            // Arrange
             when(userRepository.existsByEmail("admin@test.com")).thenReturn(true);
 
-            // Act
             dataInitializer.run();
 
-            // Assert
             verify(userRepository, never()).save(any(User.class));
             verify(reputationRepository, never()).save(any(UserReputationScore.class));
             verify(ticketRepository, never()).save(any(Ticket.class));
@@ -99,7 +104,7 @@ class DataInitializerTest {
     }
 
     @Nested
-    @DisplayName("Kiểm thử khởi tạo dữ liệu mẫu khi CSDL trống")
+    @DisplayName("Kiểm thử khởi tạo bộ dữ liệu tối thiểu (6 users + 6 tickets)")
     class InitialSeedingTests {
 
         @BeforeEach
@@ -107,143 +112,112 @@ class DataInitializerTest {
             when(userRepository.existsByEmail("admin@test.com")).thenReturn(false);
             when(passwordEncoder.encode(DataInitializer.DEFAULT_PASSWORD)).thenReturn("$2a$10$dummyHashBCryptForTesting");
 
-            // Mock trả về User có ID tự tăng tuần tự 1, 2, 3, 4, 5
-            when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-                User u = invocation.getArgument(0);
-                if ("admin@test.com".equals(u.getEmail())) u.setId(1L);
-                else if ("seller@test.com".equals(u.getEmail())) u.setId(2L);
-                else if ("buyer@test.com".equals(u.getEmail())) u.setId(3L);
-                else if ("vip_seller@test.com".equals(u.getEmail())) u.setId(4L);
-                else if ("broke_buyer@test.com".equals(u.getEmail())) u.setId(5L);
+            AtomicLong userSeq = new AtomicLong(1);
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+                User u = inv.getArgument(0);
+                if (u.getId() == null) u.setId(userSeq.getAndIncrement());
                 return u;
+            });
+
+            AtomicLong ticketSeq = new AtomicLong(1);
+            when(ticketRepository.save(any(Ticket.class))).thenAnswer(inv -> {
+                Ticket t = inv.getArgument(0);
+                if (t.getId() == null) t.setId(ticketSeq.getAndIncrement());
+                return t;
+            });
+
+            AtomicLong escrowSeq = new AtomicLong(1);
+            when(escrowTransactionRepository.save(any(EscrowTransaction.class))).thenAnswer(inv -> {
+                EscrowTransaction e = inv.getArgument(0);
+                if (e.getId() == null) e.setId(escrowSeq.getAndIncrement());
+                return e;
+            });
+
+            AtomicLong depositSeq = new AtomicLong(1);
+            when(depositRepository.save(any(Deposit.class))).thenAnswer(inv -> {
+                Deposit d = inv.getArgument(0);
+                if (d.getId() == null) d.setId(depositSeq.getAndIncrement());
+                return d;
+            });
+
+            AtomicLong disputeSeq = new AtomicLong(1);
+            when(disputeRepository.save(any(Dispute.class))).thenAnswer(inv -> {
+                Dispute d = inv.getArgument(0);
+                if (d.getId() == null) d.setId(disputeSeq.getAndIncrement());
+                return d;
             });
         }
 
         @Test
-        @DisplayName("Khởi tạo đúng và đủ 5 tài khoản người dùng với thông tin chuẩn")
-        void shouldCreateFourUsersWithCorrectAttributes() {
-            // Act
+        @DisplayName("Khởi tạo đúng 6 tài khoản (Admin, Seller, Buyer, VIP Seller, Broke Buyer, Risky User)")
+        void shouldCreateSixUsersWithCorrectAttributes() {
             dataInitializer.run();
 
-            // Assert
-            verify(userRepository, times(5)).save(userCaptor.capture());
+            verify(userRepository, times(6)).save(userCaptor.capture());
             List<User> savedUsers = userCaptor.getAllValues();
-            assertThat(savedUsers).hasSize(5);
+            assertThat(savedUsers).extracting(User::getEmail).containsExactly(
+                    "admin@test.com",
+                    "seller@test.com",
+                    "buyer@test.com",
+                    "vip_seller@test.com",
+                    "broke_buyer@test.com",
+                    "risky_user@test.com"
+            );
 
-            // 1. Kiểm tra Admin
-            User admin = savedUsers.stream()
-                    .filter(u -> "admin@test.com".equals(u.getEmail()))
-                    .findFirst().orElseThrow();
+            User admin = savedUsers.get(0);
             assertThat(admin.getRole()).isEqualTo(UserRole.ADMIN);
             assertThat(admin.getStatus()).isEqualTo(UserStatus.ACTIVE);
             assertThat(admin.getPasswordHash()).isEqualTo("$2a$10$dummyHashBCryptForTesting");
-            assertThat(admin.isEmailVerified()).isTrue();
-            assertThat(admin.isPhoneVerified()).isTrue();
-            assertThat(admin.isIdentityVerified()).isTrue();
 
-            // 2. Kiểm tra Seller
-            User seller = savedUsers.stream()
-                    .filter(u -> "seller@test.com".equals(u.getEmail()))
-                    .findFirst().orElseThrow();
-            assertThat(seller.getRole()).isEqualTo(UserRole.USER);
-            assertThat(seller.getStatus()).isEqualTo(UserStatus.ACTIVE);
-            assertThat(seller.getBankName()).isEqualTo("Vietcombank");
-            assertThat(seller.getBankAccountNumber()).isEqualTo("0071001234567");
-            assertThat(seller.getBankAccountHolder()).isEqualTo("NGUYEN VAN BAN");
-
-            // 3. Kiểm tra Buyer
-            User buyer = savedUsers.stream()
-                    .filter(u -> "buyer@test.com".equals(u.getEmail()))
-                    .findFirst().orElseThrow();
-            assertThat(buyer.getRole()).isEqualTo(UserRole.USER);
-            assertThat(buyer.getStatus()).isEqualTo(UserStatus.ACTIVE);
-            assertThat(buyer.getBankName()).isEqualTo("Techcombank");
-
-            // 4. Kiểm tra VIP Seller
-            User vipSeller = savedUsers.stream()
-                    .filter(u -> "vip_seller@test.com".equals(u.getEmail()))
-                    .findFirst().orElseThrow();
-            assertThat(vipSeller.getRole()).isEqualTo(UserRole.USER);
-            assertThat(vipSeller.getStatus()).isEqualTo(UserStatus.ACTIVE);
-            assertThat(vipSeller.getBankName()).isEqualTo("MBBank");
+            User riskyUser = savedUsers.get(5);
+            assertThat(riskyUser.getRole()).isEqualTo(UserRole.USER);
+            assertThat(riskyUser.getBankName()).isEqualTo("VPBank");
         }
 
         @Test
-        @DisplayName("Khởi tạo đúng 5 bản ghi điểm uy tín tương ứng cho từng người dùng")
-        void shouldCreateReputationScoresForUsers() {
-            // Act
+        @DisplayName("Khởi tạo đúng 6 bản ghi điểm uy tín trên thang 0-5 (5, 4, 3, 5, 3, 1)")
+        void shouldCreateSixReputationScoresOnScale0To5() {
             dataInitializer.run();
 
-            // Assert
-            verify(reputationRepository, times(5)).save(reputationCaptor.capture());
+            verify(reputationRepository, times(6)).save(reputationCaptor.capture());
             List<UserReputationScore> scores = reputationCaptor.getAllValues();
-            assertThat(scores).hasSize(5);
-
-            // VIP Seller phải có 25 giao dịch thành công và GMV 50.000.000
-            UserReputationScore vipScore = scores.stream()
-                    .filter(s -> Long.valueOf(4L).equals(s.getUserId()))
-                    .findFirst().orElseThrow();
-            assertThat(vipScore.getScore()).isEqualByComparingTo(new BigDecimal("100.00"));
-            assertThat(vipScore.getTotalTransactions()).isEqualTo(25);
-            assertThat(vipScore.getSuccessfulTransactions()).isEqualTo(25);
-            assertThat(vipScore.getTotalGmv()).isEqualByComparingTo(new BigDecimal("50000000.00"));
-            assertThat(vipScore.getLastTransactionAt()).isNotNull();
-
-            // Admin có 0 giao dịch
-            UserReputationScore adminScore = scores.stream()
-                    .filter(s -> Long.valueOf(1L).equals(s.getUserId()))
-                    .findFirst().orElseThrow();
-            assertThat(adminScore.getTotalTransactions()).isZero();
+            assertThat(scores).extracting(UserReputationScore::getScore)
+                    .usingElementComparator(BigDecimal::compareTo)
+                    .containsExactly(
+                            new BigDecimal("5.00"),
+                            new BigDecimal("4.00"),
+                            new BigDecimal("3.00"),
+                            new BigDecimal("5.00"),
+                            new BigDecimal("3.00"),
+                            new BigDecimal("1.00")
+                    );
         }
 
         @Test
-        @DisplayName("Khởi tạo 53 vé mẫu ở trạng thái LISTED (CONCERT, MOVIE, BUS) với giá bán hợp lệ")
-        void shouldCreateThreeListedTickets() {
-            // Act
+        @DisplayName("Khởi tạo đúng 6 vé tối thiểu phủ đủ các trạng thái kiểm thử web (không sinh 50 vé rác)")
+        void shouldCreateSixMinimalTicketsCoveringAllWebFlows() {
             dataInitializer.run();
 
-            // Assert
-            verify(ticketRepository, times(53)).save(ticketCaptor.capture());
-            List<Ticket> tickets = ticketCaptor.getAllValues();
-            assertThat(tickets).hasSize(53);
+            verify(ticketRepository, times(9)).save(ticketCaptor.capture());
+            List<Ticket> distinctTickets = ticketCaptor.getAllValues().stream()
+                    .collect(java.util.stream.Collectors.toMap(Ticket::getId, t -> t, (a, b) -> b))
+                    .values().stream().toList();
 
-            // Mọi vé đều phải ở trạng thái LISTED
-            assertThat(tickets).allMatch(t -> t.getStatus() == TicketStatus.LISTED);
+            assertThat(distinctTickets).hasSize(6);
+            assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.LISTED).count()).isEqualTo(3);
+            assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.DISPUTE_UNDER_REVIEW).count()).isEqualTo(1);
+            assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.TRANSFERRED).count()).isEqualTo(1);
+            assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.AUTO_COMPLETE).count()).isEqualTo(1);
 
-            // Đếm số lượng từng loại vé (3 vé cơ sở + 50 vé test phân trang: 24 phim, 14 concert, 12 xe khách)
-            long movieCount = tickets.stream().filter(t -> t.getTicketType() == TicketType.MOVIE).count();
-            long concertCount = tickets.stream().filter(t -> t.getTicketType() == TicketType.CONCERT).count();
-            long busCount = tickets.stream().filter(t -> t.getTicketType() == TicketType.BUS).count();
+            assertThat(distinctTickets.stream()
+                    .filter(t -> t.getStatus() == TicketStatus.LISTED)
+                    .map(Ticket::getTicketType))
+                    .containsExactlyInAnyOrder(TicketType.MOVIE, TicketType.CONCERT, TicketType.BUS);
 
-            assertThat(movieCount).isEqualTo(25); // 1 + 24
-            assertThat(concertCount).isEqualTo(15); // 1 + 14
-            assertThat(busCount).isEqualTo(13); // 1 + 12
-
-            // Vé Concert (2tr)
-            Ticket concert = tickets.stream()
-                    .filter(t -> t.getTicketType() == TicketType.CONCERT)
-                    .findFirst().orElseThrow();
-            assertThat(concert.getSellerId()).isEqualTo(2L); // seller@test.com
-            assertThat(concert.getSalePrice()).isEqualByComparingTo(new BigDecimal("2000000.00"));
-            assertThat(concert.getOriginalPrice()).isEqualByComparingTo(new BigDecimal("2500000.00"));
-            assertThat(concert.getVenue()).contains("Mỹ Đình");
-            assertThat(concert.getTransferInstruction()).isNotBlank();
-
-            // Vé Movie (200k)
-            Ticket movie = tickets.stream()
-                    .filter(t -> t.getTicketType() == TicketType.MOVIE)
-                    .findFirst().orElseThrow();
-            assertThat(movie.getSellerId()).isEqualTo(2L);
-            assertThat(movie.getSalePrice()).isEqualByComparingTo(new BigDecimal("200000.00"));
-            assertThat(movie.getVenue()).contains("Landmark 81");
-
-            // Vé Bus (300k) do VIP Seller bán
-            Ticket bus = tickets.stream()
-                    .filter(t -> t.getTicketType() == TicketType.BUS)
-                    .findFirst().orElseThrow();
-            assertThat(bus.getSellerId()).isEqualTo(4L); // vip_seller@test.com
-            assertThat(bus.getSalePrice()).isEqualByComparingTo(new BigDecimal("300000.00"));
-            assertThat(bus.getVenue()).contains("Miền Đông");
+            verify(escrowTransactionRepository, times(3)).save(any(EscrowTransaction.class));
+            verify(depositRepository, times(3)).save(any(Deposit.class));
+            verify(disputeRepository, times(1)).save(any(Dispute.class));
+            verify(disputeEvidenceRepository, times(1)).save(any(DisputeEvidence.class));
         }
     }
 }

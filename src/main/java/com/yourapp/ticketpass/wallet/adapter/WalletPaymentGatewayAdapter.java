@@ -18,15 +18,6 @@ import com.yourapp.ticketpass.wallet.domain.WalletTransactionType;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Adapter tích hợp Ví Điện Tử với cổng thanh toán {@link PaymentGateway}.
- *
- * <p><b>Áp dụng Adapter Pattern:</b> Lớp này kết nối module {@code wallet} vào luồng thanh toán
- * chuẩn của hệ thống mà không làm thay đổi hợp đồng giao tiếp giữa các module.</p>
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Slf4j
 @Component("walletPaymentGatewayAdapter")
 public class WalletPaymentGatewayAdapter implements PaymentGateway {
@@ -84,21 +75,42 @@ public class WalletPaymentGatewayAdapter implements PaymentGateway {
         log.info("[WalletGateway][REFUND] Hoàn tiền về ví: transId={}, amount={}, reason={}",
                 gatewayTransactionId, amount, reason);
 
-        // Tra cứu giao dịch escrow để tìm buyerId
         Long recipientUserId = null;
-        if (gatewayTransactionId != null) {
+        if (gatewayTransactionId != null && !gatewayTransactionId.isBlank()) {
             Optional<EscrowTransaction> escrowOpt = escrowTransactionRepository.findByGatewayTransactionId(gatewayTransactionId);
+            if (escrowOpt.isEmpty()) {
+                try {
+                    Long fallbackEscrowId = Long.parseLong(gatewayTransactionId.trim());
+                    escrowOpt = escrowTransactionRepository.findById(fallbackEscrowId);
+                } catch (NumberFormatException ignored) {
+                }
+            }
             if (escrowOpt.isPresent()) {
                 recipientUserId = escrowOpt.get().getBuyerId();
             }
         }
 
-        if (recipientUserId != null) {
-            walletService.credit(recipientUserId, amount, WalletTransactionType.ESCROW_REFUND,
-                    gatewayTransactionId, "Hoàn tiền ký quỹ: " + reason);
-        } else {
-            log.warn("[WalletGateway][REFUND] Không tìm thấy recipientUserId cho gatewayTransactionId={}, bỏ qua cộng ví trực tiếp.", gatewayTransactionId);
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            log.error("[WalletGateway][REFUND] Số tiền hoàn không hợp lệ (amount={}) cho transId={}.", amount, gatewayTransactionId);
+            PaymentResult fail = new PaymentResult();
+            fail.setSuccess(false);
+            fail.setGatewayStatus("REFUND_FAILED");
+            fail.setMessage("Số tiền hoàn về ví phải lớn hơn 0.");
+            return fail;
         }
+
+        if (recipientUserId == null) {
+            log.error("[WalletGateway][REFUND] Không xác định được người nhận cho gatewayTransactionId={} — từ chối xác nhận hoàn tiền rỗng.",
+                    gatewayTransactionId);
+            PaymentResult fail = new PaymentResult();
+            fail.setSuccess(false);
+            fail.setGatewayStatus("REFUND_FAILED");
+            fail.setMessage("Không tìm thấy giao dịch ký quỹ tương ứng để hoàn tiền vào ví.");
+            return fail;
+        }
+
+        walletService.credit(recipientUserId, amount, WalletTransactionType.ESCROW_REFUND,
+                gatewayTransactionId, "Hoàn tiền ký quỹ: " + reason);
 
         PaymentResult result = new PaymentResult();
         result.setSuccess(true);
@@ -116,10 +128,10 @@ public class WalletPaymentGatewayAdapter implements PaymentGateway {
         WalletTransactionType type = WalletTransactionType.PAYOUT_RECEIVE;
         String desc = "Nhận tiền giải ngân bán vé / hoàn cọc bảo đảm (" + reference + ")";
 
-        if (reference != null && reference.contains("REFUND_DEPOSIT")) {
+        if (reference != null && (reference.contains("REFUND_DEPOSIT") || reference.contains("REFUND-DEPOSIT"))) {
             type = WalletTransactionType.DEPOSIT_REFUND;
             desc = "Hoàn cọc bảo đảm 50% (" + reference + ")";
-        } else if (reference != null && reference.contains("BUYER_COMPENSATION")) {
+        } else if (reference != null && (reference.contains("BUYER_COMPENSATION") || reference.contains("FORFEIT-COMPENSATION"))) {
             type = WalletTransactionType.COMPENSATION_RECEIVE;
             desc = "Nhận tiền bồi thường khiếu nại (" + reference + ")";
         }

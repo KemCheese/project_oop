@@ -9,7 +9,7 @@
     <div th:replace="~{layout/base :: layout('TicketPass - Sàn Giao Dịch Vé An Toàn', ~{::content})}">
         <content>
             <style>
-                /* Home Page Container */
+
                 .home-wrapper {
                     min-height: 90vh;
                     display: flex;
@@ -22,7 +22,6 @@
                     position: relative;
                 }
 
-                /* Subtle Ambient Brand Glow */
                 .home-glow {
                     position: absolute;
                     top: 10%;
@@ -36,7 +35,6 @@
                     filter: blur(40px);
                 }
 
-                /* Hero Core */
                 .home-hero {
                     position: relative;
                     z-index: 1;
@@ -64,7 +62,6 @@
                     letter-spacing: 0.3px;
                 }
 
-                /* Enlarged, Eye-Catching Brand Logo */
                 .home-brand-title {
                     display: inline-flex;
                     align-items: center;
@@ -90,7 +87,6 @@
                     transform: rotate(45deg) scale(1.1);
                 }
 
-                /* Slogan */
                 .home-slogan {
                     font-size: clamp(22px, 3vw, 32px);
                     font-weight: 700;
@@ -108,7 +104,6 @@
                     margin: 0 auto 36px auto;
                 }
 
-                /* The Single Action Button */
                 .home-cta-wrapper {
                     display: flex;
                     justify-content: center;
@@ -151,7 +146,6 @@
                     transform: translateY(0) scale(0.98);
                 }
 
-                /* 3 Value Pillars Grid */
                 .pillars-grid {
                     position: relative;
                     z-index: 1;
@@ -192,7 +186,6 @@
                     border-color: #cbd5e1;
                 }
 
-                /* Card Variants */
                 .pillar-card-1:hover::before {
                     background: linear-gradient(90deg, #e71a0f, #f43f5e);
                 }
@@ -246,7 +239,6 @@
                     margin: 0;
                 }
 
-                /* Responsive */
                 @media (max-width: 960px) {
                     .pillars-grid {
                         grid-template-columns: 1fr;
@@ -262,20 +254,17 @@
             <div class="home-wrapper">
                 <div class="home-glow"></div>
 
-                <!-- Hero Section -->
                 <section class="home-hero">
                     <div class="home-badge">
                         <i class="fa-solid fa-shield-halved"></i>
                         <span>Sàn Giao Dịch Vé Điện Tử An Toàn</span>
                     </div>
 
-                    <!-- Enlarged Brand Logo -->
                     <div class="home-brand-title">
                         <span>TicketPass</span>
                         <i class="fa-solid fa-asterisk home-brand-icon"></i>
                     </div>
 
-                    <!-- Slogan -->
                     <h1 class="home-slogan">
                         Sàn Giao Dịch Vé – Mua bán thảnh thơi, trăm nơi đổ về.
                     </h1>
@@ -285,7 +274,6 @@
                         cơ chế giữ tiền trung gian và bảo đảm tiền cọc.
                     </p>
 
-                    <!-- The Single Button (Duy nhất 1 nút trên toàn trang) -->
                     <div class="home-cta-wrapper">
                         <a th:href="@{/tickets}" class="btn-explore-ticket" data-transition="true">
                             <span>Khám phá vé ngay</span>
@@ -294,9 +282,8 @@
                     </div>
                 </section>
 
-                <!-- 3 Trụ Cột Thông Tin Chính (Ngôn ngữ phổ thông, không mở ngoặc giải thích) -->
                 <section class="pillars-grid">
-                    <!-- Trụ cột 1 -->
+
                     <div class="pillar-card pillar-card-1">
                         <div class="pillar-icon-box pillar-icon-1">
                             <i class="fa-solid fa-ticket-simple"></i>
@@ -308,7 +295,6 @@
                         </p>
                     </div>
 
-                    <!-- Trụ cột 2 -->
                     <div class="pillar-card pillar-card-2">
                         <div class="pillar-icon-box pillar-icon-2">
                             <i class="fa-solid fa-vault"></i>
@@ -321,7 +307,6 @@
                         </p>
                     </div>
 
-                    <!-- Trụ cột 3 -->
                     <div class="pillar-card pillar-card-3">
                         <div class="pillar-icon-box pillar-icon-3">
                             <i class="fa-solid fa-scale-balanced"></i>
@@ -335,7 +320,6 @@
                 </section>
             </div>
 
-            <!-- Kích hoạt class nhận diện home-page để ẩn header/footer thừa -->
             <script>
                 document.body.classList.add('home-page');
             </script>

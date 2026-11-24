@@ -19,23 +19,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Thực thể Ví Điện Tử (E-Wallet) đại diện cho tài khoản số dư của người dùng trên sàn TicketPass.
- *
- * <p><b>Nguyên tắc thiết kế OOP & Bảo mật:</b></p>
- * <ul>
- *   <li><b>Đóng gói dữ liệu (Encapsulation):</b> Thuộc tính {@code balance} không có public setter tự do.
- *       Mọi biến động số dư chỉ được thực hiện qua các phương thức nghiệp vụ tường minh
- *       {@link #credit(BigDecimal)} và {@link #debit(BigDecimal)}.</li>
- *   <li><b>Bảo vệ tương tranh (Concurrency Control):</b> Trường {@code version} phục vụ khóa lạc quan (Optimistic Lock).
- *       Khi kết hợp với Khóa bi quan ở tầng Repository ({@code PESSIMISTIC_WRITE}), đảm bảo số dư không bao giờ
- *       bị âm hoặc chi tiêu trùng lặp (Double-spending).</li>
- *   <li><b>Nguyên tắc Scalability 1:</b> Chỉ lưu {@code Long userId}, không dùng JPA relation sang {@code User}.</li>
- * </ul>
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Entity
 @Table(name = "wallets")
 @Getter
@@ -86,11 +69,6 @@ public class Wallet {
         }
     }
 
-    /**
-     * Nạp/Cộng tiền vào ví (Credit).
-     *
-     * @param amount số tiền cần cộng (phải lớn hơn 0)
-     */
     public void credit(BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessRuleViolationException("Số tiền cộng vào ví phải lớn hơn 0, nhận được: " + amount);
@@ -99,13 +77,6 @@ public class Wallet {
         this.updatedAt = Instant.now();
     }
 
-    /**
-     * Rút/Trừ tiền khỏi ví (Debit).
-     *
-     * @param amount số tiền cần trừ (phải lớn hơn 0)
-     * @throws InsufficientBalanceException nếu số dư hiện tại nhỏ hơn số tiền cần trừ
-     * @throws BusinessRuleViolationException nếu ví đang ở trạng thái không hoạt động
-     */
     public void debit(BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessRuleViolationException("Số tiền trừ khỏi ví phải lớn hơn 0, nhận được: " + amount);
@@ -120,12 +91,14 @@ public class Wallet {
         this.updatedAt = Instant.now();
     }
 
-    /**
-     * Kiểm tra nhanh xem ví có đủ số dư cho một khoản tiền nhất định hay không.
-     *
-     * @param amount số tiền cần kiểm tra
-     * @return true nếu số dư lớn hơn hoặc bằng {@code amount} và ví đang ACTIVE
-     */
+    public BigDecimal liquidateAndFreeze() {
+        BigDecimal previous = this.balance != null ? this.balance : BigDecimal.ZERO;
+        this.balance = BigDecimal.ZERO;
+        this.status = WalletStatus.FROZEN;
+        this.updatedAt = Instant.now();
+        return previous;
+    }
+
     public boolean hasSufficientBalance(BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             return false;

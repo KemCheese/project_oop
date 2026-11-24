@@ -118,26 +118,21 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
         walletService.topUp(buyer.getId(), new BigDecimal("2000000.00"), "Nạp test trùng giờ");
 
         Instant baseStart = Instant.now().plus(Duration.ofDays(3));
-        Instant baseEnd = baseStart.plus(Duration.ofHours(2)); // [13:00, 15:00)
+        Instant baseEnd = baseStart.plus(Duration.ofHours(2));
 
-        // Vé đã mua hợp lệ của buyer
         createTimedTicket(seller.getId(), buyer.getId(), "Vé Phim Đã Mua 13h-15h",
                 TicketType.MOVIE, TicketStatus.AWAITING_USE, baseStart, baseEnd);
 
-        // Vé CANCELLED trùng giờ -> PHẢI bị bỏ qua
         createTimedTicket(seller.getId(), buyer.getId(), "Vé Đã Hủy 13h-15h",
                 TicketType.MOVIE, TicketStatus.CANCELLED, baseStart, baseEnd);
 
-        // Vé LISTED trùng giờ (14:00 - 16:00)
         Ticket overlapping = createTimedTicket(seller.getId(), null, "Concert Trùng Giờ 14h-16h",
                 TicketType.CONCERT, TicketStatus.LISTED,
                 baseStart.plus(Duration.ofHours(1)), baseStart.plus(Duration.ofHours(3)));
 
-        // Vé LISTED tiếp xúc biên đúng (15:00 - 19:00) -> KHÔNG trùng
         Ticket adjacent = createTimedTicket(seller.getId(), null, "Xe Khách Kế Tiếp 15h-19h",
                 TicketType.BUS, TicketStatus.LISTED, baseEnd, baseEnd.plus(Duration.ofHours(4)));
 
-        // 1. Buyer xem vé trùng giờ -> bỏ banner tĩnh trên card, bật Pop-up Modal tự động
         mockMvc.perform(get("/tickets/" + overlapping.getId()).with(user(buyer.getEmail()).roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("hasScheduleConflict", true))
@@ -146,19 +141,16 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
                 .andExpect(content().string(containsString("data-has-conflict=\"true\"")))
                 .andExpect(content().string(containsString("Vé Phim Đã Mua 13h-15h")));
 
-        // 2. Seller xem chính vé của mình -> KHÔNG hiện cảnh báo trùng
         mockMvc.perform(get("/tickets/" + overlapping.getId()).with(user(seller.getEmail()).roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("hasScheduleConflict", false))
                 .andExpect(content().string(not(containsString("data-has-conflict=\"true\""))));
 
-        // 3. Buyer xem vé tiếp xúc biên (15:00 - 19:00) -> KHÔNG trùng
         mockMvc.perform(get("/tickets/" + adjacent.getId()).with(user(buyer.getEmail()).roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("hasScheduleConflict", false))
                 .andExpect(content().string(not(containsString("data-has-conflict=\"true\""))));
 
-        // 4. Guard Backend Ví: gọi POST /payment/wallet/pay-escrow chưa confirmOverlap -> chặn & không trừ tiền ví
         mockMvc.perform(post("/payment/wallet/pay-escrow")
                         .with(user(buyer.getEmail()).roles("USER"))
                         .with(csrf())
@@ -170,7 +162,6 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
         assertThat(walletService.getOrCreateWallet(buyer.getId()).getBalance())
                 .isEqualByComparingTo("2000000.00");
 
-        // 5. Guard Backend VietQR HTML: POST /payment/escrow/buy chưa confirmOverlap -> redirect warning
         mockMvc.perform(post("/payment/escrow/buy")
                         .with(user(buyer.getEmail()).roles("USER"))
                         .with(csrf())
@@ -178,7 +169,6 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/tickets/" + overlapping.getId() + "?overlapWarning=true&method=vietqr"));
 
-        // 6. Guard API JSON: POST /payment/escrow/init với confirmOverlap=false -> HTTP 400
         String jsonBody = String.format("{\"ticketId\":%d,\"paymentMethod\":\"MANUAL_TRANSFER\",\"confirmOverlap\":false}",
                 overlapping.getId());
         mockMvc.perform(post("/payment/escrow/init")
@@ -190,7 +180,6 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(containsString("trùng khung giờ")));
 
-        // 7. Khi confirmOverlap=true qua Ví -> thanh toán thành công & trừ tiền ví đúng
         mockMvc.perform(post("/payment/wallet/pay-escrow")
                         .with(user(buyer.getEmail()).roles("USER"))
                         .with(csrf())
@@ -212,7 +201,6 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
         User buyer = newBuyer("legacy-buyer");
 
         Instant start = Instant.now().plus(Duration.ofDays(5));
-        // Vé cũ không có eventEndAt (null) -> Movie mặc định 120 phút
         createTimedTicket(seller.getId(), buyer.getId(), "Vé Phim Cũ (No EndAt)",
                 TicketType.MOVIE, TicketStatus.DEPOSIT_LOCKED, start, null);
 
@@ -224,7 +212,6 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
         assertThat(conflicts).hasSize(1);
         assertThat(conflicts.get(0).isEstimatedEndTime()).isTrue();
 
-        // Validate form đăng vé có eventEndAt <= eventStartAt -> trả inline lỗi, không lưu DB
         long ticketCountBefore = ticketRepository.findBySellerId(seller.getId()).size();
         LocalDateTime startLdt = LocalDateTime.now().plusDays(6).withSecond(0).withNano(0);
         LocalDateTime endLdt = startLdt.minusHours(1);
@@ -260,23 +247,19 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
         User buyer = newBuyer("rem-buyer");
         Instant now = Instant.now();
 
-        // 1. Vé trong cửa sổ 24h (now + 23h) -> PHẢI nhắc 1 lần
         Ticket dueTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Nhắc 24h",
                 TicketType.CONCERT, TicketStatus.TRANSFERRED,
                 now.plus(Duration.ofHours(23)), now.plus(Duration.ofHours(26)));
 
-        // 2. Vé ngoài cửa sổ 24h (now + 26h) -> CHƯA nhắc
         Ticket farTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Còn Xa",
                 TicketType.CONCERT, TicketStatus.DEPOSIT_LOCKED,
                 now.plus(Duration.ofHours(26)), now.plus(Duration.ofHours(29)));
 
-        // 3. Vé quá khứ (now - 2h) -> BỎ QUA
         Ticket pastTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Quá Khứ",
                 TicketType.MOVIE, TicketStatus.AWAITING_USE,
                 now.minus(Duration.ofHours(2)), now);
 
         ticketReminderScheduler.scanAndSendUpcomingReminders();
-        // Gọi lần 2 liên tiếp để chứng minh idempotency
         ticketReminderScheduler.scanAndSendUpcomingReminders();
 
         assertThat(ticketRepository.findById(dueTicket.getId()).orElseThrow().getReminded24hAt()).isNotNull();
@@ -289,7 +272,6 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
                 .count();
         assertThat(reminderCount1).isEqualTo(1);
 
-        // 4. Vé mua sát giờ (now + 10h, đang ở PAYMENT_ESCROWED) -> Seller khóa cọc -> Nhắc sớm đúng 1 lần
         Ticket urgentTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Mua Sát Giờ 10h",
                 TicketType.MOVIE, TicketStatus.PAYMENT_ESCROWED,
                 now.plus(Duration.ofHours(10)), now.plus(Duration.ofHours(12)));
@@ -300,7 +282,6 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
         assertThat(lockedUrgent.getStatus()).isEqualTo(TicketStatus.TRANSFERRED);
         assertThat(lockedUrgent.getReminded24hAt()).isNotNull();
 
-        // Scheduler quét lại lần 3 -> KHÔNG gửi trùng cho vé sát giờ
         ticketReminderScheduler.scanAndSendUpcomingReminders();
 
         List<Notification> finalNotifs = notificationRepository.findRecentByUserId(buyer.getId(), 50);
@@ -320,7 +301,6 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
         User buyer = newBuyer("qr-buyer");
         Instant now = Instant.now();
 
-        // 1. Vé AUTO_COMPLETE hết hạn sự kiện & QR quá 30 phút (giống trường hợp thực tế)
         Ticket expiredAutoComplete = createTimedTicket(seller.getId(), buyer.getId(), "Vé Xe Hết Hạn",
                 TicketType.BUS, TicketStatus.AUTO_COMPLETE,
                 now.minus(Duration.ofDays(10)), now.minus(Duration.ofDays(10)).plus(Duration.ofHours(4)));
@@ -334,7 +314,6 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
                 .andExpect(content().string(not(containsString("Mã QR Đã Bị Ẩn Bảo Mật"))))
                 .andExpect(content().string(not(containsString("Mã QR Check-in Đang Được Khóa Bảo Mật"))));
 
-        // 2. Vé AWAITING_USE còn hạn sự kiện + mới mở QR 5 phút -> VẪN hiện khung xanh mở khóa QR bình thường
         Ticket activeTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Đang Mở QR",
                 TicketType.BUS, TicketStatus.AWAITING_USE,
                 now.plus(Duration.ofHours(4)), now.plus(Duration.ofHours(8)));
@@ -348,7 +327,6 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
                 .andExpect(content().string(containsString("Mã Check-in QR Đã Mở Khóa")))
                 .andExpect(content().string(containsString("Vé có vấn đề? Mở khiếu nại ngay")));
 
-        // 3. Vé AWAITING_USE còn hạn sự kiện nhưng đã quá 30 phút mở QR -> ẩn khung xanh, giữ nút khiếu nại ở sidebar
         Ticket qrExpiredTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Quá 30p Mở QR",
                 TicketType.BUS, TicketStatus.AWAITING_USE,
                 now.plus(Duration.ofHours(4)), now.plus(Duration.ofHours(8)));

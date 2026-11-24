@@ -23,57 +23,58 @@ import org.springframework.security.core.userdetails.UserDetails;
 @DisplayName("Unit Test - SessionRevocationListener (Thu hồi session AFTER_COMMIT)")
 class SessionRevocationListenerTest {
 
-    @Mock
-    private SessionRegistry sessionRegistry;
+        @Mock
+        private SessionRegistry sessionRegistry;
 
-    private SessionRevocationListener listener;
+        private SessionRevocationListener listener;
 
-    @BeforeEach
-    void setUp() {
-        listener = new SessionRevocationListener(sessionRegistry);
-    }
+        @BeforeEach
+        void setUp() {
+                listener = new SessionRevocationListener(sessionRegistry);
+        }
 
-    @Test
-    @DisplayName("onPasswordChanged: giữ nguyên keepSessionId và expireNow các phiên khác khớp UserDetails")
-    void onPasswordChanged_ShouldKeepCurrentSessionAndExpireOthers() {
-        UserDetails alicePrincipal = org.springframework.security.core.userdetails.User
-                .withUsername("ALICE@ticketpass.vn").password("x").roles("USER").build();
-        UserDetails bobPrincipal = org.springframework.security.core.userdetails.User
-                .withUsername("bob@ticketpass.vn").password("x").roles("USER").build();
+        @Test
+        @DisplayName("onPasswordChanged: giữ nguyên keepSessionId và expireNow các phiên khác khớp UserDetails")
+        void onPasswordChanged_ShouldKeepCurrentSessionAndExpireOthers() {
+                UserDetails alicePrincipal = org.springframework.security.core.userdetails.User
+                                .withUsername("ALICE@ticketpass.vn").password("x").roles("USER").build();
+                UserDetails bobPrincipal = org.springframework.security.core.userdetails.User
+                                .withUsername("bob@ticketpass.vn").password("x").roles("USER").build();
 
-        SessionInformation current = mock(SessionInformation.class);
-        when(current.getSessionId()).thenReturn("sess-1");
-        SessionInformation other = mock(SessionInformation.class);
-        when(other.getSessionId()).thenReturn("sess-2");
+                SessionInformation current = mock(SessionInformation.class);
+                when(current.getSessionId()).thenReturn("sess-1");
+                SessionInformation other = mock(SessionInformation.class);
+                when(other.getSessionId()).thenReturn("sess-2");
 
-        when(sessionRegistry.getAllPrincipals()).thenReturn(List.of(alicePrincipal, bobPrincipal));
-        when(sessionRegistry.getAllSessions(alicePrincipal, false)).thenReturn(List.of(current, other));
+                when(sessionRegistry.getAllPrincipals()).thenReturn(List.of(alicePrincipal, bobPrincipal));
+                when(sessionRegistry.getAllSessions(alicePrincipal, false)).thenReturn(List.of(current, other));
 
-        listener.onPasswordChanged(new UserPasswordChangedEvent(10L, "alice@ticketpass.vn", "sess-1", Instant.now()));
+                listener.onPasswordChanged(
+                                new UserPasswordChangedEvent(10L, "alice@ticketpass.vn", "sess-1", Instant.now()));
 
-        verify(current, never()).expireNow();
-        verify(other).expireNow();
-        verify(sessionRegistry, never()).getAllSessions(bobPrincipal, false);
-    }
+                verify(current, never()).expireNow();
+                verify(other).expireNow();
+                verify(sessionRegistry, never()).getAllSessions(bobPrincipal, false);
+        }
 
-    @Test
-    @DisplayName("onAccountModerated: SUSPENDED/BANNED hủy toàn bộ session; ACTIVE không hủy")
-    void onAccountModerated_ShouldExpireAllSessionsOnSuspendOrBanOnly() {
-        UserDetails fraudPrincipal = org.springframework.security.core.userdetails.User
-                .withUsername("fraud@ticketpass.vn").password("x").roles("USER").build();
-        SessionInformation s1 = mock(SessionInformation.class);
+        @Test
+        @DisplayName("onAccountModerated: chỉ BANNED hủy toàn bộ session; ACTIVE không hủy")
+        void onAccountModerated_ShouldExpireAllSessionsOnBanOnly() {
+                UserDetails fraudPrincipal = org.springframework.security.core.userdetails.User
+                                .withUsername("fraud@ticketpass.vn").password("x").roles("USER").build();
+                SessionInformation s1 = mock(SessionInformation.class);
 
-        when(sessionRegistry.getAllPrincipals()).thenReturn(List.of(fraudPrincipal));
-        when(sessionRegistry.getAllSessions(fraudPrincipal, false)).thenReturn(List.of(s1));
+                when(sessionRegistry.getAllPrincipals()).thenReturn(List.of(fraudPrincipal));
+                when(sessionRegistry.getAllSessions(fraudPrincipal, false)).thenReturn(List.of(s1));
 
-        listener.onAccountModerated(new UserAccountModeratedEvent(
-                10L, "fraud@ticketpass.vn", 1L, "SUSPENDED", "Gian lận", Instant.now()));
-        verify(s1).expireNow();
+                listener.onAccountModerated(new UserAccountModeratedEvent(
+                                10L, "fraud@ticketpass.vn", 1L, "BANNED", "Gian lận", Instant.now()));
+                verify(s1).expireNow();
 
-        SessionRegistry untouched = mock(SessionRegistry.class);
-        SessionRevocationListener activeListener = new SessionRevocationListener(untouched);
-        activeListener.onAccountModerated(new UserAccountModeratedEvent(
-                10L, "fraud@ticketpass.vn", 1L, "ACTIVE", "Mở khóa", Instant.now()));
-        verify(untouched, never()).getAllPrincipals();
-    }
+                SessionRegistry untouched = mock(SessionRegistry.class);
+                SessionRevocationListener activeListener = new SessionRevocationListener(untouched);
+                activeListener.onAccountModerated(new UserAccountModeratedEvent(
+                                10L, "fraud@ticketpass.vn", 1L, "ACTIVE", "Mở khóa", Instant.now()));
+                verify(untouched, never()).getAllPrincipals();
+        }
 }

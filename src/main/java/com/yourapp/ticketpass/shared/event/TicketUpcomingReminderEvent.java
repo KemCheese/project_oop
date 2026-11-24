@@ -4,13 +4,6 @@ import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/**
- * Sự kiện domain: Đến hạn nhắc người mua sử dụng vé trước giờ sự kiện bắt đầu
- * (mặc định 24 giờ, hoặc nhắc sớm ngay khi Seller khóa cọc nếu vé được mua sát giờ &lt;= 24h).
- *
- * <p>Module: shared</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @AllArgsConstructor
 public class TicketUpcomingReminderEvent {

@@ -29,12 +29,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Controller phục vụ trang giao diện Ví điện tử cá nhân và nạp tiền nhanh.
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Slf4j
 @Controller
 @RequestMapping("/wallet")
@@ -54,9 +48,6 @@ public class WalletController {
         return user.getId();
     }
 
-    /**
-     * Hiển thị bảng điều khiển ví điện tử cá nhân.
-     */
     @GetMapping
     public String showWallet(Principal principal, Model model) {
         Long userId = resolveUserId(principal);
@@ -68,7 +59,6 @@ public class WalletController {
                 .map(WalletTransactionResponse::fromDomain)
                 .collect(Collectors.toList());
 
-        // Tính toán các chỉ số thống kê tổng quan
         BigDecimal totalIncome = rawTransactions.stream()
                 .filter(tx -> tx.getType() != null && tx.getType().isCredit() && tx.getType() != WalletTransactionType.TOP_UP)
                 .map(WalletTransaction::getAmount)
@@ -96,9 +86,6 @@ public class WalletController {
         return "wallet/index";
     }
 
-    /**
-     * Xử lý nạp tiền nhanh vào ví (Sandbox Quick Top-up).
-     */
     @PostMapping("/topup")
     public String handleTopUp(@Valid @ModelAttribute("topUpRequest") TopUpRequest request,
                               BindingResult bindingResult,

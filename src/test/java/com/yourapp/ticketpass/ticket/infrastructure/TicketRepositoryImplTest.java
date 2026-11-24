@@ -15,9 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * Unit test cho {@link TicketRepositoryImpl} - Phương thức searchListed.
- */
 @ExtendWith(MockitoExtension.class)
 class TicketRepositoryImplTest {
 

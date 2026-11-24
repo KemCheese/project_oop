@@ -39,15 +39,6 @@ import com.yourapp.ticketpass.wallet.domain.WalletTransactionType;
 import com.yourapp.ticketpass.wallet.web.dto.TopUpRequest;
 import com.yourapp.ticketpass.wallet.web.dto.WalletResponse;
 
-/**
- * Unit Test cho {@link WalletController} — Task C14.
- *
- * <p>Kiểm thử trang giao diện Ví cá nhân (/wallet) và tính năng nạp tiền nhanh (/wallet/topup),
- * bao gồm các nhánh thành công, lỗi validation, không xác thực hoặc lỗi hệ thống.</p>
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("WalletController Test - Điều khiển hiển thị và nạp tiền Ví")
 class WalletControllerTest {
@@ -188,7 +179,7 @@ class WalletControllerTest {
         @DisplayName("handleTopUp redirect với errorMessage khi request vi phạm validation")
         void testHandleTopUpValidationError() {
             TopUpRequest request = new TopUpRequest();
-            request.setAmount(new BigDecimal("-50000")); // Số tiền âm vi phạm validation
+            request.setAmount(new BigDecimal("-50000"));
 
             BindingResult bindingResult = new BeanPropertyBindingResult(request, "topUpRequest");
             bindingResult.rejectValue("amount", "min", "Số tiền nạp tối thiểu là 10.000 VNĐ.");

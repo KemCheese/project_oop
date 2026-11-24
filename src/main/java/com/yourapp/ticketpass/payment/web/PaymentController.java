@@ -30,6 +30,7 @@ import com.yourapp.ticketpass.payment.domain.PaymentResult;
 import com.yourapp.ticketpass.payment.web.dto.InitDepositRequest;
 import com.yourapp.ticketpass.payment.web.dto.InitEscrowRequest;
 import com.yourapp.ticketpass.payment.web.dto.PaymentInitResponse;
+import com.yourapp.ticketpass.reputation.application.ReputationPolicyService;
 import com.yourapp.ticketpass.shared.config.PaymentGatewayConfig;
 import com.yourapp.ticketpass.shared.dto.ConflictingTicketInfo;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
@@ -43,17 +44,6 @@ import com.yourapp.ticketpass.user.domain.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-/**
- * Điểm vào HTTP cho luồng thanh toán: người mua nộp tiền vào ký quỹ, người bán khoá cọc,
- * và xử lý xác nhận chuyển khoản thủ công qua QR trung gian.
- *
- * <p><b>Cơ chế thanh toán:</b> hệ thống hiển thị mã QR tài khoản trung gian (sàn) cho
- * người dùng. Người dùng chuyển khoản qua app ngân hàng, sau đó nhấn nút xác nhận trên
- * giao diện. Admin sẽ kiểm tra thủ công khoản chuyển khoản đã vào tài khoản hay chưa.</p>
- *
- * <p>Module: payment</p>
- * <p>Chủ sở hữu: Người B</p>
- */
 @Controller
 @RequestMapping("/payment")
 @RequiredArgsConstructor
@@ -69,12 +59,9 @@ public class PaymentController {
     private final PaymentGatewayConfig paymentGatewayConfig;
     private final TicketScheduleService ticketScheduleService;
 
-    /**
-     * Tra cứu userId từ phiên đăng nhập hiện tại.
-     *
-     * @param principal phiên đăng nhập
-     * @return ID người dùng
-     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ReputationPolicyService reputationPolicyService;
+
     private Long resolveUserId(Principal principal) {
         String email = principal.getName();
         User user = userRepository.findByEmail(email)
@@ -82,20 +69,6 @@ public class PaymentController {
         return user.getId();
     }
 
-    // ========================= Khởi tạo thanh toán =========================
-
-    /**
-     * Người mua bắt đầu thanh toán vào ký quỹ cho một vé.
-     *
-     * <p>Lấy buyerId từ phiên đăng nhập (KHÔNG nhận từ request body để tránh lỗ hổng bảo mật),
-     * tra vé theo ticketId để lấy sellerId và giá bán, gọi
-     * {@code holdFundsUseCase.initEscrowPayment()} rồi trả về payUrl trỏ tới trang QR
-     * chuyển khoản.</p>
-     *
-     * @param request   dữ liệu yêu cầu, gồm ID vé
-     * @param principal người dùng đang đăng nhập, dùng để suy ra ID người mua
-     * @return phản hồi có {@code payUrl} để giao diện chuyển hướng người mua tới trang QR
-     */
     @PostMapping("/escrow/init")
     @ResponseBody
     public PaymentInitResponse initEscrow(@Valid @RequestBody InitEscrowRequest request, Principal principal) {
@@ -124,17 +97,6 @@ public class PaymentController {
         return response;
     }
 
-    /**
-     * Người bán bắt đầu khoá cọc 50% giá bán cho vé của mình.
-     *
-     * <p>Lấy sellerId từ phiên đăng nhập, kiểm tra đúng chủ vé, gọi
-     * {@code lockDepositUseCase.initDepositPayment()} rồi trả về payUrl trỏ tới trang QR
-     * chuyển khoản.</p>
-     *
-     * @param request   dữ liệu yêu cầu, gồm ID vé
-     * @param principal người dùng đang đăng nhập, dùng để suy ra ID người bán
-     * @return phản hồi có {@code payUrl} để giao diện chuyển hướng người bán tới trang QR
-     */
     @PostMapping("/deposit/init")
     @ResponseBody
     public PaymentInitResponse initDeposit(@Valid @RequestBody InitDepositRequest request, Principal principal) {
@@ -156,13 +118,6 @@ public class PaymentController {
         return response;
     }
 
-    /**
-     * Người mua bắt đầu thanh toán ký quỹ qua form HTML trên web (chuyển hướng trực tiếp sang trang QR).
-     *
-     * @param ticketId  ID vé
-     * @param principal người dùng đăng nhập (buyer)
-     * @return chuyển hướng sang trang QR chuyển khoản (/payment/transfer?ref=...&type=escrow)
-     */
     @PostMapping("/escrow/buy")
     public String buyTicket(@RequestParam Long ticketId,
                             @RequestParam(defaultValue = "false") boolean confirmOverlap,
@@ -184,25 +139,43 @@ public class PaymentController {
             }
         }
 
-        // Nếu đã có escrow PENDING của chính buyer này, chuyển hướng luôn sang trang QR
+        if (reputationPolicyService != null) {
+            try {
+                reputationPolicyService.assertCanTransact(buyerId, ticket.getSalePrice(), "mua vé");
+            } catch (BusinessRuleViolationException ex) {
+                if (redirectAttributes != null) {
+                    redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                    return "redirect:/tickets/" + ticketId;
+                }
+                throw ex;
+            }
+        }
+
         Optional<EscrowTransaction> existingOpt = escrowTransactionRepository.findByTicketId(ticket.getId());
         if (existingOpt.isPresent() && existingOpt.get().getStatus() == EscrowStatus.PENDING
                 && buyerId.equals(existingOpt.get().getBuyerId())) {
             return "redirect:/payment/transfer?ref=" + existingOpt.get().getId() + "&type=escrow";
         }
 
-        PaymentResult result = holdFundsUseCase.initEscrowPayment(
-                ticket.getId(), buyerId, ticket.getSellerId(), ticket.getSalePrice());
+        try {
+            PaymentResult result = holdFundsUseCase.initEscrowPayment(
+                    ticket.getId(), buyerId, ticket.getSellerId(), ticket.getSalePrice());
 
-        if (result.isSuccess() && result.getPayUrl() != null) {
-            return "redirect:" + result.getPayUrl();
-        } else {
-            throw new BusinessRuleViolationException(
-                    result.getMessage() != null ? result.getMessage() : "Không thể khởi tạo thanh toán.");
+            if (result.isSuccess() && result.getPayUrl() != null) {
+                return "redirect:" + result.getPayUrl();
+            } else {
+                throw new BusinessRuleViolationException(
+                        result.getMessage() != null ? result.getMessage() : "Không thể khởi tạo thanh toán.");
+            }
+        } catch (BusinessRuleViolationException ex) {
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+                return "redirect:/tickets/" + ticketId;
+            }
+            throw ex;
         }
     }
 
-    /** Overload giữ tương thích GET fallback và unit test cũ. */
     public String buyTicket(Long ticketId, Principal principal) {
         return buyTicket(ticketId, false, principal, null);
     }
@@ -212,13 +185,6 @@ public class PaymentController {
         return buyTicket(ticketId, principal);
     }
 
-    /**
-     * Người bán bắt đầu nộp tiền bảo lãnh cọc qua form HTML trên web (chuyển hướng sang trang QR).
-     *
-     * @param ticketId  ID vé
-     * @param principal người dùng đăng nhập (seller)
-     * @return chuyển hướng sang trang QR chuyển khoản (/payment/transfer?ref=...&type=deposit)
-     */
     @PostMapping("/deposit/lock")
     public String lockDeposit(@RequestParam Long ticketId, Principal principal) {
         Long sellerId = resolveUserId(principal);
@@ -229,7 +195,6 @@ public class PaymentController {
             throw new BusinessRuleViolationException("Bạn không phải chủ sở hữu của vé này.");
         }
 
-        // Nếu đã có cọc PENDING, chuyển hướng luôn sang trang QR
         Optional<Deposit> existingOpt = depositRepository.findByTicketId(ticket.getId());
         if (existingOpt.isPresent() && existingOpt.get().getStatus() == DepositStatus.PENDING) {
             return "redirect:/payment/transfer?ref=" + existingOpt.get().getId() + "&type=deposit";
@@ -251,9 +216,6 @@ public class PaymentController {
         return lockDeposit(ticketId, principal);
     }
 
-    /**
-     * Endpoint tương thích ngược (fallback) cho các liên kết MoMo cũ còn sót lại trên trình duyệt.
-     */
     @GetMapping("/momo/return")
     public String momoReturnFallback(@RequestParam(required = false) String orderId,
                                      @RequestParam(required = false) String ref,
@@ -274,21 +236,6 @@ public class PaymentController {
         return "redirect:/tickets";
     }
 
-    // ========================= Trang QR chuyển khoản =========================
-
-    /**
-     * Hiển thị trang chuyển khoản QR cho người dùng.
-     *
-     * <p>Trang này hiển thị mã QR của tài khoản trung gian, số tiền cần chuyển,
-     * nội dung chuyển khoản, và hai nút: "Đã chuyển khoản thành công" / "Chưa chuyển khoản".</p>
-     *
-     * <p>TUYỆT ĐỐI KHÔNG thay đổi trạng thái giao dịch tại đây — chỉ hiển thị thông tin.</p>
-     *
-     * @param ref   mã tham chiếu giao dịch (ID escrow hoặc deposit)
-     * @param type  loại giao dịch: {@code "escrow"} hoặc {@code "deposit"}
-     * @param model model để đổ dữ liệu ra view
-     * @return tên view {@code "payment/transfer"}
-     */
     @GetMapping("/transfer")
     public String showTransferPage(@RequestParam String ref, @RequestParam String type, Model model) {
         try {
@@ -309,7 +256,6 @@ public class PaymentController {
                 return "payment/result";
             }
 
-            // Thông tin QR chuyển khoản
             model.addAttribute("ref", ref);
             model.addAttribute("type", type);
             model.addAttribute("accountHolder", paymentGatewayConfig.getAccountHolder());
@@ -327,27 +273,12 @@ public class PaymentController {
         return "payment/transfer";
     }
 
-    // ========================= Xác nhận chuyển khoản =========================
-
-    /**
-     * Người dùng nhấn "Đã chuyển khoản thành công".
-     *
-     * <p>Gọi {@code confirmHeld()} hoặc {@code confirmLocked()} tùy loại giao dịch để
-     * chuyển trạng thái từ PENDING sang HELD/LOCKED. Admin sẽ kiểm tra thủ công sau.</p>
-     *
-     * @param ref       mã tham chiếu giao dịch
-     * @param type      loại giao dịch: {@code "escrow"} hoặc {@code "deposit"}
-     * @param principal người dùng đang đăng nhập
-     * @param model     model để đổ dữ liệu ra view
-     * @return tên view {@code "payment/result"}
-     */
     @PostMapping("/transfer/confirm")
     public String confirmTransfer(@RequestParam String ref, @RequestParam String type,
                                   Principal principal, RedirectAttributes redirectAttributes, Model model) {
         try {
             Long refId = Long.parseLong(ref);
 
-            // Tạo callbackParams giả lập để truyền vào confirmHeld/confirmLocked
             Map<String, String> callbackParams = new HashMap<>();
             callbackParams.put("referenceId", ref);
             callbackParams.put("orderId", ref);
@@ -373,14 +304,6 @@ public class PaymentController {
         return "payment/result";
     }
 
-    /**
-     * Người dùng nhấn "Thanh toán thất bại" — đánh dấu FAILED và hiển thị trang kết quả lỗi.
-     *
-     * @param ref   mã tham chiếu giao dịch
-     * @param type  loại giao dịch
-     * @param model model truyền dữ liệu sang view
-     * @return tên view "payment/result"
-     */
     @PostMapping("/transfer/fail")
     public String failTransfer(@RequestParam String ref, @RequestParam String type, Model model) {
         try {
@@ -421,15 +344,6 @@ public class PaymentController {
         return "payment/result";
     }
 
-    /**
-     * Người dùng nhấn "Chưa chuyển khoản" — quay lại trang chi tiết vé.
-     *
-     * <p>Không thay đổi trạng thái giao dịch, chỉ redirect người dùng về trang vé.</p>
-     *
-     * @param ref  mã tham chiếu giao dịch
-     * @param type loại giao dịch
-     * @return chuyển hướng về trang chi tiết vé
-     */
     @PostMapping("/transfer/cancel")
     public String cancelTransfer(@RequestParam String ref, @RequestParam String type) {
         try {
@@ -452,7 +366,6 @@ public class PaymentController {
                 return "redirect:/tickets/" + ticketId;
             }
         } catch (NumberFormatException ignored) {
-            // Fall through to default redirect
         }
 
         return "redirect:/tickets";
