@@ -49,7 +49,7 @@ class TicketReminderServiceTest {
         t.setSellerId(10L);
         t.setBuyerId(20L);
         t.setTicketType(TicketType.MOVIE);
-        t.setStatus(TicketStatus.TRANSFERRED);
+        t.setStatus(TicketStatus.AWAITING_USE);
         t.setTitle("Vé Phim 00:14");
         t.setVenue("CGV Landmark");
         t.setEventStartAt(startAt);

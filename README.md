@@ -1,15 +1,13 @@
 # TicketPass — Sàn Giao Dịch Vé Điện Tử (Ticket Marketplace)
 
-TicketPass là một web application viết bằng **Java 17 / Spring Boot 3.3.4**, đóng vai trò **sàn trung gian giao dịch chuyển nhượng (pass lại) vé điện tử** theo mô hình marketplace dành cho ba loại vé chính: **vé xem phim (`MOVIE`)**, **vé concert / âm nhạc (`CONCERT`)**, và **vé xe khách (`BUS`)**.
+TicketPass là một web application viết bằng **Java 17 / Spring Boot 3.3.4**, đóng vai trò **sàn trung gian giao dịch chuyển nhượng (pass lại) vé điện tử** theo mô hình marketplace dành cho ba loại vé chính: **vé xem phim **, **vé concert / âm nhạc**, và **vé xe khách**.
 
 Dự án giải quyết bài toán nhức nhối của việc pass vé tự phát trên các hội nhóm Facebook và Zalo: người mua phải chuyển tiền trước khi có bất kỳ bằng chứng nào về chất lượng vé, người bán sau khi nhận tiền có thể biến mất hoặc chuyển vé đã sử dụng, và không có bất kỳ cơ chế nào đứng giữa để bảo vệ quyền lợi hai bên. 
 
 TicketPass đảo ngược cấu trúc rủi ro đó bằng **mô hình bảo vệ kinh tế 2 lớp cốt lõi**:
-1. **Ký quỹ 100% của người mua (`PAYMENT_ESCROWED`)**: Tiền mua vé được sàn giữ trong escrow qua cổng MoMo Sandbox, chỉ giải ngân cho người bán sau khi người mua xác nhận nhận vé và hết cửa sổ khiếu nại hợp lệ.
-2. **Khóa cọc 50% của người bán (`DEPOSIT_LOCKED`)**: Người bán bắt buộc phải khóa cọc 50% giá bán trước khi mã vé được giao. Nếu người bán gian lận và thua tranh chấp, toàn bộ tiền cọc sẽ bị tịch thu (vừa bù đắp phí sàn, vừa bồi thường thiệt hại cho người mua). Gian lận chắc chắn sẽ bị lỗ tiền thật.
-3. **Cơ chế ảnh hai lớp**: Người bán đăng tải **ảnh công khai** (thông tin sự kiện, rạp/nhà xe, vị trí ghế...) để người mua duyệt trước khi mua, và **ảnh QR ẩn** (mã vé/barcode vào cửa thật) chỉ được sàn tự động mở khóa cho người mua sau khi cả hai điều kiện trên được thỏa mãn.
-
-Đây là **đồ án môn Lập trình hướng đối tượng (OOP)**. Dự án tập trung áp dụng đúng đắn và chặt chẽ bốn design pattern trọng tâm — **Adapter, State, Strategy, Observer** — giải quyết trực tiếp các bài toán nghiệp vụ thực tế trong hệ thống.
+1. **Ký quỹ 100% của người mua**: Tiền mua vé được sàn giữ trong escrow qua Chuyển khoản VietQR trung gian hoặc Ví nội bộ, chỉ giải ngân cho người bán sau khi hết cửa sổ khiếu nại hợp lệ.
+2. **Khóa cọc 50% của người bán**: Người bán bắt buộc phải khóa cọc 50% giá bán trước khi mã vé được mở. Nếu người bán gian lận và thua tranh chấp, toàn bộ tiền cọc sẽ bị tịch thu (vừa bù đắp phí sàn, vừa bồi thường thiệt hại cho người mua). Gian lận chắc chắn sẽ bị lỗ tiền thật.
+3. **Cơ chế ảnh hai lớp**: Người bán đăng tải **ảnh công khai** (thông tin sự kiện, rạp/nhà xe, vị trí ghế...) để người mua duyệt trước khi mua, và **ảnh QR bí mật** (mã vé/barcode vào cửa thật) được sàn **tự động mở khóa ngay lập tức** khi cả hai bên đã hoàn tất ký quỹ & khóa cọc 50%, hiển thị xuyên suốt thời gian mở cửa sổ khiếu nại.
 
 ---
 
@@ -23,34 +21,30 @@ TicketPass đảo ngược cấu trúc rủi ro đó bằng **mô hình bảo v�
   - Người mua trả 100% giá bán vào Escrow của sàn qua MoMo Test Sandbox hoặc Ví điện tử nội bộ.
   - Người bán khóa cọc 50% giá bán để kích hoạt chuyển vé.
 - **Ví điện tử nội bộ (`wallet`)**:
-  - Sổ cái giao dịch kép (`WalletTransaction`) kiểm soát biến động số dư minh bạch.
+  - Sổ cái giao dịch (`WalletTransaction`) kiểm soát biến động số dư minh bạch.
   - Hỗ trợ nạp tiền (Top-up) linh hoạt (chấp nhận tiền lẻ từ 10.000đ trở lên: 11k, 13k, 17k...), rút tiền về tài khoản ngân hàng liên kết.
-  - Kiểm soát chặt chẽ số dư không âm qua ràng buộc toàn vẹn cơ sở dữ liệu và ngoại lệ `InsufficientBalanceException`.
+  - Kiểm soát chặt chẽ số dư không âm qua ràng buộc toàn vẹn cơ sở dữ liệu.
   - Tích hợp thanh toán vé và nạp cọc trực tiếp bằng số dư ví qua `WalletPaymentGatewayAdapter`.
-- **Hệ thống thông báo giao dịch thời gian thực (`notification`)**:
-  - Đa kênh sự kiện tự động bao phủ 100% vòng đời giao dịch P2P qua Observer Pattern (`AFTER_COMMIT`).
-  - Phân loại trực quan: Ký quỹ Escrow, Khóa cọc Seller, Giao nhận vé, Báo lỗi kỹ thuật QR, Khiếu nại/Phản hồi, Gỡ vé quá hạn, Vé theo dõi (Watchlist).
-  - Thanh thông báo Navbar với badge đếm số tin chưa đọc nhịp thở (breathing glow), Popover kính mờ xem nhanh 5 tin mới nhất và trang quản lý toàn diện `/notifications` hỗ trợ đánh dấu đã đọc một chạm.
+- **Hệ thống thông báo giao dịch thời gian thực**:
+  - Đa kênh sự kiện tự động bao phủ 100% vòng đời giao dịch P2P qua Observer Pattern.
+  - Phân loại trực quan: Ký quỹ Escrow, Khóa cọc Seller, Giao nhận vé, Báo lỗi kỹ thuật QR, Khiếu nại/Phản hồi, Gỡ vé quá hạn, Vé theo dõi.
+  - Thanh thông báo Navbar với đếm số tin chưa đọc.
 - **Cơ chế hiển thị ảnh 2 lớp**:
   - **Ảnh công khai**: Buyer xem trước khi quyết định mua.
-  - **Ảnh QR ẩn**: Mã vào cửa thật, chỉ mở khóa cho buyer sau khi hoàn tất thanh toán escrow và người bán đã khóa cọc.
-- **Cửa sổ khiếu nại (Dispute Window) có thời hạn theo loại vé**:
+  - **Ảnh QR ẩn**: Mã vào cửa thật, chỉ mở khóa cho buyer sau khi hoàn tất thanh toán và người bán đã khóa cọc.
+- **Cửa sổ khiếu nại có thời hạn theo loại vé**:
   - Phim: 2 giờ; Xe khách: 3 giờ; Concert: 24 giờ.
-  - Luôn tự động cắt trước thời điểm sự kiện bắt đầu (`eventStartAt`).
-- **Tự động hoàn tất và giải ngân (`AUTO_COMPLETE`)**:
+  - Luôn tự động cắt trước thời điểm sự kiện bắt đầu.
+- **Tự động hoàn tất và giải ngân**:
   - Tiến trình scheduler tự động quét và hoàn tất các giao dịch hết cửa sổ khiếu nại mà không có tranh chấp.
   - Tự động hoàn cọc cho seller, tính phí hoa hồng sàn, khấu trừ thuế stub và giải ngân tiền vé.
-- **Quy trình xử lý tranh chấp & phán quyết (`DISPUTE_UNDER_REVIEW`)**:
+- **Quy trình xử lý tranh chấp & phán quyết**:
   - Người mua mở khiếu nại kèm bằng chứng (ảnh, tài liệu).
   - Người bán có thời hạn (24 giờ) gửi phản hồi phản biện.
   - Admin xem xét hồ sơ và phán quyết: Hoàn tiền 100% escrow + bồi thường từ cọc bị tịch thu nếu buyer thắng; hoặc giải ngân + hoàn cọc nếu seller thắng.
-- **Tính hoa hồng sàn minh bạch theo bậc giá vé**:
-  - Bảng phí từ 7% xuống 2% (không lũy tiến), phí tối thiểu 5.000đ, trần hoa hồng 400.000đ, chia đều 50/50 giữa buyer và seller.
-- **Hệ thống Điểm uy tín người dùng (Reputation Score)**:
-  - Khởi tạo 100.00 điểm, cập nhật tự động sau mỗi giao dịch thành công (+2) hoặc tranh chấp (thua -15, thắng +1) thông qua Spring Domain Events.
-- **Watchlist Đánh sao vé (`user_starred_tickets`)**:
+- **Watchlist Đánh sao vé**:
   - Theo dõi nhanh các vé yêu thích từ card vé ngoài sàn và trang chi tiết vé.
-  - Nhận thông báo tự động khi vé được theo dõi có biến động (được mua hoặc hết hạn).
+  - Nhận thông báo tự động khi vé được theo dõi có biến động.
 
 ---
 
@@ -62,14 +56,12 @@ TicketPass đảo ngược cấu trúc rủi ro đó bằng **mô hình bảo v�
 | **Framework** | Spring Boot 3.3.4 | Khung ứng dụng backend, IoC/DI container |
 | **Build tool** | Maven (`.\mvnw`) | Quản lý phụ thuộc và đóng gói ứng dụng qua Maven Wrapper |
 | **Cơ sở dữ liệu** | MySQL 8.x | Database chính cho môi trường phát triển và chạy thật |
-| **Database cho Test** | H2 Database (in-memory) | Chạy kiểm thử tự động độc lập, không phụ thuộc MySQL |
 | **ORM / Data Access** | Spring Data JPA (Hibernate 6) | Ánh xạ đối tượng, cấu hình `ddl-auto=validate` |
-| **Database Migration** | Flyway | Quản lý phiên bản schema DB (`V1` đến `V6`) |
-| **Giao diện Web** | Spring Web MVC + Thymeleaf | Server-side rendering (SSR), layout phân quyền với `thymeleaf-extras-springsecurity6` |
+| **Giao diện Web** | Spring Web MVC + Thymeleaf | Server-side rendering (SSR), layout |
 | **Bảo mật** | Spring Security | Xác thực form login (session-based), phân quyền vai trò `USER` và `ADMIN`, bảo vệ CWE-601 |
-| **Cổng thanh toán** | MoMo Sandbox & Ví nội bộ | Môi trường Sandbox thử nghiệm và Ví điện tử nội bộ thanh toán Escrow / khóa cọc |
-| **Lưu trữ file** | Local File Storage Adapter | Lưu trữ ảnh công khai, ảnh QR ẩn và bằng chứng khiếu nại (`./data/uploads`) |
-| **Thư viện tiện ích** | Lombok | Giảm boilerplate code (getter, setter, constructor) |
+| **Cổng thanh toán** |Ví nội bộ | Môi trường Sandbox thử nghiệm Ví điện tử nội bộ |
+| **Lưu trữ file** | Local File Storage Adapter | Lưu trữ ảnh công khai, ảnh QR ẩn và bằng chứng khiếu nại|
+| **Thư viện tiện ích** | Lombok | Giảm boilerplate code |
 
 ---
 
@@ -77,11 +69,11 @@ TicketPass đảo ngược cấu trúc rủi ro đó bằng **mô hình bảo v�
 
 | Phần mềm | Phiên bản | Lệnh kiểm tra trong terminal |
 |---|---|---|
-| **JDK** | 17 (khuyến nghị Eclipse Temurin 17) | `java -version` |
+| **JDK** | 17 | `java -version` |
 | **MySQL** | 8.x | `mysql --version` |
 | **Git** | Bất kỳ phiên bản gần đây | `git --version` |
 
-> **Không cần cài đặt Maven:** Repo đã tích hợp sẵn Maven Wrapper (`mvnw`, `mvnw.cmd`, `.mvn/`). Mọi lệnh build/chạy đều sử dụng `.\mvnw` (trên PowerShell/CMD Windows) để đảm bảo đồng nhất phiên bản Maven cho cả nhóm.
+> **Không cần cài đặt Maven:** Repo đã tích hợp sẵn Maven Wrapper (`mvnw`, `mvnw.cmd`, `.mvn/`). Mọi lệnh build/chạy đều sử dụng `.\mvnw`để đảm bảo đồng nhất phiên bản Maven cho cả nhóm.
 
 ---
 
@@ -89,7 +81,7 @@ TicketPass đảo ngược cấu trúc rủi ro đó bằng **mô hình bảo v�
 
 ### 4.1 Cài đặt JDK 17
 1. Tải bộ cài đặt: [Eclipse Temurin 17 (LTS)](https://adoptium.net/temurin/releases/?version=17) — chọn gói `.msi` (Windows x64).
-2. Chạy file cài đặt với các thiết lập mặc định (thường nằm tại `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot`).
+2. Chạy file cài đặt với các thiết lập mặc định.
 3. Đặt biến môi trường hệ thống `JAVA_HOME`:
    - Mở cửa sổ **System Properties** → **Environment Variables**.
    - Tại mục **System variables**, nhấn **New**:
@@ -117,10 +109,6 @@ TicketPass đảo ngược cấu trúc rủi ro đó bằng **mô hình bảo v�
    # Cấu hình tài khoản MySQL máy bạn
    spring.datasource.username=root
    spring.datasource.password=mat_khau_mysql_may_ban
-
-   # MoMo Sandbox credentials (nếu có tài khoản riêng)
-   app.payment.momo.access-key=CHANGE_ME
-   app.payment.momo.secret-key=CHANGE_ME
    ```
 2. Ứng dụng sẽ tự động ghi đè các thiết lập này khi chạy với profile `local`.
 
@@ -150,8 +138,6 @@ Truy cập ứng dụng tại trình duyệt: **http://localhost:8080**
 | **`buyer@test.com`** | `Password123@` | `USER` | Người mua thường — Đã xác minh, sẵn sàng thao tác mua vé, thanh toán Escrow và mở khiếu nại. |
 | **`vip_seller@test.com`** | `Password123@` | `USER` | Người bán VIP — Có 25 giao dịch thành công, điểm uy tín 100, hiển thị ở vị trí dẫn đầu bảng xếp hạng `/reputation/top`. |
 
-*Ngoài ra, hệ thống tự động sinh sẵn **3 vé mẫu ở trạng thái `LISTED`** trên sàn `/tickets` (Concert VIP Mỹ Đình 2tr, Phim IMAX CGV 200k, Xe Limousine Đà Lạt 300k) để người dùng có thể duyệt và trải nghiệm mua ngay lập tức.*
-
 ### 5.3 Chạy bộ kiểm thử (Tests)
 ```powershell
 .\mvnw test
@@ -163,19 +149,17 @@ Truy cập ứng dụng tại trình duyệt: **http://localhost:8080**
 
 ## 6. Cấu hình tích hợp
 
-### 6.1 Cổng chuyển khoản QR trung gian (VietQR / Manual Transfer)
+### 6.1 Cổng chuyển khoản QR trung gian
 Hệ thống sử dụng cơ chế chuyển khoản thủ công qua QR trung gian (`PaymentGateway` -> `ManualTransferGatewayAdapter`) kết hợp thanh toán qua Ví nội bộ (`WalletPaymentGatewayAdapter`). Toàn bộ giao dịch đều qua tài khoản sàn trung gian hoặc số dư ví thử nghiệm:
 ```properties
 app.payment.manual-transfer.gateway-name=MANUAL_TRANSFER
-app.payment.manual-transfer.account-holder=TICKETPASS TRUNG GIAN
-app.payment.manual-transfer.account-number=0123456789
-app.payment.manual-transfer.bank-name=Vietcombank
+app.payment.manual-transfer.account-holder=TRUNG GIAN
+app.payment.manual-transfer.account-number=0828618777
+app.payment.manual-transfer.bank-name=MBBank
 app.payment.manual-transfer.qr-image-url=/images/qr-payment.png
 app.payment.manual-transfer.transfer-note-prefix=TICKETPASS
 ```
-*(Ghi chú: Lớp `MomoTestGatewayAdapter` trước đây đã được `@Deprecated` và vô hiệu hóa, chỉ lưu lại trong mã nguồn làm minh chứng học thuật cho Adapter Pattern).*
-
-### 6.2 Cấu hình lưu trữ File (Ảnh công khai & Ảnh QR ẩn)
+### 6.2 Cấu hình lưu trữ File
 Ảnh vé công khai, ảnh QR ẩn và tài liệu bằng chứng được quản lý qua `FileStorageService` (`LocalFileStorageAdapter`):
 ```properties
 app.storage.local.base-dir=./data/uploads
@@ -187,40 +171,35 @@ Thư mục `./data/uploads` sẽ tự động được tạo khi có yêu cầu 
 
 ---
 
-## 7. Luồng nghiệp vụ & Vòng đời vé (State Machine)
+## 7. Luồng nghiệp vụ & Vòng đời vé
 
 ### 7.1 Sơ đồ 9 trạng thái của vé
-Vòng đời của mỗi vé được quản lý nghiêm ngặt bởi `TicketStateMachineService` với 9 trạng thái:
+Vòng đời của mỗi vé gồm  **9 trạng thái** và **11 chuyển đổi hợp lệ**:
 
 ```
                   ┌──────────────────────┐
                   │        LISTED        │  (Người bán đăng vé thành công)
                   └──────────┬───────────┘
-                             │  [Buyer thanh toán 100% qua MoMo]
+                             │  [Buyer nạp 100% Escrow: Ví / VietQR]
                              ▼
                   ┌──────────────────────┐
-                  │   PAYMENT_ESCROWED   │  (Sàn giữ tiền trong Escrow)
+                  │   PAYMENT_ESCROWED   │  (Sàn giữ 100% tiền trong Escrow)
                   └──────────┬───────────┘
-                             │  [Seller khóa cọc 50%]
+                             │  [Seller khóa cọc 50% trong 30 phút]
                              ▼
                   ┌──────────────────────┐
-                  │    DEPOSIT_LOCKED    │  (Đã khóa cọc bảo đảm)
+                  │    DEPOSIT_LOCKED    │  (Đã khóa cọc bảo đảm 50%)
                   └──────────┬───────────┘
-                             │  [Sàn tự động mở khóa ảnh QR ẩn cho Buyer]
+                             │  [Đủ cọc 2 bên -> Chuyển tiếp ngay & Mở khóa QR]
                              ▼
                   ┌──────────────────────┐
-                  │     TRANSFERRED      │  (Đã giao vé)
-                  └──────────┬───────────┘
-                             │  [Buyer xác nhận đã nhận vé]
-                             ▼
-                  ┌──────────────────────┐
-                  │     AWAITING_USE     │  (Cửa sổ khiếu nại bắt đầu đếm)
+                  │     AWAITING_USE     │  (QR hiển thị suốt cửa sổ khiếu nại BR-09 1B)
                   └──────┬────────┬──────┘
                          │        │
   [Hết hạn khiếu nại,   │        │ [Buyer mở khiếu nại trong thời hạn]
    không có tranh chấp] │        ▼
                          │    ┌─────────────────────────┐
-                         │    │  DISPUTE_UNDER_REVIEW   │  (Admin thụ lý khiếu nại)
+                         │    │  DISPUTE_UNDER_REVIEW   │  (Admin thụ lý / Buyer có thể rút về AWAITING_USE)
                          │    └────┬───────────────┬────┘
                          │         │               │
                          │   [Buyer thắng]   [Seller thắng]
@@ -235,89 +214,13 @@ Vòng đời của mỗi vé được quản lý nghiêm ngặt bởi `TicketSta
              │     AUTO_COMPLETE      │  (Giải ngân cho seller + hoàn cọc + cộng điểm uy tín)
              └────────────────────────┘
 ```
-
-### 7.2 Luồng giao dịch mua bán thành công (Sequence Diagram)
-```mermaid
-sequenceDiagram
-    actor Seller as Người bán
-    actor Buyer as Người mua
-    participant San as Sàn TicketPass
-    participant MoMo as MoMo Test Sandbox
-
-    Seller->>San: Đăng vé (khai thông tin + upload Ảnh công khai & Ảnh QR ẩn)
-    San->>San: Validate dữ liệu (giá > 0, eventStartAt tương lai, ghế khớp SL)
-    San-->>Seller: Vé lên sàn ở trạng thái LISTED
-
-    Buyer->>San: Chọn vé và yêu cầu mua
-    San->>MoMo: Tạo yêu cầu thanh toán 100% giá bán
-    MoMo-->>San: Xác nhận thanh toán thành công
-    San->>San: HoldFundsUseCase giữ tiền trong Escrow -> Chuyển sang PAYMENT_ESCROWED
-
-    San-->>Seller: Thông báo yêu cầu khóa cọc 50%
-    Seller->>San: Thực hiện khóa cọc
-    San->>MoMo: Thu cọc 50%
-    MoMo-->>San: Xác nhận cọc đã khóa
-    San->>San: LockDepositUseCase -> Chuyển sang DEPOSIT_LOCKED
-
-    San->>San: Tự động mở khóa ảnh QR ẩn cho Buyer
-    San-->>Buyer: Hiển thị ảnh QR vé -> Chuyển sang TRANSFERRED
-
-    Buyer->>San: Xác nhận đã nhận được vé
-    San->>San: Chuyển sang AWAITING_USE (Bắt đầu đếm ngược cửa sổ khiếu nại)
-
-    Note over San: Hết cửa sổ khiếu nại mà không có khiếu nại nào mở ra
-    San->>San: AutoCompleteScheduler kích hoạt
-    San->>San: Tính hoa hồng sàn và khấu trừ thuế mock
-    San->>MoMo: Giải ngân tiền vé cho Seller + Hoàn lại 100% tiền cọc
-    San->>San: Chuyển sang AUTO_COMPLETE
-    San->>San: Publish TicketTransactionCompletedEvent
-    San->>San: UpdateReputationUseCase tự động +2 điểm uy tín cho cả hai bên
-    San-->>Seller: Thông báo giao dịch hoàn tất thành công
-    San-->>Buyer: Thông báo giao dịch hoàn tất thành công
-```
+*(Trạng thái thứ 9 là `CANCELLED` cho các nhánh hủy: Seller gỡ vé khi LISTED, quá hạn sự kiện BR-12, timeout nạp cọc 30p, hoặc thanh lý tài khoản 0 điểm uy tín khi chưa mở QR).*
 
 ---
 
-## 8. Các quy tắc nghiệp vụ trọng tâm (Business Rules)
+## 8. Cấu trúc thư mục & Kiến trúc mã nguồn
 
-### 8.1 Bảng hoa hồng sàn (Commission Tiers)
-Sàn thu hoa hồng theo bảng tra giá vé (không lũy tiến), chia đều 50/50 giữa người mua và người bán:
-| Bậc giá vé | Điều kiện giá bán | Tỷ lệ hoa hồng | Ghi chú |
-|---|---|:---:|---|
-| `UNDER_1M` | Dưới 1.000.000 VNĐ | **7%** | Phí tối thiểu: **5.000 VNĐ** |
-| `UNDER_5M` | Từ 1.000.000 đến dưới 5.000.000 VNĐ | **5%** | Chia đôi: Buyer chịu 50%, Seller chịu 50% |
-| `UNDER_10M` | Từ 5.000.000 đến dưới 10.000.000 VNĐ | **3%** | |
-| `FROM_10M` | Từ 10.000.000 VNĐ trở lên | **2%** | Trần hoa hồng tối đa: **400.000 VNĐ** |
-
-### 8.2 Cửa sổ khiếu nại theo loại vé (Dispute Window)
-Cửa sổ khiếu nại bắt đầu đếm khi buyer bấm xác nhận đã nhận vé (`AWAITING_USE`):
-- **Vé xem phim (`MOVIE`)**: **2 giờ** (thường dùng ngay trong ngày).
-- **Vé xe khách (`BUS`)**: **3 giờ**.
-- **Vé concert (`CONCERT`)**: **24 giờ** (giá trị cao, cần thời gian kiểm tra kỹ với ban tổ chức).
-- **Quy tắc chặn an toàn:** Cửa sổ khiếu nại **luôn kết thúc trước thời điểm bắt đầu sự kiện (`eventStartAt`)** để ngăn chặn lạm dụng (người mua đi xem xong rồi mới mở khiếu nại).
-- **Hạn phản hồi của seller:** Khi có khiếu nại, seller có tối đa **24 giờ** để gửi bằng chứng phản biện.
-
-### 8.3 Công thức tịch thu cọc khi người bán gian lận (Dispute Buyer Wins)
-Khi admin kết luận người bán gian lận (vé giả, vé đã quét, thông tin sai lệch):
-- Tiền escrow: **Hoàn lại 100% cho người mua**.
-- Tiền cọc 50% của người bán bị tịch thu và chia theo công thức:
-  - Phí xử lý của sàn (`founder_cut`) = `max(5.000 VNĐ, 7% * tổng tiền cọc)` (chặn không vượt quá tổng cọc).
-  - Bồi thường cho người mua (`buyer_compensation`) = `tổng tiền cọc - founder_cut`.
-  - Người mua nhận: `100% Escrow + buyer_compensation`.
-
-### 8.4 Hệ thống thang điểm uy tín (Reputation Score)
-- Điểm khởi tạo cho tài khoản mới: **100.00** điểm (thang điểm 0 - 100).
-- **Giao dịch hoàn tất thành công (`AUTO_COMPLETE`)**: **+2.00** điểm (cộng cho cả buyer và seller).
-- **Thắng tranh chấp (`RESOLVED_SELLER_WINS` hoặc buyer thắng)**: **+1.00** điểm.
-- **Tự ý hủy vé sau khi người mua đã thanh toán escrow**: **-10.00** điểm.
-- **Thua tranh chấp do gian lận**: **-15.00** điểm.
-- *Thiết kế mang tính răn đe bất đối xứng:* Cần 8 giao dịch sạch (+2) mới bù lại được 1 lần gian lận (-15). Điểm uy tín được lắng nghe và cập nhật bất đồng bộ an toàn qua Spring Domain Events.
-
----
-
-## 9. Cấu trúc thư mục & Kiến trúc mã nguồn
-
-Dự án áp dụng phong cách kiến trúc **Clean / Hexagonal Architecture** chia theo 8 module nghiệp vụ:
+Dự án áp dụng phong cách kiến trúc **Clean / Hexagonal Architecture** với **9 module nghiệp vụ** :
 
 ```
 project_oop/
@@ -329,114 +232,40 @@ project_oop/
     ├── main/
     │   ├── java/com/yourapp/ticketpass/
     │   │   ├── TicketPassApplication.java   # Điểm khởi động Spring Boot
-    │   │   ├── ticket/         # Module Vé: 3 adapter loại vé, state machine, chuyển nhượng, tự động gỡ vé quá hạn
-    │   │   ├── payment/        # Module Thanh toán: Escrow, cọc, hoa hồng, thuế, MoMo sandbox, timeout schedulers
-    │   │   ├── dispute/        # Module Tranh chấp: Mở khiếu nại, chính sách cửa sổ khiếu nại, phản hồi, phán quyết
-    │   │   ├── user/           # Module Người dùng: Đăng ký, đăng nhập, phân quyền, hồ sơ, watchlist đánh sao
-    │   │   ├── reputation/     # Module Uy tín: Điểm uy tín, lịch sử, listener domain events
-    │   │   ├── wallet/         # Module Ví điện tử: Sổ cái kép WalletTransaction, nạp/rút tiền, cổng thanh toán ví
-    │   │   ├── notification/   # Module Thông báo: Sự kiện đa kênh thời gian thực, đếm tin chưa đọc, phân loại
-    │   │   └── shared/         # Hạ tầng dùng chung: Config, DTO, Events, Exceptions, Storage adapter, Utils
+    │   │   ├── ticket/         # Module Vé (28 files): 3 adapter loại vé, state machine, chuyển nhượng, tự động gỡ vé quá hạn
+    │   │   ├── payment/        # Module Thanh toán (29 files): Escrow, cọc, hoa hồng, thuế, VietQR, timeout schedulers
+    │   │   ├── wallet/         # Module Ví điện tử (25 files): Sổ cái kép WalletTransaction, nạp tiền, cổng thanh toán ví
+    │   │   ├── dispute/        # Module Tranh chấp (29 files): Mở khiếu nại, chính sách cửa sổ khiếu nại, phản hồi, phán quyết
+    │   │   ├── user/           # Module Người dùng (27 files): Đăng ký, đăng nhập, phân quyền, hồ sơ cá nhân, watchlist đánh sao
+    │   │   ├── reputation/     # Module Uy tín (17 files): Điểm uy tín 0-5, 6 Strategy chính sách hạn mức, listener domain events
+    │   │   ├── notification/   # Module Thông báo (11 files): Sự kiện đa kênh thời gian thực, đếm tin chưa đọc, phân loại
+    │   │   ├── admin/          # Module Quản trị (10 files): Dashboard tài chính, kiểm duyệt người dùng, tự động thanh lý tài khoản 0 điểm
+    │   │   └── shared/         # Hạ tầng dùng chung (41 files): Config, DTO, Events, Exceptions, Storage adapter, Utils
     │   └── resources/
     │       ├── application.properties           # Cấu hình chính của hệ thống
     │       ├── application-local.properties     # Cấu hình cá nhân máy local (gitignored)
-    │       ├── db/migration/                    # Flyway migrations (từ V1 đến V6)
-    │       │   ├── V1__init_schema.sql
-    │       │   ├── V2__add_version_to_users.sql
-    │       │   ├── V3__create_user_starred_tickets.sql
-    │       │   ├── V4__add_timeout_and_gate_dispute_fields.sql
-    │       │   ├── V5__create_notifications_table.sql
-    │       │   └── V6__create_wallets_and_wallet_transactions.sql
+    │       ├── db/migration/                    # Flyway migration
+    │       │   └── V1__init_schema.sql          # Lược đồ cơ sở dữ liệu hợp nhất (12 bảng)
     │       ├── templates/                       # View giao diện Thymeleaf (SSR)
     │       │   ├── layout/base.html             # Layout khung dùng chung (Navbar chuông thông báo & popover)
     │       │   ├── auth/                        # Trang login, register
     │       │   ├── ticket/                      # Quản lý & chi tiết vé
-    │       │   ├── payment/                     # Chuyển khoản, thanh toán, kết quả
-    │       │   ├── dispute/                     # Khiếu nại & bằng chứng
-    │       │   ├── user/                        # Hồ sơ & danh sách vé theo dõi
-    │       │   ├── wallet/                      # Quản lý ví điện tử, số dư, nạp tiền
-    │       │   ├── notification/                # Lịch sử thông báo toàn diện
-    │       │   └── reputation/                  # Xem điểm & bảng xếp hạng uy tín
-    │       └── static/                          # CSS, JS, hình ảnh
+    │       │   ├── payment/                     # Chuyển khoản VietQR, thanh toán, kết quả
+    │       │   ├── dispute/                     # Khiếu nại, bằng chứng, tiến trình giải quyết
+    │       │   ├── user/                        # Hồ sơ cá nhân (nơi duy nhất xem mã người dùng) & vé theo dõi
+    │       │   ├── wallet/                      # Quản lý ví điện tử, số dư, nạp tiền, lịch sử biến động
+    │       │   ├── notification/                # Danh sách thông báo toàn diện
+    │       │   ├── reputation/                  # Xem điểm & bảng xếp hạng Top Người Bán
+    │       │   └── admin/                       # Dashboard số cái doanh thu, kiểm duyệt tài khoản, trạm phán quyết
+    │       └── static/                          # CSS, JS, hình ảnh QR mẫu
     └── test/
-        ├── java/                                # Bộ kiểm thử đơn vị, tích hợp & E2E flows (400+ tests)
+        ├── java/                                # Bộ kiểm thử đơn vị, tích hợp & E2E flows (80 test files / 476 tests)
         └── resources/application.properties     # Cấu hình kiểm thử (H2 in-memory)
 ```
 
-Mỗi module nghiệp vụ (`ticket`, `payment`, `dispute`, `user`, `reputation`, `wallet`, `notification`) đều được tổ chức phân lớp độc lập:
+Mỗi module nghiệp vụ đều được tổ chức phân lớp độc lập theo kiến trúc Ports & Adapters:
 - `domain`: Chứa các Entity, Enum, và Interface Port (`TicketRepository`, `PaymentGateway`, `WalletRepository`, `NotificationRepository`...). **Không phụ thuộc Spring Framework**.
-- `adapter`: Hiện thực cụ thể của các port kết nối ra bên ngoài (`MovieTicketAdapter`, `ManualTransferGatewayAdapter`, `WalletPaymentGatewayAdapter`, `LocalFileStorageAdapter`...).
-- `application`: Use Cases và Services điều phối nghiệp vụ (`HoldFundsUseCase`, `TicketStateMachineService`, `WalletService`, `NotificationService`...). Nơi quản lý transaction (`@Transactional`).
+- `adapter`: Hiện thực cụ thể của các port kết nối ra bên ngoài (`MovieTicketAdapter`, `ConcertTicketAdapter`, `BusTicketAdapter`, `ManualTransferGatewayAdapter`, `WalletPaymentGatewayAdapter`, `LocalFileStorageAdapter`...).
+- `application`: Use Cases và Services điều phối nghiệp vụ (`HoldFundsUseCase`, `LockDepositUseCase`, `TicketStateMachineService`, `WalletService`, `NotificationService`...). Nơi quản lý transaction (`@Transactional`).
 - `infrastructure`: Hiện thực repository (`*RepositoryImpl`) kết hợp Spring Data JPA (`*JpaRepository`).
-- `web`: Controllers và DTOs request/response phục vụ giao diện người dùng.
-
-### 4 Nguyên tắc kiến trúc cốt lõi:
-1. **Liên kết module bằng ID thuần (`Long`)**: Tuyệt đối không dùng JPA `@ManyToOne` hay `@OneToMany` xuyên module (ví dụ: `Ticket` chỉ lưu `Long sellerId`, `Long escrowTransactionId`, `Notification` chỉ lưu `Long recipientUserId`). Loại bỏ hoàn toàn lazy loading xuyên module và cyclic dependency.
-2. **Side-effects đi qua Domain Event**: Module `payment` publish `TicketTransactionCompletedEvent`, module `reputation` và `notification` lắng nghe bằng `@TransactionalEventListener(phase = AFTER_COMMIT)`. Nếu module uy tín hay thông báo lỗi thì tiền vẫn giải ngân an toàn.
-3. **Trừu tượng hóa lưu trữ file**: Không bao giờ thao tác trực tiếp với đường dẫn ổ đĩa vật lý trong business logic; mọi file đều đi qua interface `FileStorageService`.
-4. **Quản lý Session Spring Security**: Kiểm soát xác thực dựa trên session với hai vai trò tối giản `ROLE_USER` và `ROLE_ADMIN`, phòng vệ tấn công Open Redirect (CWE-601).
-
----
-
-## 10. Design Patterns trọng tâm (Môn OOP)
-
-Dự án hiện thực bốn design pattern trọng tâm nhằm giải quyết các bài toán thiết kế cụ thể:
-
-| Pattern | Nơi áp dụng trong code | Vấn đề thực tế giải quyết |
-|---|---|---|
-| **Adapter** | • `ticket/domain/TicketAdapter` (`MovieTicketAdapter`, `ConcertTicketAdapter`, `BusTicketAdapter`)<br>• `payment/domain/PaymentGateway` (`ManualTransferGatewayAdapter`, `WalletPaymentGatewayAdapter`, `DelegatingPaymentGateway`, `MomoTestGatewayAdapter` [deprecated])<br>• `shared/storage/FileStorageService` (`LocalFileStorageAdapter`) | • Chuẩn hóa xử lý các loại vé khác nhau về chung một giao diện thống nhất.<br>• Giúp hệ thống dễ dàng hoán đổi/mở rộng cổng thanh toán (Chuyển khoản VietQR, Ví nội bộ) hoặc lưu trữ file (từ Local sang AWS S3) mà không sửa business logic. |
-| **State** | • `ticket/domain/TicketStatus`<br>• `ticket/application/TicketStateMachineService`<br>• `ticket/domain/IllegalTicketTransitionException` | Tập trung hóa toàn bộ logic và điều kiện chuyển đổi trạng thái giao dịch (9 trạng thái) vào một nơi duy nhất. Ngăn chặn triệt để tình trạng nhảy cóc trạng thái hoặc cập nhật sai luồng. |
-| **Strategy** | • `dispute/domain/DisputeWindowPolicy`<br>• `payment/application/CommissionCalculatorService`<br>• `payment/application/ForfeitDepositPolicy` | • Cho phép thay đổi thuật toán tính cửa sổ khiếu nại tùy biến theo từng loại vé (2h, 3h, 24h).<br>• Linh hoạt điều chỉnh bảng hoa hồng và cách phân chia cọc phạt mà không làm ảnh hưởng đến các service gọi. |
-| **Observer** | • `shared/event/TicketTransactionCompletedEvent`<br>• `shared/event/DisputeResolvedEvent`<br>• `shared/event/TicketExpiredEvent`<br>• `reputation/application/UpdateReputationUseCase`<br>• `notification/application/NotificationEventListener` | Giảm khớp nối (loose coupling) giữa luồng thanh toán tiền bạc và luồng tính điểm uy tín/phát thông báo. Giúp hệ thống mở rộng thêm thông báo đa kênh, gửi email mà không sửa mã nguồn của module thanh toán. |
-
----
-
-## 11. Xử lý sự cố thường gặp (Troubleshooting)
-
-| Triệu chứng lỗi | Nguyên nhân | Cách khắc phục |
-|---|---|---|
-| Ứng dụng không khởi động: `Schema-validation: missing table` hoặc `missing column` | Hibernate bật `ddl-auto=validate` và phát hiện sai lệch giữa Entity và schema database MySQL, hoặc Flyway chưa chạy. | Kiểm tra DB `ticketpass` đã được tạo chưa. Kiểm tra bảng `flyway_schema_history`. Nếu cần debug, tạm đặt `spring.jpa.hibernate.ddl-auto=none`, kiểm tra trường bị thiếu và đối chiếu lại file migration `V1__init_schema.sql`. |
-| `Access denied for user 'root'@'localhost'` | Sai tài khoản hoặc mật khẩu MySQL trong file cấu hình. | Cập nhật chính xác `spring.datasource.password` trong file `application-local.properties` cho khớp với mật khẩu máy bạn. |
-| `Unknown database 'ticketpass'` | Chưa tạo cơ sở dữ liệu `ticketpass`. | Đăng nhập MySQL và chạy lệnh: `CREATE DATABASE ticketpass CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`. |
-| Lỗi biên dịch: `cannot find symbol: method getXxx()` dù class có `@Getter` / `@Data` | IDE chưa bật tính năng **Annotation Processing** của Lombok. | **IntelliJ IDEA**: Vào `Settings` → `Build, Execution, Deployment` → `Compiler` → `Annotation Processors` → Tích chọn **Enable annotation processing** và cài đặt Lombok plugin, sau đó Restart IDE. |
-| Lỗi `JAVA_HOME not found` hoặc `variable is not defined correctly` | Chưa cấu hình hoặc cấu hình sai biến môi trường `JAVA_HOME`. | Đặt lại biến `JAVA_HOME` trỏ đúng vào thư mục gốc của JDK 17 (không trỏ vào thư mục `bin`), sau đó **tắt và mở lại cửa sổ PowerShell mới**. |
-| PowerShell báo `mvnw : The term 'mvnw' is not recognized` | Gõ thiếu tiền tố `.\` khi chạy file script trên PowerShell. | Luôn gõ có tiền tố: `.\mvnw` và đảm bảo terminal đang đứng ở thư mục gốc chứa file `mvnw.cmd`. |
-| Lỗi khi upload ảnh vé: Multipart exception | Kích thước file vượt quá cấu hình tối đa hoặc thiếu quyền ghi thư mục. | File tối đa 25MB (`spring.servlet.multipart.max-file-size`). Thư mục `./data/uploads` sẽ tự sinh; kiểm tra quyền ghi của user hệ thống. |
-
----
-
-## 12. Tài liệu thiết kế kỹ thuật (`design-note/`)
-
-Toàn bộ chi tiết kỹ thuật, hợp đồng giao tiếp giữa các module và quy ước đã được lưu trữ đầy đủ trong thư mục `design-note/`:
-
-| Tài liệu | Nội dung chi tiết |
-|---|---|
-| [`00-tong-quan-du-an.md`](design-note/00-tong-quan-du-an.md) | **Tài liệu đọc đầu tiên.** Tổng quan bài toán, mục tiêu đồ án OOP, phạm vi trong/ngoài, luồng mua bán 7 bước, cơ chế bảo vệ kinh tế. |
-| [`01-kien-truc-he-thong.md`](design-note/01-kien-truc-he-thong.md) | Kiến trúc phân lớp Clean/Hexagonal, ma trận import giữa các module, 4 nguyên tắc bất khả xâm phạm. |
-| [`02-hop-dong-module.md`](design-note/02-hop-dong-module.md) | **Hợp đồng giao tiếp giữa các module.** Định nghĩa các interface port, DTO và Domain Events dùng chung. |
-| [`03-database-schema.md`](design-note/03-database-schema.md) | Sơ đồ ERD, mô tả chi tiết các bảng và quyền sở hữu bảng của từng module. |
-| [`04-quy-tac-nghiep-vu.md`](design-note/04-quy-tac-nghiep-vu.md) | Danh sách quy tắc nghiệp vụ BR-01 đến BR-11: công thức hoa hồng, cọc, tịch thu cọc, thuế, thang điểm uy tín, cửa sổ khiếu nại. |
-| [`05-state-machine-giao-dich.md`](design-note/05-state-machine-giao-dich.md) | Chi tiết 9 trạng thái của vé, bảng ma trận chuyển đổi hợp lệ và các bất biến giao dịch. |
-| [`06-quy-uoc-code-va-git.md`](design-note/06-quy-uoc-code-va-git.md) | Quy ước đặt tên, kiểu dữ liệu (`BigDecimal`, `Instant`), quy trình Git branch, merge conflict resolution. |
-| [`07-phan-cong-cong-viec.md`](design-note/07-phan-cong-cong-viec.md) | Phân công module, danh mục file sở hữu và danh sách nhiệm vụ của từng thành viên. |
-| [`08-ke-hoach-tich-hop.md`](design-note/08-ke-hoach-tich-hop.md) | Kịch bản kiểm thử End-to-End, quy trình tích hợp hằng tuần, 3 trường hợp biên quan trọng. |
-| [`09-oop-design-patterns.md`](design-note/09-oop-design-patterns.md) | Bảng tổng kết các design pattern và nguyên lý OOP dùng để bảo vệ đồ án trước hội đồng. |
-
----
-
-## 13. Phân công nhóm & Nhật ký phát triển
-
-Dự án được xây dựng bởi nhóm 3 thành viên, phân chia theo **module nghiệp vụ toàn trình (vertical slice)** để tối ưu hóa tính độc lập và hạn chế tối đa xung đột mã nguồn:
-
-| Thành viên | Nhánh Git | Module phụ trách | Design Pattern trọng tâm | Nhiệm vụ chính |
-|---|---|---|---|---|
-| **Minh Tuấn** (`MinhTuan`) | `MinhTuan` | `ticket`, `web / giao diện`, `notification` (frontend) | Adapter, State, Strategy | Vòng đời vé, 3 adapter loại vé (`Movie`, `Concert`, `Bus`), State Machine 9 trạng thái, kiểm tra điều kiện đăng vé, chuyển nhượng vé, toàn bộ giao diện Thymeleaf, layout chung, trang chủ, chuông thông báo và styling CSS. |
-| **Hà Linh** (`Halinh`) | `Halinh` | `payment`, `dispute`, `wallet` (đồng quản trị) | Adapter, Strategy | Dòng tiền: Escrow, khóa cọc 50%, tính hoa hồng, khấu trừ thuế stub, giải ngân, MoMo Sandbox adapter, ví điện tử, quy trình khiếu nại và tự động hoàn tất. |
-| **Hoàng Thế Ngọc** (`ngocht`) | `ngocht` | `user`, `reputation`, `shared` (backend), `wallet` (ledger & adapter), `notification` (backend & events) | Observer, Adapter, Ports & Adapters | Quản lý người dùng, Spring Security session, lưu file, tính điểm uy tín qua Domain Events, hạ tầng ví điện tử & sổ cái kép, trung tâm phát sự kiện thông báo đa kênh, xử lý ngoại lệ toàn cục và cấu hình hệ thống. |
-
-### Nhật ký phát triển cá nhân (Dev Logs)
-Mỗi thành viên cập nhật tiến độ công việc và lý do đưa ra các quyết định thiết kế tại:
-- [`nhat-ky-nguoi-a.md`](design-note/dev-logs/nhat-ky-nguoi-a.md) — Module `ticket`, `web / giao diện`
-- [`nhat-ky-nguoi-b.md`](design-note/dev-logs/nhat-ky-nguoi-b.md) — Module `payment`, `dispute`
-- [`nhat-ky-nguoi-c.md`](design-note/dev-logs/nhat-ky-nguoi-c.md) — Module `user`, `reputation`, `shared`, `wallet`, `notification`
-
+- `web`: Controllers và DTOs request/response phục vụ giao diện người dùng Thymeleaf.

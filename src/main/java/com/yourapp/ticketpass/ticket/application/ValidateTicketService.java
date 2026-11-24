@@ -103,31 +103,6 @@ public class ValidateTicketService {
         return ValidationResult.fail(errors);
     }
 
-    public ValidationResult validateForTransfer(Long ticketId, Long sellerId) {
-        List<String> errors = new ArrayList<>();
-
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
-
-        if (!ticket.getSellerId().equals(sellerId)) {
-            errors.add("Ban khong phai la chu so huu cua ve nay.");
-        }
-
-        if (ticket.getStatus() != TicketStatus.DEPOSIT_LOCKED) {
-            errors.add("Ve chua san sang de chuyen (trang thai hien tai: " + ticket.getStatus()
-                    + ", can: DEPOSIT_LOCKED).");
-        }
-
-        if (ticket.getQrImageStorageKey() == null || ticket.getQrImageStorageKey().isBlank()) {
-            errors.add("Ve chua co anh QR an. Vui long upload anh QR truoc khi chuyen ve.");
-        }
-
-        if (errors.isEmpty()) {
-            return ValidationResult.ok();
-        }
-        return ValidationResult.fail(errors);
-    }
-
     private TicketAdapter findAdapter(Ticket ticket) {
         if (ticket.getTicketType() == null) {
             return null;

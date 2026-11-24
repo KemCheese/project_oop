@@ -157,12 +157,6 @@
                 </div>
 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <a th:href="@{/admin/users}" class="btn btn-outline btn-sm">
-                        <i class="fa-solid fa-users-gear"></i> Quản lý người dùng
-                    </a>
-                    <a th:href="@{/admin/disputes}" class="btn btn-outline btn-sm">
-                        <i class="fa-solid fa-shield-halved"></i> Tranh chấp
-                    </a>
                     <a th:href="@{/admin/dashboard/export.csv(fromDate=${summary.fromDate},toDate=${summary.toDate})}"
                         class="btn btn-primary btn-sm">
                         <i class="fa-solid fa-file-csv"></i> Xuất báo cáo CSV
@@ -200,7 +194,7 @@
 
             <div class="kpi-grid">
                 <div class="kpi-card">
-                    <span class="kpi-label">Tổng Giá Trị Giao Dịch (GMV)</span>
+                    <span class="kpi-label">Tổng Giá Trị Giao Dịch</span>
                     <span class="kpi-value" style="color: var(--color-brand);"
                         th:text="${#numbers.formatDecimal(summary.totalGmv, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</span>
                 </div>
@@ -229,7 +223,7 @@
                 </div>
 
                 <div class="kpi-card">
-                    <span class="kpi-label">Thuế Khấu Trừ Giữ Hộ (Mock)</span>
+                    <span class="kpi-label">Thuế Khấu Trừ Giữ Hộ</span>
                     <span class="kpi-value" style="color: #b45309;"
                         th:text="${#numbers.formatDecimal(summary.totalTaxWithheld, 1, 'COMMA', 0, 'POINT')} + ' đ'">0
                         đ</span>
@@ -250,10 +244,7 @@
                             Phân Tích Giao Dịch Theo Loại Vé (<span th:text="${summary.fromDate}"></span> → <span
                                 th:text="${summary.toDate}"></span>)
                         </div>
-                        <div style="font-size: 12px; color: var(--color-text-muted); margin-top: 2px;">
-                            Tỷ lệ hoàn tất / tranh chấp / hủy lọc theo ngày kết thúc <code>completedAt</code>; 3 cột
-                            cuối là trạng thái đang vận hành tức thời (Live).
-                        </div>
+
                     </div>
                 </div>
 
@@ -315,10 +306,6 @@
                     <div class="section-title">
                         Sổ Cái Doanh Thu Sàn Trong Kỳ (<span th:text="${#lists.size(summary.ledgerRows)}">0</span> bút
                         toán)
-                    </div>
-                    <div style="font-size: 12px; color: var(--color-text-muted);">
-                        Dòng tịch thu cọc ghi nhận GMV = 0 đ và Thuế = 0 đ, chỉ cộng phần Phí phạt cọc vào Doanh thu
-                        sàn.
                     </div>
                 </div>
 

@@ -29,10 +29,9 @@ public class TicketStateMachineService {
     static {
         ALLOWED.put(TicketStatus.LISTED, EnumSet.of(TicketStatus.PAYMENT_ESCROWED, TicketStatus.CANCELLED));
         ALLOWED.put(TicketStatus.PAYMENT_ESCROWED, EnumSet.of(TicketStatus.DEPOSIT_LOCKED, TicketStatus.CANCELLED));
-        ALLOWED.put(TicketStatus.DEPOSIT_LOCKED, EnumSet.of(TicketStatus.TRANSFERRED, TicketStatus.CANCELLED));
-        ALLOWED.put(TicketStatus.TRANSFERRED, EnumSet.of(TicketStatus.AWAITING_USE, TicketStatus.CANCELLED));
+        ALLOWED.put(TicketStatus.DEPOSIT_LOCKED, EnumSet.of(TicketStatus.AWAITING_USE, TicketStatus.CANCELLED));
         ALLOWED.put(TicketStatus.AWAITING_USE, EnumSet.of(TicketStatus.AUTO_COMPLETE, TicketStatus.DISPUTE_UNDER_REVIEW));
-        ALLOWED.put(TicketStatus.DISPUTE_UNDER_REVIEW, EnumSet.of(TicketStatus.RESOLVED_BUYER_WINS, TicketStatus.RESOLVED_SELLER_WINS));
+        ALLOWED.put(TicketStatus.DISPUTE_UNDER_REVIEW, EnumSet.of(TicketStatus.RESOLVED_BUYER_WINS, TicketStatus.RESOLVED_SELLER_WINS, TicketStatus.AWAITING_USE));
         ALLOWED.put(TicketStatus.AUTO_COMPLETE, EnumSet.noneOf(TicketStatus.class));
         ALLOWED.put(TicketStatus.RESOLVED_BUYER_WINS, EnumSet.noneOf(TicketStatus.class));
         ALLOWED.put(TicketStatus.RESOLVED_SELLER_WINS, EnumSet.noneOf(TicketStatus.class));
@@ -84,12 +83,16 @@ public class TicketStateMachineService {
             case PAYMENT_ESCROWED:
                 ticket.setEscrowedAt(now);
                 break;
-            case TRANSFERRED:
-                ticket.setTransferredAt(now);
-                break;
             case AWAITING_USE:
-                ticket.setReceivedAt(now);
-                ticket.setDisputeWindowClosesAt(computeDisputeWindowClose(ticket));
+                if (ticket.getTransferredAt() == null) {
+                    ticket.setTransferredAt(now);
+                }
+                if (ticket.getReceivedAt() == null) {
+                    ticket.setReceivedAt(now);
+                }
+                if (ticket.getDisputeWindowClosesAt() == null) {
+                    ticket.setDisputeWindowClosesAt(computeDisputeWindowClose(ticket));
+                }
                 break;
             case AUTO_COMPLETE:
             case RESOLVED_BUYER_WINS:

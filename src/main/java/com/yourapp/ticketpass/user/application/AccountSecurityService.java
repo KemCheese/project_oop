@@ -27,8 +27,7 @@ public class AccountSecurityService {
 
     private static final int MIN_MODERATION_REASON_LENGTH = 5;
     private static final int MAX_MODERATION_REASON_LENGTH = 500;
-    private static final Pattern PASSWORD_STRENGTH_PATTERN =
-            Pattern.compile("\\A(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+\\z");
+    private static final Pattern PASSWORD_STRENGTH_PATTERN = Pattern.compile("\\A(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+\\z");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -68,8 +67,7 @@ public class AccountSecurityService {
                 user.getId(),
                 user.getEmail(),
                 currentSessionId,
-                Instant.now(clock)
-        ));
+                Instant.now(clock)));
         log.info("Người dùng #{} đã đổi mật khẩu và phát sự kiện thu hồi các phiên khác.", userId);
     }
 
@@ -79,7 +77,8 @@ public class AccountSecurityService {
             throw new BusinessRuleViolationException("Thông tin kiểm duyệt tài khoản không hợp lệ.");
         }
         if (targetUserId.equals(adminId)) {
-            throw new BusinessRuleViolationException("Bạn không thể tự khóa hoặc tự thay đổi trạng thái tài khoản của chính mình.");
+            throw new BusinessRuleViolationException(
+                    "Bạn không thể tự khóa hoặc tự thay đổi trạng thái tài khoản của chính mình.");
         }
         if (targetStatus == UserStatus.PENDING_VERIFICATION) {
             throw new BusinessRuleViolationException("Không thể chuyển tài khoản về trạng thái chờ xác minh.");
@@ -89,7 +88,8 @@ public class AccountSecurityService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", targetUserId));
 
         if (targetUser.getRole() == UserRole.ADMIN) {
-            throw new BusinessRuleViolationException("Không được phép thay đổi trạng thái của tài khoản Quản trị viên.");
+            throw new BusinessRuleViolationException(
+                    "Không được phép thay đổi trạng thái của tài khoản Quản trị viên.");
         }
         if (targetUser.isPermanentlyBanned()) {
             throw new BusinessRuleViolationException(
@@ -118,8 +118,7 @@ public class AccountSecurityService {
                 adminId,
                 targetStatus.name(),
                 effectiveReason,
-                now
-        ));
+                now));
 
         log.info("Admin #{} đã chuyển tài khoản #{} sang trạng thái {} (lý do: {}).",
                 adminId, targetUserId, targetStatus, sanitizeForLog(effectiveReason));
@@ -163,8 +162,7 @@ public class AccountSecurityService {
                 null,
                 UserStatus.BANNED.name(),
                 effectiveReason,
-                now
-        ));
+                now));
 
         log.warn("Hệ thống đã khóa vĩnh viễn tài khoản #{} do điểm uy tín về 0.", userId);
     }

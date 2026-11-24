@@ -86,11 +86,6 @@ public class TicketRepositoryImpl implements TicketRepository {
     }
 
     @Override
-    public List<Ticket> findOverdueDeliveryTickets(Instant before) {
-        return ticketJpaRepository.findByStatusAndTransferredAtBefore(TicketStatus.TRANSFERRED, before);
-    }
-
-    @Override
     public List<Ticket> findExpiredListedTickets(Instant now) {
         return ticketJpaRepository.findByStatusAndEventStartAtBefore(TicketStatus.LISTED, now);
     }

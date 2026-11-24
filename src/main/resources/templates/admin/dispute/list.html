@@ -93,17 +93,12 @@
                         <span class="badge badge-brand" style="background-color: #0f172a; color: #fff;">
                             <i class="fa-solid fa-lock"></i> ROLE_ADMIN
                         </span>
-                        <span style="font-size: 13px; color: var(--color-text-muted);">Trung tâm kiểm soát giao dịch và
-                            phân xử tranh chấp</span>
+
                     </div>
                     <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand);">
                         Quản Trị Khiếu Nại và Tranh Chấp
                     </h1>
                 </div>
-
-                <a th:href="@{/tickets}" class="btn btn-outline btn-sm">
-                    <i class="fa-solid fa-store"></i> Xem sàn vé
-                </a>
             </div>
 
             <div class="alert alert-success" th:if="${successMessage != null}" style="margin-bottom: 16px;">
@@ -126,7 +121,7 @@
                 <div class="stat-card">
                     <div
                         style="font-size: 12px; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">
-                        Quá Hạn Giải Trình (24h)
+                        Quá Hạn Giải Trình
                     </div>
                     <div class="stat-number" style="color: var(--color-danger);" th:text="${overdueCount ?: 0}">0</div>
                     <div style="font-size: 12px; color: var(--color-danger);">Người bán không giải trình đúng hạn</div>

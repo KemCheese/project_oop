@@ -233,7 +233,6 @@ public class AdminDashboardService {
             long liveListed = live.getOrDefault(TicketStatus.LISTED, 0L);
             long liveInProgress = live.getOrDefault(TicketStatus.PAYMENT_ESCROWED, 0L)
                     + live.getOrDefault(TicketStatus.DEPOSIT_LOCKED, 0L)
-                    + live.getOrDefault(TicketStatus.TRANSFERRED, 0L)
                     + live.getOrDefault(TicketStatus.AWAITING_USE, 0L);
             long liveDisputeReview = live.getOrDefault(TicketStatus.DISPUTE_UNDER_REVIEW, 0L);
 

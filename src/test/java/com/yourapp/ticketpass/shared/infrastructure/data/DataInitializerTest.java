@@ -206,7 +206,7 @@ class DataInitializerTest {
             assertThat(distinctTickets).hasSize(6);
             assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.LISTED).count()).isEqualTo(3);
             assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.DISPUTE_UNDER_REVIEW).count()).isEqualTo(1);
-            assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.TRANSFERRED).count()).isEqualTo(1);
+            assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.AWAITING_USE).count()).isEqualTo(1);
             assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.AUTO_COMPLETE).count()).isEqualTo(1);
 
             assertThat(distinctTickets.stream()

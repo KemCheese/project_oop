@@ -291,20 +291,6 @@ public class TicketController {
         }
     }
 
-    @PostMapping("/{id}/transfer")
-    public String markTransferred(@PathVariable Long id, Principal principal) {
-        Long sellerId = resolveUserId(principal);
-        transferTicketService.markTransferred(id, sellerId);
-        return "redirect:/tickets/" + id;
-    }
-
-    @PostMapping("/{id}/received")
-    public String markReceived(@PathVariable Long id, Principal principal) {
-        Long buyerId = resolveUserId(principal);
-        transferTicketService.markAwaitingUse(id, buyerId);
-        return "redirect:/tickets/" + id;
-    }
-
     @PostMapping("/{id}/cancel")
     public String cancel(@PathVariable Long id, @RequestParam String reason,
                          Principal principal) {
@@ -386,9 +372,10 @@ public class TicketController {
         response.setReceivedAt(ticket.getReceivedAt());
 
         java.time.Instant now = java.time.Instant.now();
-        if (ticket.getReceivedAt() != null) {
-            java.time.Instant expiredAt = ticket.getReceivedAt().plus(java.time.Duration.ofMinutes(30));
-            response.setQrExpired(expiredAt.isBefore(now));
+        if (ticket.getDisputeWindowClosesAt() != null) {
+            response.setQrExpired(now.isAfter(ticket.getDisputeWindowClosesAt()));
+        } else if (ticket.getEventStartAt() != null) {
+            response.setQrExpired(now.isAfter(ticket.getEventStartAt().plus(java.time.Duration.ofMinutes(30))));
         } else {
             response.setQrExpired(false);
         }

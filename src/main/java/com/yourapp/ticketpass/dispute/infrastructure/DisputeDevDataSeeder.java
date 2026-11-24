@@ -133,8 +133,12 @@ public class DisputeDevDataSeeder implements CommandLineRunner {
         if (tickets.size() > 1) {
             Ticket ticket2 = tickets.get(1);
             ticket2.setBuyerId(buyer.getId());
-            ticket2.setStatus(TicketStatus.TRANSFERRED);
+            ticket2.setStatus(TicketStatus.AWAITING_USE);
             ticket2.setTransferredAt(now.minus(Duration.ofHours(1)));
+            ticket2.setReceivedAt(now.minus(Duration.ofHours(1)));
+            ticket2.setDisputeWindowClosesAt(ticket2.getEventStartAt() != null
+                    ? ticket2.getEventStartAt().plus(Duration.ofMinutes(30))
+                    : now.plus(Duration.ofHours(2)));
             ticketRepository.save(ticket2);
         }
 

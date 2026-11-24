@@ -251,7 +251,7 @@ class PaymentControllerTest {
         ticket.setSalePrice(new BigDecimal("500000"));
 
         ConflictingTicketInfo conflict = new ConflictingTicketInfo(
-                55L, "Vé cũ", "Concert", "Mỹ Đình", "TRANSFERRED", "Đã mở mã vé QR",
+                55L, "Vé cũ", "Concert", "Mỹ Đình", "AWAITING_USE", "Đã mở mã vé QR · Chờ sự kiện",
                 java.time.Instant.now(), java.time.Instant.now().plusSeconds(3600), false, "13:00 - 15:00"
         );
         when(principal.getName()).thenReturn("buyer@example.com");
@@ -280,7 +280,7 @@ class PaymentControllerTest {
         ticket.setSalePrice(new BigDecimal("500000"));
 
         ConflictingTicketInfo conflict = new ConflictingTicketInfo(
-                55L, "Vé cũ", "Concert", "Mỹ Đình", "TRANSFERRED", "Đã mở mã vé QR",
+                55L, "Vé cũ", "Concert", "Mỹ Đình", "AWAITING_USE", "Đã mở mã vé QR · Chờ sự kiện",
                 java.time.Instant.now(), java.time.Instant.now().plusSeconds(3600), false, "13:00 - 15:00"
         );
         when(principal.getName()).thenReturn("buyer@example.com");

@@ -48,10 +48,12 @@
                         transform: scale(0.95);
                         box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7);
                     }
+
                     70% {
                         transform: scale(1);
                         box-shadow: 0 0 0 6px rgba(217, 119, 6, 0);
                     }
+
                     100% {
                         transform: scale(0.95);
                         box-shadow: 0 0 0 0 rgba(217, 119, 6, 0);
@@ -540,14 +542,14 @@
                         <span class="pulse-dot"></span>
                         <span>Đang chờ quét mã chuyển khoản</span>
                     </div>
-                    <h1 class="transfer-title" th:text="${type == 'escrow' ? 'Ký Quỹ Escrow Mua Vé #' + ticketId : 'Nộp Bảo Lãnh Cọc Bán Vé #' + ticketId}">
+                    <h1 class="transfer-title"
+                        th:text="${type == 'escrow' ? 'Ký Quỹ Escrow Mua Vé #' + ticketId : 'Nộp Bảo Lãnh Cọc Bán Vé #' + ticketId}">
                         Thanh toán Chuyển khoản Ký quỹ
                     </h1>
-                    <p class="transfer-subtitle" th:if="${type == 'escrow'}">
-                        Toàn bộ 100% tiền vé được giữ an toàn trong tài khoản ký quỹ trung gian của TicketPass và chỉ giải ngân khi bạn đã nhận vé hợp lệ.
-                    </p>
+
                     <p class="transfer-subtitle" th:if="${type == 'deposit'}">
-                        Khoản bảo lãnh cọc 50% giúp đảm bảo bạn sẽ bàn giao vé đúng hẹn, giữ vững uy tín người bán trên sàn vé.
+                        Khoản bảo lãnh cọc 50% giúp đảm bảo bạn sẽ bàn giao vé đúng hẹn, giữ vững uy tín người bán trên
+                        sàn vé.
                     </p>
                 </div>
 
@@ -569,9 +571,8 @@
                             <span class="bracket bracket-top-right"></span>
                             <span class="bracket bracket-bottom-left"></span>
                             <span class="bracket bracket-bottom-right"></span>
-                            <img id="qrImage"
-                                 th:src="${qrImageUrl ?: '/images/qr-payment.png'}"
-                                 alt="Mã QR Chuyển khoản VietQR" />
+                            <img id="qrImage" th:src="${qrImageUrl ?: '/images/qr-payment.png'}"
+                                alt="Mã QR Chuyển khoản VietQR" />
                         </div>
 
                         <div class="session-timer">
@@ -590,7 +591,8 @@
                         <div>
                             <div class="info-section-title">
                                 <span>
-                                    <i class="fa-solid fa-building-columns" style="color: var(--color-primary); margin-right: 6px;"></i>
+                                    <i class="fa-solid fa-building-columns"
+                                        style="color: var(--color-primary); margin-right: 6px;"></i>
                                     Thông tin tài khoản thụ hưởng
                                 </span>
                                 <span class="trust-pill">
@@ -610,15 +612,18 @@
                                 <div class="bank-row">
                                     <span class="bank-row-label">Chủ tài khoản</span>
                                     <div class="bank-row-val-group">
-                                        <span class="bank-row-val" th:text="${accountHolder}">TICKETPASS TRUNG GIAN</span>
+                                        <span class="bank-row-val" th:text="${accountHolder}">TICKETPASS TRUNG
+                                            GIAN</span>
                                     </div>
                                 </div>
 
                                 <div class="bank-row">
                                     <span class="bank-row-label">Số tài khoản</span>
                                     <div class="bank-row-val-group">
-                                        <span class="bank-row-val" id="accountNumberVal" th:text="${accountNumber}">0123456789</span>
-                                        <button type="button" class="btn-copy" onclick="copyText('accountNumberVal', this)">
+                                        <span class="bank-row-val" id="accountNumberVal"
+                                            th:text="${accountNumber}">0123456789</span>
+                                        <button type="button" class="btn-copy"
+                                            onclick="copyText('accountNumberVal', this)">
                                             <i class="fa-regular fa-copy"></i>
                                             <span>Chép</span>
                                         </button>
@@ -628,12 +633,12 @@
                                 <div class="bank-row highlight-amount">
                                     <span class="bank-row-label">Số tiền thanh toán</span>
                                     <div class="bank-row-val-group">
-                                        <span class="bank-row-val amount"
-                                              id="amountVal"
-                                              th:text="${#numbers.formatDecimal(amount, 0, 'POINT', 0, 'POINT')} + ' ₫'">
+                                        <span class="bank-row-val amount" id="amountVal"
+                                            th:text="${#numbers.formatDecimal(amount, 0, 'POINT', 0, 'POINT')} + ' ₫'">
                                             250.000 ₫
                                         </span>
-                                        <button type="button" class="btn-copy" onclick="copyRawText([[${amount}]], this, 'Số tiền')">
+                                        <button type="button" class="btn-copy"
+                                            onclick="copyRawText([[${amount}]], this, 'Số tiền')">
                                             <i class="fa-regular fa-copy"></i>
                                             <span>Chép</span>
                                         </button>
@@ -643,12 +648,12 @@
                                 <div class="bank-row highlight-syntax">
                                     <span class="bank-row-label">Nội dung chuyển khoản</span>
                                     <div class="bank-row-val-group">
-                                        <span class="bank-row-val syntax"
-                                              id="transferNoteVal"
-                                              th:text="${transferNote}">
+                                        <span class="bank-row-val syntax" id="transferNoteVal"
+                                            th:text="${transferNote}">
                                             TICKETPASS 1
                                         </span>
-                                        <button type="button" class="btn-copy" onclick="copyText('transferNoteVal', this)">
+                                        <button type="button" class="btn-copy"
+                                            onclick="copyText('transferNoteVal', this)">
                                             <i class="fa-regular fa-copy"></i>
                                             <span>Chép</span>
                                         </button>
@@ -659,7 +664,8 @@
                             <div class="transfer-notice">
                                 <i class="fa-solid fa-triangle-exclamation"></i>
                                 <div>
-                                    <strong>Lưu ý quan trọng:</strong> Giữ nguyên <strong>nội dung chuyển khoản</strong> để hệ thống tự động đối soát và kích hoạt giao dịch của bạn một cách nhanh nhất.
+                                    <strong>Lưu ý quan trọng:</strong> Giữ nguyên <strong>nội dung chuyển khoản</strong>
+                                    để hệ thống tự động đối soát và kích hoạt giao dịch của bạn một cách nhanh nhất.
                                 </div>
                             </div>
                         </div>
@@ -673,7 +679,9 @@
                                 <span class="sandbox-badge">Chế độ Test</span>
                             </div>
                             <div class="sandbox-desc">
-                                Chưa cần quét QR thật: Bạn hãy bấm <strong>"Thanh toán thành công"</strong> để chuyển sang các bước tiếp theo của vé, hoặc <strong>"Thanh toán thất bại"</strong> để thử luồng báo lỗi.
+                                Chưa cần quét QR thật: Bạn hãy bấm <strong>"Thanh toán thành công"</strong> để chuyển
+                                sang các bước tiếp theo của vé, hoặc <strong>"Thanh toán thất bại"</strong> để thử luồng
+                                báo lỗi.
                             </div>
                             <div class="sandbox-actions">
 
@@ -696,10 +704,12 @@
                                 </form>
                             </div>
 
-                            <form th:action="@{/payment/wallet/pay-from-transfer}" method="post" style="margin-top: 12px;">
+                            <form th:action="@{/payment/wallet/pay-from-transfer}" method="post"
+                                style="margin-top: 12px;">
                                 <input type="hidden" name="ref" th:value="${ref}" />
                                 <input type="hidden" name="type" th:value="${type}" />
-                                <button type="submit" style="width: 100%; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; border: 1px solid #334155; border-radius: var(--radius-md); padding: 11px 16px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                                <button type="submit"
+                                    style="width: 100%; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; border: 1px solid #334155; border-radius: var(--radius-md); padding: 11px 16px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
                                     <i class="fa-solid fa-wallet" style="color: #f59e0b;"></i>
                                     <span>Trừ tiền Ví TicketPass & Xác nhận ngay (1-Click)</span>
                                 </button>

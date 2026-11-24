@@ -111,7 +111,7 @@ public class ReputationController {
         userQueryService.findById(score.getUserId()).ifPresent(user ->
                 response.setFullName(user.getFullName()));
         if (response.getFullName() == null) {
-            response.setFullName("Thành viên #" + score.getUserId());
+            response.setFullName("Thành viên TicketPass");
         }
 
         return response;

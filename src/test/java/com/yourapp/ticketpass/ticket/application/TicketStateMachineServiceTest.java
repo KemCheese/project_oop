@@ -51,9 +51,9 @@ class TicketStateMachineServiceTest {
     }
 
     @Test
-    @DisplayName("allowedNextStates: TRANSFERRED chỉ cho phép đúng {AWAITING_USE, CANCELLED}")
-    void testAllowedNextStatesFromTransferred() {
-        Set<TicketStatus> nextStates = stateMachineService.allowedNextStates(TicketStatus.TRANSFERRED);
+    @DisplayName("allowedNextStates: DEPOSIT_LOCKED chỉ cho phép đúng {AWAITING_USE, CANCELLED}")
+    void testAllowedNextStatesFromDepositLocked() {
+        Set<TicketStatus> nextStates = stateMachineService.allowedNextStates(TicketStatus.DEPOSIT_LOCKED);
         assertEquals(Set.of(TicketStatus.AWAITING_USE, TicketStatus.CANCELLED), nextStates);
     }
 
@@ -87,20 +87,19 @@ class TicketStateMachineServiceTest {
     }
 
     @Test
-    @DisplayName("allowedNextStates: DEPOSIT_LOCKED và TRANSFERRED cho phép CANCELLED để hỗ trợ auto-cancel khi điểm uy tín = 0")
+    @DisplayName("allowedNextStates: DEPOSIT_LOCKED cho phép CANCELLED và AWAITING_USE không cho phép CANCELLED khi điểm uy tín = 0")
     void testAllowedNextStatesSupportsAutoCancelBeforeQrOpened() {
         assertTrue(stateMachineService.allowedNextStates(TicketStatus.DEPOSIT_LOCKED).contains(TicketStatus.CANCELLED));
-        assertTrue(stateMachineService.allowedNextStates(TicketStatus.TRANSFERRED).contains(TicketStatus.CANCELLED));
         assertFalse(stateMachineService.allowedNextStates(TicketStatus.AWAITING_USE).contains(TicketStatus.CANCELLED));
     }
 
     @Test
-    @DisplayName("transition: TRANSFERRED -> AWAITING_USE cập nhật receivedAt và disputeWindowClosesAt = eventStartAt + 30p (BR-09 1B)")
-    void testTransitionTransferredToAwaitingUseSetsReceivedAt() {
+    @DisplayName("transition: DEPOSIT_LOCKED -> AWAITING_USE cập nhật transferredAt, receivedAt và disputeWindowClosesAt = eventStartAt + 30p (BR-09 1B)")
+    void testTransitionDepositLockedToAwaitingUseSetsTimestampsAndWindow() {
         Ticket ticket = new Ticket();
         ticket.setId(4L);
         ticket.setTicketType(TicketType.MOVIE);
-        ticket.setStatus(TicketStatus.TRANSFERRED);
+        ticket.setStatus(TicketStatus.DEPOSIT_LOCKED);
         ticket.setEventStartAt(Instant.now().plus(Duration.ofHours(5)));
 
         when(ticketRepository.findById(4L)).thenReturn(Optional.of(ticket));
@@ -108,18 +107,19 @@ class TicketStateMachineServiceTest {
         Ticket result = stateMachineService.transition(4L, TicketStatus.AWAITING_USE);
 
         assertEquals(TicketStatus.AWAITING_USE, result.getStatus());
+        assertNotNull(result.getTransferredAt());
         assertNotNull(result.getReceivedAt());
         assertNotNull(result.getDisputeWindowClosesAt());
         assertEquals(ticket.getEventStartAt().plus(Duration.ofMinutes(30)), result.getDisputeWindowClosesAt());
     }
 
     @Test
-    @DisplayName("transition: TRANSFERRED -> AWAITING_USE khi eventStartAt null thì fallback receivedAt + window")
-    void testTransitionTransferredToAwaitingUseFallbackWhenEventStartNull() {
+    @DisplayName("transition: DEPOSIT_LOCKED -> AWAITING_USE khi eventStartAt null thì fallback receivedAt + window")
+    void testTransitionDepositLockedToAwaitingUseFallbackWhenEventStartNull() {
         Ticket ticket = new Ticket();
         ticket.setId(6L);
         ticket.setTicketType(TicketType.MOVIE);
-        ticket.setStatus(TicketStatus.TRANSFERRED);
+        ticket.setStatus(TicketStatus.DEPOSIT_LOCKED);
         ticket.setEventStartAt(null);
 
         when(ticketRepository.findById(6L)).thenReturn(Optional.of(ticket));
@@ -129,6 +129,28 @@ class TicketStateMachineServiceTest {
         assertEquals(TicketStatus.AWAITING_USE, result.getStatus());
         assertNotNull(result.getReceivedAt());
         assertEquals(result.getReceivedAt().plus(Duration.ofHours(2)), result.getDisputeWindowClosesAt());
+    }
+
+    @Test
+    @DisplayName("transition: DISPUTE_UNDER_REVIEW -> AWAITING_USE giữ nguyên receivedAt và disputeWindowClosesAt gốc")
+    void testTransitionDisputeWithdrawnToAwaitingUsePreservesOriginalTimestamps() {
+        Instant originalReceived = Instant.now().minus(Duration.ofHours(3));
+        Instant originalClose = Instant.now().plus(Duration.ofHours(5));
+        Ticket ticket = new Ticket();
+        ticket.setId(7L);
+        ticket.setTicketType(TicketType.MOVIE);
+        ticket.setStatus(TicketStatus.DISPUTE_UNDER_REVIEW);
+        ticket.setTransferredAt(originalReceived);
+        ticket.setReceivedAt(originalReceived);
+        ticket.setDisputeWindowClosesAt(originalClose);
+
+        when(ticketRepository.findById(7L)).thenReturn(Optional.of(ticket));
+
+        Ticket result = stateMachineService.transition(7L, TicketStatus.AWAITING_USE);
+
+        assertEquals(TicketStatus.AWAITING_USE, result.getStatus());
+        assertEquals(originalReceived, result.getReceivedAt());
+        assertEquals(originalClose, result.getDisputeWindowClosesAt());
     }
 
     @Test

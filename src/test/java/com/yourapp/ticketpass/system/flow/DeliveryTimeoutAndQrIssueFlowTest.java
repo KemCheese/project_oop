@@ -19,7 +19,6 @@ import com.yourapp.ticketpass.payment.domain.EscrowStatus;
 import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.system.base.AbstractSystemIntegrationTest;
-import com.yourapp.ticketpass.ticket.application.DeliveryTimeoutScheduler;
 import com.yourapp.ticketpass.ticket.application.TransferTicketService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
@@ -36,11 +35,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MvcResult;
 
-@DisplayName("Hệ Thống - Luồng 5: Auto-Confirm 30p & Lộ Trình Khiếu Nại Tranh Chấp Sau Khi Mở QR")
+@DisplayName("Hệ Thống - Luồng 5: Mở Mã QR Ngay Khi Đủ Cọc 2 Bên & Lộ Trình Khiếu Nại Tranh Chấp")
 class DeliveryTimeoutAndQrIssueFlowTest extends AbstractSystemIntegrationTest {
-
-    @Autowired
-    private DeliveryTimeoutScheduler deliveryTimeoutScheduler;
 
     @Autowired
     private TransferTicketService transferTicketService;
@@ -66,31 +62,42 @@ class DeliveryTimeoutAndQrIssueFlowTest extends AbstractSystemIntegrationTest {
     }
 
     @Test
-    @DisplayName("Nhánh 1 (Auto-Confirm 30p): Sau 30p Buyer không phản hồi -> Scheduler tự chuyển AWAITING_USE đúng hạn BR-09 1B")
-    void shouldAutoConfirmDeliveryAfterThirtyMinutesTimeout() {
-        User seller = createAndSaveUser("seller_deliv1_" + System.nanoTime() + "@test.com", "Password123@", UserRole.USER);
-        User buyer = createAndSaveUser("buyer_deliv1_" + System.nanoTime() + "@test.com", "Password123@", UserRole.USER);
+    @DisplayName("Nhánh 1 (Mở QR tức thì): Ngay khi 2 bên hoàn tất ký quỹ + cọc 50% -> chuyển thẳng AWAITING_USE, mở QR đến hết cửa sổ khiếu nại BR-09 1B")
+    void shouldImmediatelyUnlockQrUponDepositLockWithoutManualConfirmation() throws Exception {
+        String sellerEmail = "seller_unlock1_" + System.nanoTime() + "@test.com";
+        String buyerEmail = "buyer_unlock1_" + System.nanoTime() + "@test.com";
+        User seller = createAndSaveUser(sellerEmail, "Password123@", UserRole.USER);
+        User buyer = createAndSaveUser(buyerEmail, "Password123@", UserRole.USER);
 
         Instant eventStart = Instant.now().plus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
         Ticket ticket = createAndSaveTicket(seller.getId(), "Vé Xem Phim Avatar 3", TicketType.MOVIE,
-                new BigDecimal("200000.00"), TicketStatus.TRANSFERRED);
+                new BigDecimal("200000.00"), TicketStatus.PAYMENT_ESCROWED);
         ticket.setBuyerId(buyer.getId());
         ticket.setEventStartAt(eventStart);
-        ticket.setTransferredAt(Instant.now().minus(35, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS));
+        ticket.setQrImageStorageKey("tickets-qr/instant-unlock-qr.png");
         ticket = ticketRepository.save(ticket);
 
-        deliveryTimeoutScheduler.scanDeliveryTimeouts();
+        transferTicketService.markDepositLocked(ticket.getId(), 9001L);
 
         Ticket finalTicket = ticketRepository.findById(ticket.getId()).orElseThrow();
         assertThat(finalTicket.getStatus()).isEqualTo(TicketStatus.AWAITING_USE);
+        assertThat(finalTicket.getTransferredAt()).isNotNull();
         assertThat(finalTicket.getReceivedAt()).isNotNull();
         assertThat(finalTicket.getDisputeWindowClosesAt())
                 .isEqualTo(eventStart.plus(30, ChronoUnit.MINUTES));
+
+        MockHttpSession buyerSession = loginAs(buyerEmail, "Password123@");
+        mockMvc.perform(get("/tickets/" + ticket.getId()).session(buyerSession))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Mã Check-in QR Đã Mở Khóa")))
+                .andExpect(content().string(containsString("instant-unlock-qr.png")))
+                .andExpect(content().string(not(containsString("Xác nhận vé hợp lệ"))))
+                .andExpect(content().string(not(containsString("confirmReceiptModal"))));
     }
 
     @Test
-    @DisplayName("Nhánh 2 (Lộ trình khiếu nại thay thế không dead-end): TRANSFERRED -> Xác nhận (AWAITING_USE + thấy QR) -> Mở tranh chấp TICKET_INVALID -> Admin xử BUYER_WINS hoàn tiền & phạt Seller")
-    void shouldAllowBuyerToConfirmAndFileDisputeEndToEndWithoutTechnicalIssuePath() throws Exception {
+    @DisplayName("Nhánh 2 (E2E tranh chấp): Đủ cọc 2 bên -> mở QR ngay (AWAITING_USE) -> Mở tranh chấp TICKET_INVALID -> Admin xử BUYER_WINS hoàn tiền & phạt Seller")
+    void shouldUnlockQrImmediatelyAndAllowDisputeEndToEnd() throws Exception {
         String sellerEmail = "seller_alt_disp_" + System.nanoTime() + "@test.com";
         String buyerEmail = "buyer_alt_disp_" + System.nanoTime() + "@test.com";
         User seller = createAndSaveUser(sellerEmail, "Password123@", UserRole.USER);
@@ -104,10 +111,9 @@ class DeliveryTimeoutAndQrIssueFlowTest extends AbstractSystemIntegrationTest {
         BigDecimal depositAmount = new BigDecimal("200000.00");
         Instant eventStart = Instant.now().plus(12, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
         Ticket ticket = createAndSaveTicket(seller.getId(), "Vé Concert Tranh Chấp E2E", TicketType.CONCERT,
-                salePrice, TicketStatus.TRANSFERRED);
+                salePrice, TicketStatus.PAYMENT_ESCROWED);
         ticket.setBuyerId(buyer.getId());
         ticket.setEventStartAt(eventStart);
-        ticket.setTransferredAt(Instant.now().minus(5, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS));
         ticket.setQrImageStorageKey("tickets-qr/e2e-sample-qr.png");
         ticket = ticketRepository.save(ticket);
 
@@ -117,26 +123,21 @@ class DeliveryTimeoutAndQrIssueFlowTest extends AbstractSystemIntegrationTest {
         ticket.setDepositId(deposit.getId());
         ticketRepository.save(ticket);
 
-        MockHttpSession buyerSession = loginAs(buyerEmail, "Password123@");
-        mockMvc.perform(get("/tickets/" + ticket.getId()).session(buyerSession))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Xác nhận vé hợp lệ")))
-                .andExpect(content().string(not(containsString("Báo lỗi vé không hợp lệ"))));
+        transferTicketService.markDepositLocked(ticket.getId(), deposit.getId());
 
-        mockMvc.perform(post("/tickets/" + ticket.getId() + "/received")
-                        .session(buyerSession)
-                        .with(csrf()))
-                .andExpect(status().is3xxRedirection());
         Ticket awaitingTicket = ticketRepository.findById(ticket.getId()).orElseThrow();
         assertThat(awaitingTicket.getStatus()).isEqualTo(TicketStatus.AWAITING_USE);
         assertThat(awaitingTicket.getReceivedAt()).isNotNull();
         assertThat(awaitingTicket.getDisputeWindowClosesAt())
                 .isEqualTo(awaitingTicket.getEventStartAt().plus(30, ChronoUnit.MINUTES));
 
+        MockHttpSession buyerSession = loginAs(buyerEmail, "Password123@");
         mockMvc.perform(get("/tickets/" + ticket.getId()).session(buyerSession))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Mã QR đang hiển thị")))
-                .andExpect(content().string(containsString("e2e-sample-qr.png")));
+                .andExpect(content().string(containsString("e2e-sample-qr.png")))
+                .andExpect(content().string(not(containsString("Xác nhận vé hợp lệ"))))
+                .andExpect(content().string(not(containsString("Báo lỗi vé không hợp lệ"))));
 
         Dispute dispute = fileDisputeUseCase.fileDispute(
                 ticket.getId(), buyer.getId(), DisputeReason.TICKET_INVALID,

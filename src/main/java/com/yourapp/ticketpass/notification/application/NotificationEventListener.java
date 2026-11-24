@@ -11,7 +11,6 @@ import com.yourapp.ticketpass.shared.event.TicketAutoCancelledDueToBanEvent;
 import com.yourapp.ticketpass.shared.event.TicketDepositLockedEvent;
 import com.yourapp.ticketpass.shared.event.TicketEscrowPaidEvent;
 import com.yourapp.ticketpass.shared.event.TicketExpiredEvent;
-import com.yourapp.ticketpass.shared.event.TicketReceivedEvent;
 import com.yourapp.ticketpass.shared.event.TicketTransactionCompletedEvent;
 import com.yourapp.ticketpass.shared.event.TicketUpcomingReminderEvent;
 import com.yourapp.ticketpass.shared.event.UserAccountModeratedEvent;
@@ -89,14 +88,26 @@ public class NotificationEventListener {
             return;
         }
         log.info("Xử lý thông báo DEPOSIT_LOCKED cho vé {}", event.getTicketId());
-        String content = String.format("Người bán đã đóng cọc 50%% bảo đảm cho vé \"%s\". Mã QR / vé bí mật đã được mở khóa, mời bạn vào nhận và kiểm tra vé!",
+        String targetUrl = "/tickets/" + event.getTicketId();
+        String buyerContent = String.format(
+                "Cả 2 bên đã hoàn tất ký quỹ và đóng cọc 50%% cho vé \"%s\". Mã QR check-in đã được mở khóa ngay và hiển thị trong suốt thời gian mở cửa sổ khiếu nại!",
                 event.getTicketTitle());
         safeSendNotification(
                 event.getBuyerId(),
-                "Người bán đã đóng cọc vé!",
-                content,
+                "Người bán đã đóng cọc — Mã QR đã mở khóa!",
+                buyerContent,
                 NotificationType.DEPOSIT_LOCKED,
-                "/tickets/" + event.getTicketId()
+                targetUrl
+        );
+        String sellerContent = String.format(
+                "Bạn đã khóa cọc 50%% thành công cho vé \"%s\". Mã QR check-in đã được mở khóa ngay cho người mua; tiền bán vé và tiền cọc sẽ tự động giải ngân khi hết cửa sổ khiếu nại.",
+                event.getTicketTitle());
+        safeSendNotification(
+                event.getSellerId(),
+                "Đã khóa cọc 50% — Đã mở mã QR cho người mua",
+                sellerContent,
+                NotificationType.DEPOSIT_LOCKED,
+                targetUrl
         );
     }
 
@@ -203,47 +214,6 @@ public class NotificationEventListener {
                 NotificationType.DEPOSIT_TIMEOUT,
                 "/profile"
         );
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    public void onTicketReceived(TicketReceivedEvent event) {
-        if (event == null) {
-            return;
-        }
-        log.info("Xử lý thông báo TICKET_RECEIVED cho vé {}", event.getTicketId());
-        String targetUrl = "/tickets/" + event.getTicketId();
-
-        if (event.isAutoConfirmed()) {
-            safeSendNotification(
-                    event.getBuyerId(),
-                    "Hệ thống tự động xác nhận nhận vé",
-                    String.format("Vé \"%s\" đã được hệ thống tự động xác nhận sau 30 phút. Cửa sổ khiếu nại chính thức kích hoạt.", event.getTicketTitle()),
-                    NotificationType.TICKET_RECEIVED,
-                    targetUrl
-            );
-            safeSendNotification(
-                    event.getSellerId(),
-                    "Vé đã được tự động xác nhận",
-                    String.format("Vé \"%s\" đã được tự động xác nhận sau 30 phút giao vé. Tiền sẽ được giải ngân khi hết cửa sổ khiếu nại.", event.getTicketTitle()),
-                    NotificationType.TICKET_RECEIVED,
-                    targetUrl
-            );
-        } else {
-            safeSendNotification(
-                    event.getBuyerId(),
-                    "Xác nhận nhận vé thành công",
-                    String.format("Bạn đã xác nhận nhận vé \"%s\" và mở mã QR check-in (mã QR có hiệu lực trong 30 phút). Cửa sổ khiếu nại chính thức kích hoạt.", event.getTicketTitle()),
-                    NotificationType.TICKET_RECEIVED,
-                    targetUrl
-            );
-            safeSendNotification(
-                    event.getSellerId(),
-                    "Người mua đã xác nhận & mở mã QR",
-                    String.format("Người mua đã xác nhận vé hợp lệ và nhấn hiện mã QR check-in cho vé \"%s\" (mã QR có hiệu lực trong 30 phút). Tiền sẽ được giải ngân khi hết cửa sổ khiếu nại.", event.getTicketTitle()),
-                    NotificationType.TICKET_RECEIVED,
-                    targetUrl
-            );
-        }
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)

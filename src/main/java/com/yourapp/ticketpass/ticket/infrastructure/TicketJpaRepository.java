@@ -30,8 +30,6 @@ public interface TicketJpaRepository extends JpaRepository<Ticket, Long> {
 
     List<Ticket> findByStatusAndEscrowedAtBefore(TicketStatus status, Instant before);
 
-    List<Ticket> findByStatusAndTransferredAtBefore(TicketStatus status, Instant before);
-
     List<Ticket> findByStatusAndEventStartAtBefore(TicketStatus status, Instant before);
 
     @Query("SELECT t FROM Ticket t WHERE t.status = :status AND " +
