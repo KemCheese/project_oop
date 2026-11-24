@@ -8,8 +8,6 @@ public enum TicketStatus {
 
     DEPOSIT_LOCKED,
 
-    TRANSFERRED,
-
     AWAITING_USE,
 
     AUTO_COMPLETE,

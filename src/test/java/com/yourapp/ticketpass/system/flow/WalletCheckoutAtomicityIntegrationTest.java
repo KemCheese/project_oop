@@ -103,7 +103,7 @@ class WalletCheckoutAtomicityIntegrationTest extends AbstractSystemIntegrationTe
         createdDepositIds.add(deposit.getId());
         assertThat(deposit.getStatus()).isEqualTo(DepositStatus.LOCKED);
         assertThat(ticketRepository.findById(ticket.getId()).orElseThrow().getStatus())
-                .isEqualTo(TicketStatus.TRANSFERRED);
+                .isEqualTo(TicketStatus.AWAITING_USE);
         assertThat(walletRepository.findByUserId(seller.getId()).orElseThrow().getBalance())
                 .isEqualByComparingTo("800000.00");
 

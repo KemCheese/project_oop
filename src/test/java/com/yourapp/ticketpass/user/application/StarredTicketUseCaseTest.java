@@ -161,7 +161,7 @@ class StarredTicketUseCaseTest {
             when(starredTicketRepository.findTicketIdsByUserId(1L)).thenReturn(List.of(10L, 20L));
 
             Ticket t1 = buildSampleTicket(10L, "Phim Dune 2", TicketType.MOVIE, TicketStatus.LISTED);
-            Ticket t2 = buildSampleTicket(20L, "Xe Hà Nội - Sapa", TicketType.BUS, TicketStatus.TRANSFERRED);
+            Ticket t2 = buildSampleTicket(20L, "Xe Hà Nội - Sapa", TicketType.BUS, TicketStatus.AWAITING_USE);
 
             when(ticketRepository.findById(10L)).thenReturn(Optional.of(t1));
             when(ticketRepository.findById(20L)).thenReturn(Optional.of(t2));
@@ -177,7 +177,7 @@ class StarredTicketUseCaseTest {
 
             assertThat(result.get(1).ticketId()).isEqualTo(20L);
             assertThat(result.get(1).title()).isEqualTo("Xe Hà Nội - Sapa");
-            assertThat(result.get(1).status()).isEqualTo(TicketStatus.TRANSFERRED);
+            assertThat(result.get(1).status()).isEqualTo(TicketStatus.AWAITING_USE);
         }
     }
 

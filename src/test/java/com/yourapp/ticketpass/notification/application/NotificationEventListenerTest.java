@@ -17,7 +17,6 @@ import com.yourapp.ticketpass.shared.event.TicketAutoCancelledDueToBanEvent;
 import com.yourapp.ticketpass.shared.event.TicketDepositLockedEvent;
 import com.yourapp.ticketpass.shared.event.TicketEscrowPaidEvent;
 import com.yourapp.ticketpass.shared.event.TicketExpiredEvent;
-import com.yourapp.ticketpass.shared.event.TicketReceivedEvent;
 import com.yourapp.ticketpass.shared.event.TicketTransactionCompletedEvent;
 import com.yourapp.ticketpass.shared.event.TicketUpcomingReminderEvent;
 import com.yourapp.ticketpass.shared.event.UserAccountModeratedEvent;
@@ -63,7 +62,7 @@ class NotificationEventListenerTest {
     }
 
     @Test
-    @DisplayName("onTicketDepositLocked: Bắn thông báo DEPOSIT_LOCKED cho Người mua")
+    @DisplayName("onTicketDepositLocked: Bắn thông báo DEPOSIT_LOCKED cho cả Người mua và Người bán khi mở QR ngay")
     void testOnTicketDepositLocked() {
         TicketDepositLockedEvent event = new TicketDepositLockedEvent(
                 2L, 10L, 20L, "Vé Phim Mai", BigDecimal.valueOf(100000), Instant.now()
@@ -73,7 +72,14 @@ class NotificationEventListenerTest {
 
         verify(notificationService).sendNotification(
                 eq(20L),
-                eq("Người bán đã đóng cọc vé!"),
+                contains("Mã QR đã mở khóa"),
+                contains("Vé Phim Mai"),
+                eq(NotificationType.DEPOSIT_LOCKED),
+                eq("/tickets/2")
+        );
+        verify(notificationService).sendNotification(
+                eq(10L),
+                contains("Đã khóa cọc 50%"),
                 contains("Vé Phim Mai"),
                 eq(NotificationType.DEPOSIT_LOCKED),
                 eq("/tickets/2")
@@ -165,31 +171,6 @@ class NotificationEventListenerTest {
                 contains("bị trừ 1 điểm"),
                 eq(NotificationType.DEPOSIT_TIMEOUT),
                 eq("/profile")
-        );
-    }
-
-    @Test
-    @DisplayName("onTicketReceived: Bắn thông báo TICKET_RECEIVED cho cả 2 bên")
-    void testOnTicketReceived() {
-        TicketReceivedEvent event = new TicketReceivedEvent(
-                8L, 10L, 20L, "Vé Kpop", false, Instant.now()
-        );
-
-        listener.onTicketReceived(event);
-
-        verify(notificationService).sendNotification(
-                eq(20L),
-                contains("thành công"),
-                any(),
-                eq(NotificationType.TICKET_RECEIVED),
-                eq("/tickets/8")
-        );
-        verify(notificationService).sendNotification(
-                eq(10L),
-                contains("Người mua đã xác nhận"),
-                any(),
-                eq(NotificationType.TICKET_RECEIVED),
-                eq("/tickets/8")
         );
     }
 

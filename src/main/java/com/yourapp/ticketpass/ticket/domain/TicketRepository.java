@@ -33,8 +33,6 @@ public interface TicketRepository {
 
     List<Ticket> findOverdueDepositTickets(Instant before);
 
-    List<Ticket> findOverdueDeliveryTickets(Instant before);
-
     List<Ticket> findExpiredListedTickets(Instant now);
 
     List<Ticket> findPotentialScheduleConflicts(Long buyerId,

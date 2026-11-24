@@ -350,19 +350,38 @@ class TicketControllerTest {
         }
 
         @Test
-        @DisplayName("Vé AWAITING_USE còn hạn sự kiện và mới mở QR < 30p -> eligibleForUnlockedQrBox = true")
-        void testDetailActiveAwaitingUseShowsUnlockedQrBox() {
+        @DisplayName("Vé AWAITING_USE đã mở quá 30p nhưng còn trong cửa sổ khiếu nại -> qrExpired = false, eligibleForUnlockedQrBox = true")
+        void testDetailActiveAwaitingUseShowsUnlockedQrBoxThroughoutDisputeWindow() {
             Ticket t = buildTicket(20L, "BUS", "Vé còn hạn", "Sài Gòn - Đà Lạt");
             t.setStatus(TicketStatus.AWAITING_USE);
             t.setBuyerId(20L);
             t.setEventStartAt(Instant.now().plus(Duration.ofHours(5)));
             t.setEventEndAt(Instant.now().plus(Duration.ofHours(9)));
-            t.setReceivedAt(Instant.now().minus(Duration.ofMinutes(5)));
+            t.setReceivedAt(Instant.now().minus(Duration.ofDays(2)));
+            t.setDisputeWindowClosesAt(t.getEventStartAt().plus(Duration.ofMinutes(30)));
 
             TicketResponse response = loadDetailResponse(t);
             assertThat(response.isEventExpired()).isFalse();
             assertThat(response.isQrExpired()).isFalse();
             assertThat(response.isEligibleForUnlockedQrBox()).isTrue();
+            assertThat(response.isEligibleForLockedQrBox()).isFalse();
+        }
+
+        @Test
+        @DisplayName("Vé AWAITING_USE đã quá cửa sổ khiếu nại (dù sự kiện chưa kết thúc) -> qrExpired = true, ẩn khung QR")
+        void testDetailPastDisputeWindowHidesUnlockedQrBox() {
+            Ticket t = buildTicket(23L, "BUS", "Vé hết cửa sổ khiếu nại", "Sài Gòn - Đà Lạt");
+            t.setStatus(TicketStatus.AWAITING_USE);
+            t.setBuyerId(20L);
+            t.setEventStartAt(Instant.now().minus(Duration.ofMinutes(40)));
+            t.setEventEndAt(Instant.now().plus(Duration.ofHours(2)));
+            t.setReceivedAt(Instant.now().minus(Duration.ofDays(1)));
+            t.setDisputeWindowClosesAt(Instant.now().minus(Duration.ofMinutes(10)));
+
+            TicketResponse response = loadDetailResponse(t);
+            assertThat(response.isEventExpired()).isFalse();
+            assertThat(response.isQrExpired()).isTrue();
+            assertThat(response.isEligibleForUnlockedQrBox()).isFalse();
             assertThat(response.isEligibleForLockedQrBox()).isFalse();
         }
 
@@ -374,23 +393,25 @@ class TicketControllerTest {
             t.setBuyerId(20L);
             t.setEventStartAt(Instant.now().minus(Duration.ofDays(5)));
             t.setEventEndAt(Instant.now().minus(Duration.ofDays(5)).plus(Duration.ofHours(4)));
-            t.setReceivedAt(Instant.now().minus(Duration.ofMinutes(5)));
+            t.setReceivedAt(Instant.now().minus(Duration.ofDays(6)));
 
             TicketResponse response = loadDetailResponse(t);
             assertThat(response.isEventExpired()).isTrue();
+            assertThat(response.isQrExpired()).isTrue();
             assertThat(response.isEligibleForUnlockedQrBox()).isFalse();
             assertThat(response.isEligibleForLockedQrBox()).isFalse();
         }
 
         @Test
-        @DisplayName("Vé AUTO_COMPLETE hoặc đã quá 30p mở QR -> không hiển thị khung xanh hay khung khóa")
+        @DisplayName("Vé AUTO_COMPLETE -> trạng thái kết thúc, ẩn toàn bộ khung xanh và khung khóa")
         void testDetailTerminalOrQrExpiredHidesAllQrBoxes() {
             Ticket autoComplete = buildTicket(22L, "BUS", "Vé hoàn tất cũ", "Cần Thơ - Rạch Giá");
             autoComplete.setStatus(TicketStatus.AUTO_COMPLETE);
             autoComplete.setBuyerId(20L);
             autoComplete.setEventStartAt(Instant.now().plus(Duration.ofHours(3)));
             autoComplete.setEventEndAt(Instant.now().plus(Duration.ofHours(7)));
-            autoComplete.setReceivedAt(Instant.now().minus(Duration.ofMinutes(45)));
+            autoComplete.setReceivedAt(Instant.now().minus(Duration.ofHours(1)));
+            autoComplete.setDisputeWindowClosesAt(Instant.now().minus(Duration.ofMinutes(5)));
 
             TicketResponse response = loadDetailResponse(autoComplete);
             assertThat(response.isTerminalState()).isTrue();

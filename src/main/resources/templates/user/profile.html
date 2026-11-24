@@ -405,10 +405,6 @@
                                             Bình thường
                                         </span>
                                     </div>
-                                    <div style="font-size: 12px; color: var(--color-text-muted); margin-top: 6px;"
-                                        th:text="${profile.reputationLimitDescription ?: 'Giao dịch dưới 6.000.000 đ'}">
-                                        Giao dịch dưới 6.000.000 đ
-                                    </div>
                                 </div>
 
                                 <div class="info-row">
@@ -494,8 +490,6 @@
                                 Tài Khoản Ngân Hàng Nhận Tiền Giải Ngân
                             </div>
                             <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 16px;">
-                                Thông tin tài khoản để hệ thống tự động giải ngân số tiền bán vé sau khi giao dịch
-                                chuyển nhượng hoàn tất thành công.
                             </p>
 
                             <div
@@ -554,8 +548,8 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label class="form-label" for="bankAccountHolder">Tên chủ tài khoản (viết hoa không
-                                        dấu) <span class="required">*</span></label>
+                                    <label class="form-label" for="bankAccountHolder">Tên chủ tài khoản<span
+                                            class="required">*</span></label>
                                     <input type="text" id="bankAccountHolder" th:field="*{bankAccountHolder}"
                                         class="form-control"
                                         th:classappend="${#fields.hasErrors('bankAccountHolder')} ? 'is-invalid' : ''"
@@ -803,7 +797,7 @@
                                                     class="badge badge-warning"
                                                     style="font-size: 11px; padding: 2px 8px;">Đang giao dịch</span>
                                                 <span
-                                                    th:if="${st.status != null and (st.status.name() == 'TRANSFERRED' or st.status.name() == 'AWAITING_USE' or st.status.name() == 'AUTO_COMPLETE' or st.status.name() == 'RESOLVED_BUYER_WINS' or st.status.name() == 'RESOLVED_SELLER_WINS')}"
+                                                    th:if="${st.status != null and (st.status.name() == 'AWAITING_USE' or st.status.name() == 'AUTO_COMPLETE' or st.status.name() == 'RESOLVED_BUYER_WINS' or st.status.name() == 'RESOLVED_SELLER_WINS')}"
                                                     class="badge badge-brand"
                                                     style="font-size: 11px; padding: 2px 8px;">Đã bán</span>
                                                 <span th:if="${st.status != null and st.status.name() == 'CANCELLED'}"
@@ -928,8 +922,7 @@
                     if (status === 'LISTED') { text = 'Đang bán'; bg = 'var(--color-primary)'; }
                     else if (status === 'PAYMENT_ESCROWED') { text = 'Chờ khóa cọc'; bg = 'var(--color-warning)'; }
                     else if (status === 'DEPOSIT_LOCKED') { text = 'Đã khóa cọc'; bg = 'var(--color-success)'; }
-                    else if (status === 'TRANSFERRED') { text = 'Đã chuyển vé'; bg = 'var(--color-success)'; }
-                    else if (status === 'AWAITING_USE') { text = 'Chờ sự kiện'; bg = 'var(--color-warning)'; }
+                    else if (status === 'AWAITING_USE') { text = 'Đã mở QR · Chờ sự kiện'; bg = 'var(--color-success)'; }
                     else if (status === 'DISPUTE_UNDER_REVIEW') { text = 'Đang tranh chấp'; bg = '#ef4444'; }
                     else if (status === 'AUTO_COMPLETE' || status === 'COMPLETED') { text = 'Thành công'; bg = 'var(--color-success)'; }
                     else if (status === 'RESOLVED_SELLER_WINS') {

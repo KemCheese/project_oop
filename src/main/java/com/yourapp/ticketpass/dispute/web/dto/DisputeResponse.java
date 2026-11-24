@@ -23,7 +23,11 @@ public class DisputeResponse {
 
     private Long buyerId;
 
+    private String buyerName;
+
     private Long sellerId;
+
+    private String sellerName;
 
     private DisputeStatus status;
 

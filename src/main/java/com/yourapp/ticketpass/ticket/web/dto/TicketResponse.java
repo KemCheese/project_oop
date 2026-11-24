@@ -83,15 +83,13 @@ public class TicketResponse {
     }
 
     public boolean isEligibleForUnlockedQrBox() {
-        return !eventExpired && !qrExpired && !isTerminalState()
-                && status != null && UNLOCKED_QR_ACTIVE_STATUSES.contains(status);
+        if (qrExpired || isTerminalState() || status == null || !UNLOCKED_QR_ACTIVE_STATUSES.contains(status)) {
+            return false;
+        }
+        return disputeWindowClosesAt != null || !eventExpired;
     }
 
     public boolean isEligibleForLockedQrBox() {
         return !eventExpired && status != null && PRE_TRANSFER_LOCKED_STATUSES.contains(status);
-    }
-
-    public boolean isEligibleForTransferVerifyBox() {
-        return !eventExpired && status == TicketStatus.TRANSFERRED;
     }
 }

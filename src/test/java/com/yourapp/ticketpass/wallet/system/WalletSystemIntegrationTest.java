@@ -110,11 +110,6 @@ class WalletSystemIntegrationTest extends AbstractSystemIntegrationTest {
         sellerWallet = walletRepository.findByUserId(seller.getId()).orElseThrow();
         assertThat(sellerWallet.getBalance()).isEqualByComparingTo(new BigDecimal("700000.00"));
 
-        ticketStateMachineService.transition(ticket.getId(), TicketStatus.TRANSFERRED);
-        ticket = ticketRepository.findById(ticket.getId()).orElseThrow();
-        ticket.setTransferredAt(Instant.now());
-        ticketRepository.save(ticket);
-
         ticketStateMachineService.transition(ticket.getId(), TicketStatus.AWAITING_USE);
         ticket = ticketRepository.findById(ticket.getId()).orElseThrow();
         ticket.setReceivedAt(Instant.now());

@@ -291,7 +291,7 @@ public class PaymentController {
             } else if ("deposit".equals(type)) {
                 Deposit deposit = lockDepositUseCase.confirmLocked(null, callbackParams);
                 redirectAttributes.addFlashAttribute("successMessage",
-                        "Khóa cọc thành công! Hệ thống đã tự động chuyển giao vé và mở mã QR cho người mua kiểm tra.");
+                        "Khóa cọc 50% thành công! Mã QR check-in đã được mở khóa ngay cho người mua trong suốt thời gian mở cửa sổ khiếu nại.");
                 return "redirect:/tickets/" + deposit.getTicketId();
             } else {
                 model.addAttribute("error", "Loại giao dịch không hợp lệ: " + type);

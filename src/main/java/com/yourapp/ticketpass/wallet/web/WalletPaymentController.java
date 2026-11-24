@@ -102,7 +102,7 @@ public class WalletPaymentController {
             CheckoutResult result = walletCheckoutUseCase.payDepositWithWallet(ticketId, sellerId);
             if (redirectAttributes != null) {
                 redirectAttributes.addFlashAttribute("successMessage",
-                        String.format("Khóa cọc 50%% (%,.0f VNĐ) bằng Ví thành công! Vé đã được tự động mở cho người mua kiểm tra.",
+                        String.format("Khóa cọc 50%% (%,.0f VNĐ) bằng Ví thành công! Mã QR check-in đã được mở khóa ngay cho người mua.",
                                 result.getChargedAmount()));
             }
         } catch (BusinessRuleViolationException e) {

@@ -1,5 +1,6 @@
 package com.yourapp.ticketpass.ticket.application;
 
+import com.yourapp.ticketpass.shared.event.TicketDepositLockedEvent;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
@@ -49,43 +50,13 @@ class TransferTicketServiceTest {
     private TransferTicketService transferTicketService;
 
     @Test
-    @DisplayName("autoConfirmReceipt: Chuyển vé TRANSFERRED sang AWAITING_USE thành công (AC-02.2)")
-    void testAutoConfirmReceiptSuccess() {
-        Ticket ticket = new Ticket();
-        ticket.setId(401L);
-        ticket.setStatus(TicketStatus.TRANSFERRED);
-
-        when(ticketRepository.findById(401L)).thenReturn(Optional.of(ticket));
-
-        transferTicketService.autoConfirmReceipt(401L);
-
-        verify(stateMachineService).transition(401L, TicketStatus.AWAITING_USE);
-    }
-
-    @Test
-    @DisplayName("autoConfirmReceipt: Bỏ qua nếu vé không còn ở trạng thái TRANSFERRED (AWAITING_USE / CANCELLED)")
-    void testAutoConfirmReceiptIgnoresNonTransferredTicket() {
-        Ticket awaitingTicket = new Ticket();
-        awaitingTicket.setId(402L);
-        awaitingTicket.setStatus(TicketStatus.AWAITING_USE);
-        when(ticketRepository.findById(402L)).thenReturn(Optional.of(awaitingTicket));
-
-        Ticket cancelledTicket = new Ticket();
-        cancelledTicket.setId(403L);
-        cancelledTicket.setStatus(TicketStatus.CANCELLED);
-        when(ticketRepository.findById(403L)).thenReturn(Optional.of(cancelledTicket));
-
-        transferTicketService.autoConfirmReceipt(402L);
-        transferTicketService.autoConfirmReceipt(403L);
-
-        verify(stateMachineService, never()).transition(anyLong(), any());
-    }
-
-    @Test
-    @DisplayName("markDepositLocked: Tự động chuyển tiếp từ DEPOSIT_LOCKED sang TRANSFERRED để mở vé cho buyer")
-    void testMarkDepositLockedAutoTransitionsToTransferred() {
+    @DisplayName("markDepositLocked: Chuyển thẳng DEPOSIT_LOCKED -> AWAITING_USE để mở QR ngay cho buyer")
+    void testMarkDepositLockedImmediatelyUnlocksToAwaitingUse() {
         Ticket ticket = new Ticket();
         ticket.setId(406L);
+        ticket.setSellerId(10L);
+        ticket.setBuyerId(20L);
+        ticket.setTitle("Vé mở QR ngay");
         ticket.setStatus(TicketStatus.PAYMENT_ESCROWED);
 
         when(ticketRepository.findById(406L)).thenReturn(Optional.of(ticket));
@@ -93,23 +64,9 @@ class TransferTicketServiceTest {
         transferTicketService.markDepositLocked(406L, 50L);
 
         verify(stateMachineService).transition(406L, TicketStatus.DEPOSIT_LOCKED);
-        verify(stateMachineService).transition(406L, TicketStatus.TRANSFERRED);
+        verify(stateMachineService).transition(406L, TicketStatus.AWAITING_USE);
+        verify(eventPublisher).publishEvent(any(TicketDepositLockedEvent.class));
         verify(ticketReminderService).triggerEarlyReminderIfWithinLeadWindow(ticket);
-    }
-
-    @Test
-    @DisplayName("markTransferred: Idempotent khi vé đã ở TRANSFERRED thì không báo lỗi")
-    void testMarkTransferredIdempotentWhenAlreadyTransferred() {
-        Ticket ticket = new Ticket();
-        ticket.setId(407L);
-        ticket.setSellerId(100L);
-        ticket.setStatus(TicketStatus.TRANSFERRED);
-
-        when(ticketRepository.findById(407L)).thenReturn(Optional.of(ticket));
-
-        transferTicketService.markTransferred(407L, 100L);
-
-        verify(stateMachineService, never()).transition(anyLong(), any());
     }
 
     @Test

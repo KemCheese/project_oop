@@ -274,3 +274,17 @@ CREATE TABLE IF NOT EXISTS account_liquidations (
     KEY idx_account_liq_user (user_id),
     KEY idx_account_liq_liquidated_at (liquidated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+UPDATE tickets
+SET status = 'AWAITING_USE',
+    received_at = COALESCE(received_at, transferred_at, CURRENT_TIMESTAMP(6)),
+    dispute_window_closes_at = COALESCE(
+        dispute_window_closes_at,
+        CASE
+            WHEN event_start_at IS NOT NULL THEN DATE_ADD(event_start_at, INTERVAL 30 MINUTE)
+            WHEN ticket_type = 'CONCERT' THEN DATE_ADD(COALESCE(received_at, transferred_at, CURRENT_TIMESTAMP(6)), INTERVAL 24 HOUR)
+            WHEN ticket_type = 'BUS' THEN DATE_ADD(COALESCE(received_at, transferred_at, CURRENT_TIMESTAMP(6)), INTERVAL 3 HOUR)
+            ELSE DATE_ADD(COALESCE(received_at, transferred_at, CURRENT_TIMESTAMP(6)), INTERVAL 2 HOUR)
+        END
+    )
+WHERE status = 'TRANSFERRED';

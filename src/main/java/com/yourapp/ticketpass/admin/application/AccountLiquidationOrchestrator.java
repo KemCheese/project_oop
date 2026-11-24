@@ -45,8 +45,7 @@ public class AccountLiquidationOrchestrator {
     private static final Set<TicketStatus> UNOPENED_QR_STATUSES = EnumSet.of(
             TicketStatus.LISTED,
             TicketStatus.PAYMENT_ESCROWED,
-            TicketStatus.DEPOSIT_LOCKED,
-            TicketStatus.TRANSFERRED
+            TicketStatus.DEPOSIT_LOCKED
     );
 
     private final UserRepository userRepository;

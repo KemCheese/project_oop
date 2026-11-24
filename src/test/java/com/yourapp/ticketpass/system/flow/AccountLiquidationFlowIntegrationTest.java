@@ -110,16 +110,13 @@ class AccountLiquidationFlowIntegrationTest extends AbstractSystemIntegrationTes
         depositLockedTicket.setDepositId(dlDeposit.getId());
         ticketRepository.save(depositLockedTicket);
 
-        Ticket transferredTicket = createAndSaveTicket(counterparty.getId(), "Vé Doomed Mua Chưa Xác Nhận", TicketType.MOVIE,
-                new BigDecimal("250000.00"), TicketStatus.TRANSFERRED);
-        EscrowTransaction trEscrow = createAndSaveEscrow(transferredTicket.getId(), doomed.getId(),
+        Ticket buyerEscrowedTicket = createAndSaveTicket(counterparty.getId(), "Vé Doomed Mua Chờ Cọc", TicketType.MOVIE,
+                new BigDecimal("250000.00"), TicketStatus.PAYMENT_ESCROWED);
+        EscrowTransaction buyerEscrow = createAndSaveEscrow(buyerEscrowedTicket.getId(), doomed.getId(),
                 new BigDecimal("250000.00"), EscrowStatus.HELD);
-        Deposit trDeposit = createAndSaveDeposit(transferredTicket.getId(), counterparty.getId(),
-                new BigDecimal("125000.00"), DepositStatus.LOCKED);
-        transferredTicket.setBuyerId(doomed.getId());
-        transferredTicket.setEscrowTransactionId(trEscrow.getId());
-        transferredTicket.setDepositId(trDeposit.getId());
-        ticketRepository.save(transferredTicket);
+        buyerEscrowedTicket.setBuyerId(doomed.getId());
+        buyerEscrowedTicket.setEscrowTransactionId(buyerEscrow.getId());
+        ticketRepository.save(buyerEscrowedTicket);
 
         Ticket awaitingUseTicket = createAndSaveTicket(doomed.getId(), "Vé Đã Mở QR Phải Giữ Nguyên", TicketType.CONCERT,
                 new BigDecimal("500000.00"), TicketStatus.AWAITING_USE);
@@ -143,13 +140,12 @@ class AccountLiquidationFlowIntegrationTest extends AbstractSystemIntegrationTes
         assertThat(ticketRepository.findById(listedTicket.getId()).orElseThrow().getStatus()).isEqualTo(TicketStatus.CANCELLED);
         assertThat(ticketRepository.findById(escrowedTicket.getId()).orElseThrow().getStatus()).isEqualTo(TicketStatus.CANCELLED);
         assertThat(ticketRepository.findById(depositLockedTicket.getId()).orElseThrow().getStatus()).isEqualTo(TicketStatus.CANCELLED);
-        assertThat(ticketRepository.findById(transferredTicket.getId()).orElseThrow().getStatus()).isEqualTo(TicketStatus.CANCELLED);
+        assertThat(ticketRepository.findById(buyerEscrowedTicket.getId()).orElseThrow().getStatus()).isEqualTo(TicketStatus.CANCELLED);
 
         assertThat(escrowTransactionRepository.findById(escrowedTx.getId()).orElseThrow().getStatus()).isEqualTo(EscrowStatus.REFUNDED);
         assertThat(escrowTransactionRepository.findById(dlEscrow.getId()).orElseThrow().getStatus()).isEqualTo(EscrowStatus.REFUNDED);
         assertThat(depositRepository.findById(dlDeposit.getId()).orElseThrow().getStatus()).isEqualTo(DepositStatus.REFUNDED);
-        assertThat(escrowTransactionRepository.findById(trEscrow.getId()).orElseThrow().getStatus()).isEqualTo(EscrowStatus.REFUNDED);
-        assertThat(depositRepository.findById(trDeposit.getId()).orElseThrow().getStatus()).isEqualTo(DepositStatus.REFUNDED);
+        assertThat(escrowTransactionRepository.findById(buyerEscrow.getId()).orElseThrow().getStatus()).isEqualTo(EscrowStatus.REFUNDED);
 
         assertThat(ticketRepository.findById(awaitingUseTicket.getId()).orElseThrow().getStatus()).isEqualTo(TicketStatus.AWAITING_USE);
         assertThat(escrowTransactionRepository.findById(auEscrow.getId()).orElseThrow().getStatus()).isEqualTo(EscrowStatus.HELD);

@@ -3,7 +3,6 @@ package com.yourapp.ticketpass.ticket.application;
 import com.yourapp.ticketpass.reputation.application.ReputationPolicyService;
 import com.yourapp.ticketpass.shared.event.TicketDepositLockedEvent;
 import com.yourapp.ticketpass.shared.event.TicketEscrowPaidEvent;
-import com.yourapp.ticketpass.shared.event.TicketReceivedEvent;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
 import com.yourapp.ticketpass.shared.storage.FileStorageService;
@@ -128,87 +127,22 @@ public class TransferTicketService {
 
         stateMachineService.transition(ticketId, TicketStatus.DEPOSIT_LOCKED);
 
-        stateMachineService.transition(ticketId, TicketStatus.TRANSFERRED);
+        Ticket unlockedTicket = stateMachineService.transition(ticketId, TicketStatus.AWAITING_USE);
+        Ticket targetTicket = unlockedTicket != null ? unlockedTicket : ticket;
 
         if (eventPublisher != null) {
             eventPublisher.publishEvent(new TicketDepositLockedEvent(
-                    ticket.getId(),
-                    ticket.getSellerId(),
-                    ticket.getBuyerId(),
-                    ticket.getTitle(),
-                    ticket.getSalePrice(),
+                    targetTicket.getId(),
+                    targetTicket.getSellerId(),
+                    targetTicket.getBuyerId(),
+                    targetTicket.getTitle(),
+                    targetTicket.getSalePrice(),
                     resolveNow()
             ));
         }
 
         if (ticketReminderService != null) {
-            ticketReminderService.triggerEarlyReminderIfWithinLeadWindow(ticket);
-        }
-    }
-
-    @Transactional
-    public void markTransferred(Long ticketId, Long sellerId) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
-
-        if (ticket.getStatus() == TicketStatus.TRANSFERRED) {
-            return;
-        }
-
-        ValidationResult result = validateTicketService.validateForTransfer(ticketId, sellerId);
-        if (!result.isValid()) {
-            String errorMessage = result.getErrors().stream()
-                    .collect(Collectors.joining("; "));
-            throw new BusinessRuleViolationException(errorMessage);
-        }
-
-        stateMachineService.transition(ticketId, TicketStatus.TRANSFERRED);
-    }
-
-    @Transactional
-    public void markAwaitingUse(Long ticketId, Long buyerId) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
-
-        if (ticket.getBuyerId() == null || !ticket.getBuyerId().equals(buyerId)) {
-            throw new BusinessRuleViolationException(
-                    "Ban khong phai la nguoi mua cua ve nay.");
-        }
-
-        stateMachineService.transition(ticketId, TicketStatus.AWAITING_USE);
-
-        if (eventPublisher != null) {
-            eventPublisher.publishEvent(new TicketReceivedEvent(
-                    ticket.getId(),
-                    ticket.getSellerId(),
-                    ticket.getBuyerId(),
-                    ticket.getTitle(),
-                    false,
-                    Instant.now()
-            ));
-        }
-    }
-
-    @Transactional
-    public void autoConfirmReceipt(Long ticketId) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
-
-        if (ticket.getStatus() != TicketStatus.TRANSFERRED) {
-            return;
-        }
-
-        stateMachineService.transition(ticketId, TicketStatus.AWAITING_USE);
-
-        if (eventPublisher != null) {
-            eventPublisher.publishEvent(new TicketReceivedEvent(
-                    ticket.getId(),
-                    ticket.getSellerId(),
-                    ticket.getBuyerId(),
-                    ticket.getTitle(),
-                    true,
-                    Instant.now()
-            ));
+            ticketReminderService.triggerEarlyReminderIfWithinLeadWindow(targetTicket);
         }
     }
 
@@ -271,9 +205,11 @@ public class TransferTicketService {
         response.setCreatedAt(ticket.getCreatedAt());
         response.setReceivedAt(ticket.getReceivedAt());
 
-        if (ticket.getReceivedAt() != null) {
-            java.time.Instant expiredAt = ticket.getReceivedAt().plus(java.time.Duration.ofMinutes(30));
-            response.setQrExpired(expiredAt.isBefore(java.time.Instant.now()));
+        Instant now = resolveNow();
+        if (ticket.getDisputeWindowClosesAt() != null) {
+            response.setQrExpired(now.isAfter(ticket.getDisputeWindowClosesAt()));
+        } else if (ticket.getEventStartAt() != null) {
+            response.setQrExpired(now.isAfter(ticket.getEventStartAt().plus(java.time.Duration.ofMinutes(30))));
         } else {
             response.setQrExpired(false);
         }

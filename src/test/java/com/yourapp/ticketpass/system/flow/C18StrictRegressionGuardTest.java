@@ -64,11 +64,11 @@ class C18StrictRegressionGuardTest extends AbstractSystemIntegrationTest {
                 UserStatus.BANNED
         );
         assertThat(Arrays.stream(TicketStatus.values()).map(Enum::name))
-                .doesNotContain("TECHNICAL_ISSUE");
+                .doesNotContain("TECHNICAL_ISSUE", "TRANSFERRED");
         assertThat(Arrays.stream(NotificationType.values()).map(Enum::name))
                 .doesNotContain("TECHNICAL_ISSUE");
 
-        assertThat(ticketStateMachineService.allowedNextStates(TicketStatus.TRANSFERRED))
+        assertThat(ticketStateMachineService.allowedNextStates(TicketStatus.DEPOSIT_LOCKED))
                 .isEqualTo(Set.of(TicketStatus.AWAITING_USE, TicketStatus.CANCELLED));
     }
 
@@ -99,12 +99,22 @@ class C18StrictRegressionGuardTest extends AbstractSystemIntegrationTest {
         User seller = createAndSaveUser(sellerEmail, "Pass1234@", UserRole.USER);
 
         Ticket ticket = createAndSaveTicket(seller.getId(), "Vé Test 404 Route", TicketType.MOVIE,
-                new BigDecimal("200000.00"), TicketStatus.TRANSFERRED);
+                new BigDecimal("200000.00"), TicketStatus.AWAITING_USE);
         ticket.setBuyerId(buyer.getId());
         ticketRepository.save(ticket);
 
         MockHttpSession adminSession = loginAs(adminEmail, "Admin123@");
         MockHttpSession buyerSession = loginAs(buyerEmail, "Pass1234@");
+
+        mockMvc.perform(post("/tickets/" + ticket.getId() + "/received")
+                        .session(buyerSession)
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(post("/tickets/" + ticket.getId() + "/transfer")
+                        .session(buyerSession)
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
 
         mockMvc.perform(post("/admin/users/" + seller.getId() + "/suspend")
                         .param("reason", "Thử route tạm khóa đã xóa")
@@ -158,10 +168,11 @@ class C18StrictRegressionGuardTest extends AbstractSystemIntegrationTest {
         lostTicket.setBuyerId(buyer.getId());
         ticketRepository.save(lostTicket);
 
-        Ticket transferredTicket = createAndSaveTicket(seller.getId(), "Vé Chờ Xác Nhận UI", TicketType.CONCERT,
-                new BigDecimal("350000.00"), TicketStatus.TRANSFERRED);
-        transferredTicket.setBuyerId(buyer.getId());
-        ticketRepository.save(transferredTicket);
+        Ticket unlockedTicket = createAndSaveTicket(seller.getId(), "Vé Mở QR Ngay UI", TicketType.CONCERT,
+                new BigDecimal("350000.00"), TicketStatus.AWAITING_USE);
+        unlockedTicket.setBuyerId(buyer.getId());
+        unlockedTicket.setDisputeWindowClosesAt(java.time.Instant.now().plus(java.time.Duration.ofHours(5)));
+        ticketRepository.save(unlockedTicket);
 
         MockHttpSession adminSession = loginAs(adminEmail, "Admin123@");
         MockHttpSession buyerSession = loginAs(buyerEmail, "Pass1234@");
@@ -179,9 +190,11 @@ class C18StrictRegressionGuardTest extends AbstractSystemIntegrationTest {
                 .andExpect(content().string(containsString("Lịch Sử Giao Dịch")))
                 .andExpect(content().string(containsString("Thua tranh chấp")));
 
-        mockMvc.perform(get("/tickets/" + transferredTicket.getId()).session(buyerSession))
+        mockMvc.perform(get("/tickets/" + unlockedTicket.getId()).session(buyerSession))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Xác nhận vé hợp lệ")))
+                .andExpect(content().string(containsString("Mã Check-in QR Đã Mở Khóa")))
+                .andExpect(content().string(not(containsString("Xác nhận vé hợp lệ"))))
+                .andExpect(content().string(not(containsString("confirmReceiptModal"))))
                 .andExpect(content().string(not(containsString("Báo lỗi vé không hợp lệ"))))
                 .andExpect(content().string(not(containsString("reportIssueModal"))));
 

@@ -196,8 +196,8 @@ public class DataInitializer implements CommandLineRunner {
         ticketRepository.save(t4);
 
         Ticket t5 = buildTicket(
-                seller.getId(), buyer.getId(), TicketType.MOVIE, TicketStatus.TRANSFERRED,
-                "Vé Xem Phim 'Avengers: Doomsday' - Suất Chiếu Sớm (Chờ nhận QR)",
+                seller.getId(), buyer.getId(), TicketType.MOVIE, TicketStatus.AWAITING_USE,
+                "Vé Xem Phim 'Avengers: Doomsday' - Suất Chiếu Sớm (Đã mở mã QR)",
                 "Avengers: Doomsday Premiere",
                 "CGV Metropolis Liễu Giai, Hà Nội", "Phòng IMAX - Hàng E - Ghế 12",
                 now.plus(Duration.ofDays(4)), Duration.ofHours(2),
@@ -205,6 +205,8 @@ public class DataInitializer implements CommandLineRunner {
                 "CGV Cinemas", "CGV-AVEN-005", IMG_MOVIE_3, now.minus(Duration.ofHours(3)));
         t5.setEscrowedAt(now.minus(Duration.ofMinutes(15)));
         t5.setTransferredAt(now.minus(Duration.ofMinutes(5)));
+        t5.setReceivedAt(now.minus(Duration.ofMinutes(5)));
+        t5.setDisputeWindowClosesAt(t5.getEventStartAt().plus(Duration.ofMinutes(30)));
         t5 = ticketRepository.save(t5);
         EscrowTransaction e5 = createHeldEscrow(t5, buyer.getId(), seller.getId(), "ESCROW-SEED-5", now.minus(Duration.ofMinutes(15)));
         Deposit d5 = createLockedDeposit(t5, seller.getId(), now.minus(Duration.ofMinutes(5)));

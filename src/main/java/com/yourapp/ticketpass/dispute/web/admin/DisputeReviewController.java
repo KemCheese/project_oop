@@ -148,6 +148,14 @@ public class DisputeReviewController {
         resp.setTicketId(dispute.getTicketId());
         resp.setBuyerId(dispute.getBuyerId());
         resp.setSellerId(dispute.getSellerId());
+        if (dispute.getBuyerId() != null) {
+            userQueryService.findById(dispute.getBuyerId())
+                    .ifPresent(u -> resp.setBuyerName(u.getFullName()));
+        }
+        if (dispute.getSellerId() != null) {
+            userQueryService.findById(dispute.getSellerId())
+                    .ifPresent(u -> resp.setSellerName(u.getFullName()));
+        }
         resp.setStatus(dispute.getStatus());
         resp.setReason(dispute.getReason());
         resp.setDescription(dispute.getDescription());

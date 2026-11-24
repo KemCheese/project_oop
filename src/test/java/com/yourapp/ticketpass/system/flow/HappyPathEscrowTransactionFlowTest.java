@@ -65,11 +65,6 @@ class HappyPathEscrowTransactionFlowTest extends AbstractSystemIntegrationTest {
         ticketRepository.save(ticket);
         ticketStateMachineService.transition(ticket.getId(), TicketStatus.DEPOSIT_LOCKED);
 
-        ticketStateMachineService.transition(ticket.getId(), TicketStatus.TRANSFERRED);
-        ticket = ticketRepository.findById(ticket.getId()).orElseThrow();
-        ticket.setTransferredAt(Instant.now());
-        ticketRepository.save(ticket);
-
         ticketStateMachineService.transition(ticket.getId(), TicketStatus.AWAITING_USE);
         ticket = ticketRepository.findById(ticket.getId()).orElseThrow();
         ticket.setReceivedAt(Instant.now());

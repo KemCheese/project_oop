@@ -50,13 +50,12 @@
             <div class="auth-wrapper">
                 <h1 class="auth-title">Đăng Ký Tài Khoản</h1>
                 <p class="auth-sub">
-                    Tham gia sàn giao dịch vé an toàn với mức uy tín khởi tạo 3 (Bình thường)
                 </p>
 
                 <form method="post" th:action="@{/register}" th:object="${registerRequest}" novalidate>
 
                     <input type="hidden" name="redirect" th:value="${redirect != null ? redirect : param.redirect}"
-                           th:if="${(redirect != null and !redirect.isEmpty()) or (param.redirect != null and !#strings.isEmpty(param.redirect))}" />
+                        th:if="${(redirect != null and !redirect.isEmpty()) or (param.redirect != null and !#strings.isEmpty(param.redirect))}" />
 
                     <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}" style="font-size: 13px;">
                         <i class="fa-solid fa-triangle-exclamation"></i>
@@ -66,25 +65,27 @@
                     <div class="form-group">
                         <label class="form-label" for="fullName">Họ và tên <span class="required">*</span></label>
                         <input type="text" id="fullName" th:field="*{fullName}" class="form-control"
-                               th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"
-                               placeholder="Nguyễn Văn A" required />
+                            th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"
+                            placeholder="Nguyễn Văn A" required />
                         <div th:if="${#fields.hasErrors('fullName')}" class="form-error" th:errors="*{fullName}"></div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="email">Địa chỉ Email <span class="required">*</span></label>
                         <input type="email" id="email" th:field="*{email}" class="form-control"
-                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
-                               placeholder="email@example.com" required />
+                            th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                            placeholder="email@example.com" required />
                         <div th:if="${#fields.hasErrors('email')}" class="form-error" th:errors="*{email}"></div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="phoneNumber">Số điện thoại <span class="required">*</span></label>
+                        <label class="form-label" for="phoneNumber">Số điện thoại <span
+                                class="required">*</span></label>
                         <input type="tel" id="phoneNumber" th:field="*{phoneNumber}" class="form-control"
-                               th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid' : ''"
-                               placeholder="0912345678" required />
-                        <div th:if="${#fields.hasErrors('phoneNumber')}" class="form-error" th:errors="*{phoneNumber}"></div>
+                            th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid' : ''"
+                            placeholder="0912345678" required />
+                        <div th:if="${#fields.hasErrors('phoneNumber')}" class="form-error" th:errors="*{phoneNumber}">
+                        </div>
                         <span class="form-text">Gồm 10 chữ số, bắt đầu bằng số 0</span>
                     </div>
 
@@ -92,17 +93,21 @@
                         <div class="form-group">
                             <label class="form-label" for="password">Mật khẩu <span class="required">*</span></label>
                             <input type="password" id="password" th:field="*{password}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
-                                   placeholder="Tối thiểu 8 ký tự" required />
-                            <div th:if="${#fields.hasErrors('password')}" class="form-error" th:errors="*{password}"></div>
+                                th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
+                                placeholder="Tối thiểu 8 ký tự" required />
+                            <div th:if="${#fields.hasErrors('password')}" class="form-error" th:errors="*{password}">
+                            </div>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="confirmPassword">Xác nhận mật khẩu <span class="required">*</span></label>
-                            <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid' : ''"
-                                   placeholder="Nhập lại mật khẩu" required />
-                            <div th:if="${#fields.hasErrors('confirmPassword')}" class="form-error" th:errors="*{confirmPassword}"></div>
+                            <label class="form-label" for="confirmPassword">Xác nhận mật khẩu <span
+                                    class="required">*</span></label>
+                            <input type="password" id="confirmPassword" th:field="*{confirmPassword}"
+                                class="form-control"
+                                th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid' : ''"
+                                placeholder="Nhập lại mật khẩu" required />
+                            <div th:if="${#fields.hasErrors('confirmPassword')}" class="form-error"
+                                th:errors="*{confirmPassword}"></div>
                         </div>
                     </div>
 
@@ -112,7 +117,8 @@
                 </form>
 
                 <div style="margin-top: 20px; text-align: center; font-size: 13px; color: var(--color-text-muted);">
-                    Đã có tài khoản? <a th:href="@{/login(redirect=${redirect != null ? redirect : param.redirect})}" style="color: var(--color-primary); font-weight: 600;">Đăng nhập tại đây</a>
+                    Đã có tài khoản? <a th:href="@{/login(redirect=${redirect != null ? redirect : param.redirect})}"
+                        style="color: var(--color-primary); font-weight: 600;">Đăng nhập tại đây</a>
                 </div>
             </div>
         </content>

@@ -248,7 +248,7 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
         Instant now = Instant.now();
 
         Ticket dueTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Nhắc 24h",
-                TicketType.CONCERT, TicketStatus.TRANSFERRED,
+                TicketType.CONCERT, TicketStatus.AWAITING_USE,
                 now.plus(Duration.ofHours(23)), now.plus(Duration.ofHours(26)));
 
         Ticket farTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Còn Xa",
@@ -279,7 +279,8 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
         transferTicketService.markDepositLocked(urgentTicket.getId(), 888L);
 
         Ticket lockedUrgent = ticketRepository.findById(urgentTicket.getId()).orElseThrow();
-        assertThat(lockedUrgent.getStatus()).isEqualTo(TicketStatus.TRANSFERRED);
+        assertThat(lockedUrgent.getStatus()).isEqualTo(TicketStatus.AWAITING_USE);
+        assertThat(lockedUrgent.getDisputeWindowClosesAt()).isNotNull();
         assertThat(lockedUrgent.getReminded24hAt()).isNotNull();
 
         ticketReminderScheduler.scanAndSendUpcomingReminders();
@@ -295,7 +296,7 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
     }
 
     @Test
-    @DisplayName("Vé đã hết hạn hoặc quá 30p mở QR -> ẩn hoàn toàn khung xanh và khung khóa QR trên trang chi tiết")
+    @DisplayName("Thời gian hiển thị QR = cửa sổ khiếu nại: mở > 30p vẫn thấy QR nếu cửa sổ còn mở, đóng cửa sổ thì ẩn QR")
     void testExpiredTicketHidesGreenQrBox() throws Exception {
         User seller = newBuyer("qr-seller");
         User buyer = newBuyer("qr-buyer");
@@ -317,8 +318,8 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
         Ticket activeTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Đang Mở QR",
                 TicketType.BUS, TicketStatus.AWAITING_USE,
                 now.plus(Duration.ofHours(4)), now.plus(Duration.ofHours(8)));
-        activeTicket.setReceivedAt(now.minus(Duration.ofMinutes(5)));
-        activeTicket.setDisputeWindowClosesAt(now.plus(Duration.ofHours(10)));
+        activeTicket.setReceivedAt(now.minus(Duration.ofHours(2)));
+        activeTicket.setDisputeWindowClosesAt(now.plus(Duration.ofHours(4).plusMinutes(30)));
         activeTicket = ticketRepository.save(activeTicket);
 
         mockMvc.perform(get("/tickets/" + activeTicket.getId()).with(user(buyer.getEmail()).roles("USER")))
@@ -327,17 +328,17 @@ class ScheduleConflictAndReminderFlowTest extends AbstractSystemIntegrationTest 
                 .andExpect(content().string(containsString("Mã Check-in QR Đã Mở Khóa")))
                 .andExpect(content().string(containsString("Vé có vấn đề? Mở khiếu nại ngay")));
 
-        Ticket qrExpiredTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Quá 30p Mở QR",
+        Ticket qrExpiredTicket = createTimedTicket(seller.getId(), buyer.getId(), "Vé Hết Cửa Sổ Khiếu Nại",
                 TicketType.BUS, TicketStatus.AWAITING_USE,
-                now.plus(Duration.ofHours(4)), now.plus(Duration.ofHours(8)));
-        qrExpiredTicket.setReceivedAt(now.minus(Duration.ofMinutes(40)));
-        qrExpiredTicket.setDisputeWindowClosesAt(now.plus(Duration.ofHours(10)));
+                now.minus(Duration.ofMinutes(40)), now.plus(Duration.ofHours(3)));
+        qrExpiredTicket.setReceivedAt(now.minus(Duration.ofHours(2)));
+        qrExpiredTicket.setDisputeWindowClosesAt(now.minus(Duration.ofMinutes(10)));
         qrExpiredTicket = ticketRepository.save(qrExpiredTicket);
 
         mockMvc.perform(get("/tickets/" + qrExpiredTicket.getId()).with(user(buyer.getEmail()).roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("class=\"qr-unlocked-box\""))))
                 .andExpect(content().string(not(containsString("class=\"qr-locked-box\""))))
-                .andExpect(content().string(containsString("Vé có vấn đề? Mở khiếu nại ngay")));
+                .andExpect(content().string(containsString("Cửa sổ khiếu nại đã đóng")));
     }
 }

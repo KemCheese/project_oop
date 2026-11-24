@@ -147,9 +147,6 @@
                         <span class="badge" style="background-color: #0f172a; color: #fff;">
                             <i class="fa-solid fa-lock"></i> ROLE_ADMIN
                         </span>
-                        <span style="font-size: 13px; color: var(--color-text-muted);">
-                            Giám sát uy tín, lịch sử tranh chấp và thu hồi
-                        </span>
                     </div>
                     <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand);">
                         Quản Lý Tài Khoản và Kiểm Duyệt Vi Phạm
@@ -157,12 +154,6 @@
                 </div>
 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <a th:href="@{/admin/dashboard}" class="btn btn-outline btn-sm">
-                        <i class="fa-solid fa-chart-line"></i> Dashboard tài chính
-                    </a>
-                    <a th:href="@{/admin/disputes}" class="btn btn-outline btn-sm">
-                        <i class="fa-solid fa-shield-halved"></i> Tranh chấp
-                    </a>
                 </div>
             </div>
 
@@ -251,7 +242,6 @@
                     <table class="custom-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Tài khoản</th>
                                 <th>Trạng thái</th>
                                 <th>Điểm uy tín và Lịch sử</th>
@@ -262,7 +252,6 @@
                         </thead>
                         <tbody>
                             <tr th:each="u : ${users}">
-                                <td><strong th:text="'#' + ${u.id}">#1</strong></td>
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                         <strong th:text="${u.email}">user@example.com</strong>
@@ -418,13 +407,13 @@
                     submitBtn.disabled = false;
 
                     if (action === 'ban') {
-                        title.textContent = 'Khóa tài khoản #' + userId;
+                        title.textContent = 'Khóa tài khoản ' + email;
                         desc.textContent = 'Tài khoản ' + email + ' sẽ bị khóa và đăng xuất ngay lập tức khỏi mọi thiết bị. Admin vẫn có thể mở khóa lại sau.';
                         requiredBadge.style.display = 'inline';
                         reasonInput.required = true;
                         submitBtn.textContent = 'Xác nhận khóa tài khoản';
                     } else {
-                        title.textContent = 'Mở khóa tài khoản #' + userId;
+                        title.textContent = 'Mở khóa tài khoản ' + email;
                         desc.textContent = 'Tài khoản ' + email + ' sẽ được kích hoạt lại và nhận thông báo hệ thống.';
                         requiredBadge.style.display = 'none';
                         reasonInput.required = false;

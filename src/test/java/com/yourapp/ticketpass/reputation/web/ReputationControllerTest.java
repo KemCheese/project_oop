@@ -125,7 +125,7 @@ class ReputationControllerTest {
         }
 
         @Test
-        @DisplayName("User mới -> mặc định điểm 3 (Bình thường) và fallback tên 'Thành viên #id'")
+        @DisplayName("User mới -> mặc định điểm 3 (Bình thường) và fallback tên 'Thành viên TicketPass'")
         void detail_newUser_createsDefaultScore3() {
             UserReputationScore defaultScore = buildScore(999L, "3.00", 0, 0, 0, 0, "0");
             when(updateReputationUseCase.getOrCreate(999L)).thenReturn(defaultScore);
@@ -137,7 +137,7 @@ class ReputationControllerTest {
             assertThat(viewName).isEqualTo("reputation/detail");
             ReputationResponse response = (ReputationResponse) model.getAttribute("reputation");
             assertThat(response).isNotNull();
-            assertThat(response.getFullName()).isEqualTo("Thành viên #999");
+            assertThat(response.getFullName()).isEqualTo("Thành viên TicketPass");
             assertThat(response.getScoreInt()).isEqualTo(3);
             assertThat(response.getTierName()).isEqualTo("Bình thường");
         }
