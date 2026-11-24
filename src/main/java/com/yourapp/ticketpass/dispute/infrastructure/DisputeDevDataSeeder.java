@@ -34,12 +34,6 @@ import com.yourapp.ticketpass.user.domain.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Seeder dữ liệu mẫu cho phân hệ Tranh chấp (Dispute) trong môi trường thử
- * nghiệm.
- * Khởi tạo sẵn 1 khiếu nại mẫu đang đối soát để kiểm thử phán quyết Admin,
- * và chuẩn bị 1 vé đã chuyển giao cho Buyer để thử nghiệm form nộp khiếu nại.
- */
 @Slf4j
 @Component
 @Profile("!prod")
@@ -63,6 +57,10 @@ public class DisputeDevDataSeeder implements CommandLineRunner {
             return;
         }
 
+        if (ticketRepository.countByStatus(TicketStatus.DISPUTE_UNDER_REVIEW) > 0) {
+            return;
+        }
+
         User buyer = buyerOpt.get();
         User seller = sellerOpt.get();
         List<Ticket> tickets = ticketRepository.findBySellerId(seller.getId());
@@ -77,12 +75,10 @@ public class DisputeDevDataSeeder implements CommandLineRunner {
 
         Instant now = Instant.now();
 
-        // 1. Vé 1: Thiết lập trạng thái DISPUTE_UNDER_REVIEW và gắn khiếu nại mẫu
         ticket1.setBuyerId(buyer.getId());
         ticket1.setStatus(TicketStatus.DISPUTE_UNDER_REVIEW);
         ticketRepository.save(ticket1);
 
-        // Tạo Escrow và Deposit mẫu tương ứng cho Vé 1
         BigDecimal price = (ticket1.getSalePrice() != null && ticket1.getSalePrice().compareTo(BigDecimal.ZERO) > 0)
                 ? ticket1.getSalePrice()
                 : new BigDecimal("250000.00");
@@ -123,7 +119,6 @@ public class DisputeDevDataSeeder implements CommandLineRunner {
                 "Tôi cam kết vé mua chính chủ từ app CGV và chưa từng gửi mã cho ai khác trước thời điểm bàn giao cho người mua.");
         dispute1 = disputeRepository.save(dispute1);
 
-        // Tạo bằng chứng mẫu cho Vé 1
         DisputeEvidence evidence = new DisputeEvidence();
         evidence.setDisputeId(dispute1.getId());
         evidence.setStorageKey("samples/movie-sample.jpg");
@@ -135,8 +130,6 @@ public class DisputeDevDataSeeder implements CommandLineRunner {
         evidence.setUploadedAt(now.minus(Duration.ofHours(5)));
         disputeEvidenceRepository.save(evidence);
 
-        // 2. Vé 2: Chuyển sang TRANSFERRED gắn với buyer để thử nghiệm nộp khiếu nại
-        // mới
         if (tickets.size() > 1) {
             Ticket ticket2 = tickets.get(1);
             ticket2.setBuyerId(buyer.getId());

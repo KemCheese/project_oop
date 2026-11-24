@@ -89,15 +89,12 @@ class WalletServiceTest {
         when(walletRepository.findByUserIdWithLock(10L)).thenReturn(Optional.of(wallet));
         when(walletRepository.save(any(Wallet.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        // Nạp tiền lẻ 13.000 VNĐ
         Wallet result1 = walletService.topUp(10L, new BigDecimal("13000.00"), "Nạp lẻ 13k");
         assertThat(result1.getBalance()).isEqualByComparingTo(new BigDecimal("63000.00"));
 
-        // Nạp tiếp tiền lẻ 17.000 VNĐ
         Wallet result2 = walletService.topUp(10L, new BigDecimal("17000.00"), "Nạp lẻ 17k");
         assertThat(result2.getBalance()).isEqualByComparingTo(new BigDecimal("80000.00"));
 
-        // Nạp tiếp tiền lẻ 11.000 VNĐ
         Wallet result3 = walletService.topUp(10L, new BigDecimal("11000.00"), "Nạp lẻ 11k");
         assertThat(result3.getBalance()).isEqualByComparingTo(new BigDecimal("91000.00"));
     }

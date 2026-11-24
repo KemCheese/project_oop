@@ -8,21 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Dữ liệu form đăng ký tài khoản mới.
- *
- * <p>Đây là DTO của tầng {@code web}: nó được Thymeleaf bind vào form
- * {@code auth/register.html} và được kiểm tra bằng Bean Validation trước khi đi vào
- * {@code RegisterUserUseCase}. Giới hạn 72 ký tự của mật khẩu là giới hạn kỹ thuật của
- * thuật toán BCrypt - ký tự vượt quá sẽ bị bỏ qua khi băm.</p>
- *
- * <p>Việc so khớp {@code password} và {@code confirmPassword} không thể diễn tả bằng
- * annotation đơn lẻ nên sẽ được kiểm tra trong {@code RegisterUserUseCase.register}.</p>
- *
- * <p>Module: user</p>
- *
- * Chủ sở hữu: Người C
- */
 @Getter
 @Setter
 @NoArgsConstructor

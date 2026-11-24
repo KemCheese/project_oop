@@ -20,22 +20,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Use case bảo mật tài khoản và kiểm duyệt trạng thái người dùng.
- *
- * <p>Chịu trách nhiệm hai nghiệp vụ trọng tâm trong phạm vi module {@code user}:</p>
- * <ul>
- *   <li>Đổi mật khẩu cá nhân: kiểm tra tài khoản {@code ACTIVE}, xác thực mật khẩu cũ qua
- *       BCrypt, kiểm tra độ mạnh mật khẩu mới, không cho phép đặt trùng mật khẩu hiện tại, và
- *       phát {@link UserPasswordChangedEvent} ({@code AFTER_COMMIT}) để hủy các phiên khác.</li>
- *   <li>Kiểm duyệt trạng thái tài khoản từ Admin ({@code SUSPENDED}, {@code BANNED},
- *       {@code ACTIVE}): ngăn tự khóa/khóa Admin khác, ghi nhận lịch sử audit và phát
- *       {@link UserAccountModeratedEvent} ({@code AFTER_COMMIT}) để thu hồi phiên và gửi thông báo.</li>
- * </ul>
- *
- * <p>Module: user</p>
- * <p>Chủ sở hữu: Người C</p>
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -51,10 +35,6 @@ public class AccountSecurityService {
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
-    /**
-     * Ngoại lệ nghiệp vụ chuyên biệt cho form đổi mật khẩu, mang theo tên field
-     * để tầng Web gắn lỗi chính xác vào {@code BindingResult}.
-     */
     @Getter
     public static class PasswordChangeValidationException extends BusinessRuleViolationException {
 
@@ -66,13 +46,6 @@ public class AccountSecurityService {
         }
     }
 
-    /**
-     * Đổi mật khẩu của người dùng hiện tại và phát sự kiện thu hồi các phiên đăng nhập khác sau commit.
-     *
-     * @param userId ID người dùng đang đăng nhập (lấy từ Principal)
-     * @param request dữ liệu mật khẩu cũ, mật khẩu mới và xác nhận
-     * @param currentSessionId ID phiên hiện tại cần được giữ nguyên (có thể null)
-     */
     @Transactional
     public void changePassword(Long userId, ChangePasswordRequest request, String currentSessionId) {
         if (userId == null || request == null) {
@@ -100,14 +73,6 @@ public class AccountSecurityService {
         log.info("Người dùng #{} đã đổi mật khẩu và phát sự kiện thu hồi các phiên khác.", userId);
     }
 
-    /**
-     * Thay đổi trạng thái kiểm duyệt tài khoản người dùng dưới quyền Admin.
-     *
-     * @param targetUserId ID tài khoản mục tiêu
-     * @param adminId ID Admin đang thao tác
-     * @param targetStatus trạng thái mới ({@code ACTIVE}, {@code SUSPENDED} hoặc {@code BANNED})
-     * @param reason lý do kiểm duyệt (bắt buộc &gt;= 5 ký tự khi khóa/cấm)
-     */
     @Transactional
     public void moderateUserStatus(Long targetUserId, Long adminId, UserStatus targetStatus, String reason) {
         if (targetUserId == null || adminId == null || targetStatus == null) {
@@ -125,6 +90,10 @@ public class AccountSecurityService {
 
         if (targetUser.getRole() == UserRole.ADMIN) {
             throw new BusinessRuleViolationException("Không được phép thay đổi trạng thái của tài khoản Quản trị viên.");
+        }
+        if (targetUser.isPermanentlyBanned()) {
+            throw new BusinessRuleViolationException(
+                    "Tài khoản này đã bị khóa vĩnh viễn do điểm uy tín giảm về 0 và không thể thay đổi trạng thái hay mở khóa.");
         }
         if (targetUser.getStatus() == targetStatus) {
             throw new BusinessRuleViolationException("Tài khoản hiện đã ở trạng thái " + targetStatus.name() + ".");
@@ -156,6 +125,50 @@ public class AccountSecurityService {
                 adminId, targetUserId, targetStatus, sanitizeForLog(effectiveReason));
     }
 
+    @Transactional
+    public void permanentlyBanForZeroReputation(Long userId, String reason) {
+        if (userId == null) {
+            throw new BusinessRuleViolationException("Thiếu ID tài khoản cần khóa vĩnh viễn.");
+        }
+
+        User targetUser = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        if (targetUser.getRole() == UserRole.ADMIN) {
+            throw new BusinessRuleViolationException("Không được phép tự động khóa tài khoản Quản trị viên.");
+        }
+
+        if (targetUser.isPermanentlyBanned() && targetUser.getStatus() == UserStatus.BANNED) {
+            return;
+        }
+
+        String effectiveReason = (reason != null && !reason.isBlank())
+                ? reason.trim()
+                : "Điểm uy tín giảm về 0 — tài khoản bị khóa vĩnh viễn và thanh lý số dư ví.";
+        if (effectiveReason.length() > MAX_MODERATION_REASON_LENGTH) {
+            effectiveReason = effectiveReason.substring(0, MAX_MODERATION_REASON_LENGTH);
+        }
+
+        Instant now = Instant.now(clock);
+        targetUser.setStatus(UserStatus.BANNED);
+        targetUser.setPermanentlyBanned(true);
+        targetUser.setModerationReason(effectiveReason);
+        targetUser.setModeratedAt(now);
+        targetUser.setModeratedByAdminId(null);
+        userRepository.save(targetUser);
+
+        eventPublisher.publishEvent(new UserAccountModeratedEvent(
+                targetUser.getId(),
+                targetUser.getEmail(),
+                null,
+                UserStatus.BANNED.name(),
+                effectiveReason,
+                now
+        ));
+
+        log.warn("Hệ thống đã khóa vĩnh viễn tài khoản #{} do điểm uy tín về 0.", userId);
+    }
+
     private void validatePasswordChangeRequest(ChangePasswordRequest request, String currentHash) {
         String currentPassword = request.getCurrentPassword();
         if (currentPassword == null || currentPassword.isBlank()
@@ -185,10 +198,10 @@ public class AccountSecurityService {
 
     private String normalizeAndValidateReason(UserStatus targetStatus, String rawReason) {
         String trimmed = rawReason != null ? rawReason.trim() : "";
-        if ((targetStatus == UserStatus.SUSPENDED || targetStatus == UserStatus.BANNED)
+        if (targetStatus == UserStatus.BANNED
                 && trimmed.length() < MIN_MODERATION_REASON_LENGTH) {
             throw new BusinessRuleViolationException(
-                    "Vui lòng nhập lý do kiểm duyệt tối thiểu 5 ký tự khi khóa hoặc cấm tài khoản.");
+                    "Vui lòng nhập lý do kiểm duyệt tối thiểu 5 ký tự khi khóa tài khoản.");
         }
         if (trimmed.length() > MAX_MODERATION_REASON_LENGTH) {
             throw new BusinessRuleViolationException(

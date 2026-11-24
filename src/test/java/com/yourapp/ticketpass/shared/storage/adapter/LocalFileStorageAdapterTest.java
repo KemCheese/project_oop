@@ -19,16 +19,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit test cho {@link LocalFileStorageAdapter}.
- *
- * <p>Sử dụng {@code @TempDir} của JUnit 5 để tạo thư mục tạm riêng cho mỗi test,
- * đảm bảo test không ghi lên ổ đĩa thật và không để lại rác. Không cần khởi động
- * Spring context — inject trực tiếp qua reflection để test nhanh.</p>
- *
- * <p>Module sở hữu: shared (test).</p>
- * <p>Chủ sở hữu theo phân công: Người C.</p>
- */
 class LocalFileStorageAdapterTest {
 
     @TempDir
@@ -40,33 +30,22 @@ class LocalFileStorageAdapterTest {
     void setUp() throws Exception {
         adapter = new LocalFileStorageAdapter();
 
-        // Inject baseDir và publicUrlPrefix bằng reflection (thay cho Spring @Value)
         setField(adapter, "baseDir", tempDir.toString());
         setField(adapter, "publicUrlPrefix", "/files");
 
-        // Gọi @PostConstruct thủ công
         adapter.init();
     }
 
-    /**
-     * Helper inject giá trị vào field private qua reflection.
-     */
     private void setField(Object target, String fieldName, Object value) throws Exception {
         Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(target, value);
     }
 
-    /**
-     * Helper tạo InputStream từ chuỗi nội dung.
-     */
     private InputStream toInputStream(String content) {
         return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  STORE
-    // ═══════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("store()")
@@ -90,7 +69,6 @@ class LocalFileStorageAdapterTest {
             assertNotNull(ref.getPublicUrl());
             assertTrue(ref.getPublicUrl().startsWith("/files/tickets/"));
 
-            // Kiểm tra file thực sự tồn tại trên đĩa
             assertTrue(adapter.exists(ref.getStorageKey()));
         }
 
@@ -161,9 +139,6 @@ class LocalFileStorageAdapterTest {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  CHUẨN HOÁ TÊN FILE
-    // ═══════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("Chuẩn hoá tên tệp")
@@ -177,7 +152,6 @@ class LocalFileStorageAdapterTest {
                     toInputStream("img"), 3, "image/jpeg");
 
             String key = ref.getStorageKey();
-            // Sau chuẩn hoá, không còn ký tự tiếng Việt, khoảng trắng → _
             assertFalse(key.contains("Ả"));
             assertFalse(key.contains("ẹ"));
             assertFalse(key.contains("đ"));
@@ -210,14 +184,10 @@ class LocalFileStorageAdapterTest {
                     toInputStream("img"), 3, "image/png");
 
             String key = ref.getStorageKey();
-            // Sau chuẩn hoá → "file" (fallback)
             assertTrue(key.contains("file"));
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  LOAD
-    // ═══════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("load()")
@@ -256,9 +226,6 @@ class LocalFileStorageAdapterTest {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  DELETE
-    // ═══════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("delete()")
@@ -291,9 +258,6 @@ class LocalFileStorageAdapterTest {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  BUILD PUBLIC URL
-    // ═══════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("buildPublicUrl()")
@@ -322,7 +286,6 @@ class LocalFileStorageAdapterTest {
         @DisplayName("Public URL encode ký tự đặc biệt trong tên file")
         void buildPublicUrl_specialChars_encoded() {
             String url = adapter.buildPublicUrl("tickets/file name.jpg");
-            // Khoảng trắng phải được encode thành %20
             assertTrue(url.contains("%20") || url.contains("+"));
             assertFalse(url.contains(" "));
         }
@@ -338,9 +301,6 @@ class LocalFileStorageAdapterTest {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  EXISTS
-    // ═══════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("exists()")
@@ -370,38 +330,29 @@ class LocalFileStorageAdapterTest {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  FULL LIFECYCLE
-    // ═══════════════════════════════════════════════════════════════
 
     @Test
     @DisplayName("Vòng đời đầy đủ: Store → Exists → Load → Delete → Exists")
     void fullLifecycle() throws IOException {
         String content = "Full lifecycle test content";
 
-        // Store
         StoredFileRef ref = adapter.store(
                 "tickets", "lifecycle.txt",
                 toInputStream(content), content.length(), "text/plain");
         assertNotNull(ref);
 
-        // Exists (phải true)
         assertTrue(adapter.exists(ref.getStorageKey()));
 
-        // Load (nội dung phải khớp)
         Optional<InputStream> loaded = adapter.load(ref.getStorageKey());
         assertTrue(loaded.isPresent());
         String readBack = new String(loaded.get().readAllBytes(), StandardCharsets.UTF_8);
         loaded.get().close();
         assertEquals(content, readBack);
 
-        // Delete (phải true)
         assertTrue(adapter.delete(ref.getStorageKey()));
 
-        // Exists (phải false)
         assertFalse(adapter.exists(ref.getStorageKey()));
 
-        // Load lại (phải empty)
         assertTrue(adapter.load(ref.getStorageKey()).isEmpty());
     }
 }

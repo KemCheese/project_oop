@@ -21,21 +21,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Service kiểm tra trùng khung giờ sử dụng vé của người mua (Schedule Conflict Detection).
- *
- * <p>Áp dụng Value Object {@link TimeSlot} (khoảng nửa mở {@code [start, end)}) kết hợp
- * Strategy {@link TicketAdapter#defaultEventDuration()} làm fallback cho các vé cũ chưa lưu
- * {@code eventEndAt}. Chỉ đối chiếu trên 6 trạng thái Buyer đang sở hữu vé có hiệu lực.</p>
- *
- * <p>Module: ticket</p>
- * <p>Chủ sở hữu: Người A (phối hợp Dev C)</p>
- */
 @Service
 @RequiredArgsConstructor
 public class TicketScheduleService {
 
-    /** 6 trạng thái vé mà người mua đang nắm quyền/sở hữu hiệu lực theo phương án 3.PA A. */
     public static final Set<TicketStatus> ACTIVE_BUYER_SCHEDULE_STATUSES = Collections.unmodifiableSet(EnumSet.of(
             TicketStatus.PAYMENT_ESCROWED,
             TicketStatus.DEPOSIT_LOCKED,
@@ -54,13 +43,6 @@ public class TicketScheduleService {
     private final TicketRepository ticketRepository;
     private final List<TicketAdapter> ticketAdapters;
 
-    /**
-     * Tìm danh sách vé mà {@code buyerId} đã sở hữu có khung giờ trùng với {@code targetTicket}.
-     *
-     * @param buyerId id người mua dự kiến
-     * @param targetTicket vé đang xem / chuẩn bị mua
-     * @return danh sách thông tin vé trùng giờ (rỗng nếu không có xung đột)
-     */
     @Transactional(readOnly = true)
     public List<ConflictingTicketInfo> findConflictingTickets(Long buyerId, Ticket targetTicket) {
         if (buyerId == null || targetTicket == null) {
@@ -88,7 +70,6 @@ public class TicketScheduleService {
             if (candidate == null) {
                 continue;
             }
-            // Kiểm tra lại phòng trường hợp test mock trả về vé trùng ID hoặc ngoài 6 trạng thái hiệu lực
             if (targetTicket.getId() != null && targetTicket.getId().equals(candidate.getId())) {
                 continue;
             }
@@ -108,10 +89,6 @@ public class TicketScheduleService {
         return conflicts;
     }
 
-    /**
-     * Suy ra {@link TimeSlot} hiệu lực cho một vé: ưu tiên {@code eventEndAt} nếu hợp lệ,
-     * nếu null thì fallback theo {@link TicketAdapter#defaultEventDuration()}.
-     */
     public Optional<TimeSlot> resolveTimeSlot(Ticket ticket) {
         if (ticket == null || ticket.getEventStartAt() == null) {
             return Optional.empty();
@@ -125,9 +102,6 @@ public class TicketScheduleService {
         return Optional.of(new TimeSlot(start, start.plus(fallback)));
     }
 
-    /**
-     * Kiểm tra thời điểm kết thúc của vé có phải là giá trị ước tính (fallback) hay không.
-     */
     public boolean isEstimatedEndTime(Ticket ticket) {
         if (ticket == null || ticket.getEventStartAt() == null) {
             return false;

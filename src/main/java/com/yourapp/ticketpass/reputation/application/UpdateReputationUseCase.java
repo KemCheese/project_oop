@@ -4,73 +4,74 @@ import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.shared.event.CompletionReason;
 import com.yourapp.ticketpass.shared.event.DisputeResolvedEvent;
+import com.yourapp.ticketpass.shared.event.ReputationDepletedEvent;
 import com.yourapp.ticketpass.shared.event.TicketTransactionCompletedEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.function.Consumer;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.support.TransactionTemplate;
 
-/**
- * Cập nhật điểm uy tín người dùng dựa trên các sự kiện nghiệp vụ của sàn.
- *
- * <p><b>Nguyên tắc 2 - Observer pattern:</b> module {@code payment} và {@code dispute}
- * <b>KHÔNG</b> gọi trực tiếp module này. Khi một giao dịch hoàn tất hoặc một tranh chấp
- * được phân xử, các module đó chỉ publish sự kiện qua {@code ApplicationEventPublisher};
- * lớp này đăng ký lắng nghe và tự cập nhật điểm. Nhờ vậy có thể thêm bớt hệ quả của một sự
- * kiện (gửi email, ghi log kiểm toán, tính điểm) mà không phải sửa code của module phát
- * sinh sự kiện.</p>
- *
- * <p><b>Vì sao dùng {@code AFTER_COMMIT}:</b> điểm uy tín chỉ được phép thay đổi khi
- * transaction tiền tệ đã commit thành công. Nếu lắng nghe đồng bộ trong cùng transaction,
- * một lỗi khi giải ngân sẽ rollback tiền nhưng điểm có thể đã bị thay đổi sai lệch, hoặc
- * ngược lại lỗi khi tính điểm lại làm hỏng cả giao dịch tiền. Tách bằng
- * {@link TransactionPhase#AFTER_COMMIT} giữ cho hai việc độc lập.</p>
- *
- * <p><b>Quy tắc cộng/trừ điểm ĐỀ XUẤT</b> (Prompt 2 hiện thực, thang 0-100):</p>
- * <ul>
- *   <li>Giao dịch hoàn tất: <b>+2</b> điểm, không vượt trần 100.</li>
- *   <li>Thua tranh chấp: <b>-15</b> điểm.</li>
- *   <li>Thắng tranh chấp: <b>+1</b> điểm.</li>
- *   <li>Huỷ listing sau khi người mua đã thanh toán: <b>-10</b> điểm.</li>
- *   <li>Điểm không bao giờ xuống dưới sàn 0.</li>
- * </ul>
- *
- * <p>Module: reputation</p>
- *
- * Chủ sở hữu: Người C
- */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class UpdateReputationUseCase {
 
-    private static final BigDecimal MAX_SCORE = new BigDecimal("100.00");
-    private static final BigDecimal MIN_SCORE = new BigDecimal("0.00");
-    private static final BigDecimal INITIAL_SCORE = new BigDecimal("100.00");
-    private static final BigDecimal POINTS_TRANSACTION_COMPLETED = new BigDecimal("2");
-    private static final BigDecimal POINTS_DISPUTE_WON = BigDecimal.ONE;
-    private static final BigDecimal POINTS_DISPUTE_LOST = new BigDecimal("15");
-    private static final BigDecimal POINTS_LISTING_CANCELLED = new BigDecimal("10");
-    private static final BigDecimal POINTS_DEPOSIT_TIMEOUT = new BigDecimal("15");
+    public static final BigDecimal MAX_SCORE = new BigDecimal("5.00");
+    public static final BigDecimal MIN_SCORE = new BigDecimal("0.00");
+    public static final BigDecimal INITIAL_SCORE = new BigDecimal("3.00");
+    private static final BigDecimal POINTS_TRANSACTION_COMPLETED = BigDecimal.ONE;
+    private static final BigDecimal POINTS_DISPUTE_WON = BigDecimal.ZERO;
+    private static final BigDecimal POINTS_DISPUTE_LOST = new BigDecimal("2");
+    private static final BigDecimal POINTS_LISTING_CANCELLED = BigDecimal.ONE;
+    private static final BigDecimal POINTS_DEPOSIT_TIMEOUT = BigDecimal.ONE;
     private static final int MAX_RETRY = 3;
 
-    private final ReputationRepository reputationRepository;
+    public static final String REASON_TRANSACTION_COMPLETED = "TRANSACTION_COMPLETED";
+    public static final String REASON_DISPUTE_WON = "DISPUTE_WON";
+    public static final String REASON_DISPUTE_LOST = "DISPUTE_LOST";
+    public static final String REASON_CANCELLED_LISTING = "CANCELLED_LISTING";
+    public static final String REASON_DEPOSIT_TIMEOUT = "DEPOSIT_TIMEOUT";
 
-    /**
-     * Lắng nghe sự kiện giao dịch vé hoàn tất để cộng điểm cho cả người bán và người mua.
-     *
-     * @param event sự kiện do module payment publish sau khi giải ngân xong
-     */
+    private final ReputationRepository reputationRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final TransactionTemplate requiresNewTxTemplate;
+
+    @Autowired
+    public UpdateReputationUseCase(ReputationRepository reputationRepository,
+                                   ApplicationEventPublisher eventPublisher,
+                                   @Autowired(required = false) PlatformTransactionManager transactionManager) {
+        this.reputationRepository = reputationRepository;
+        this.eventPublisher = eventPublisher;
+        if (transactionManager != null) {
+            TransactionTemplate tpl = new TransactionTemplate(transactionManager);
+            tpl.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            this.requiresNewTxTemplate = tpl;
+        } else {
+            this.requiresNewTxTemplate = null;
+        }
+    }
+
+    public UpdateReputationUseCase(ReputationRepository reputationRepository,
+                                   ApplicationEventPublisher eventPublisher) {
+        this(reputationRepository, eventPublisher, null);
+    }
+
+    public UpdateReputationUseCase(ReputationRepository reputationRepository) {
+        this(reputationRepository, null, null);
+    }
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onTicketTransactionCompleted(TicketTransactionCompletedEvent event) {
         if (event == null) {
             log.warn("Received null TicketTransactionCompletedEvent, ignoring");
@@ -82,12 +83,9 @@ public class UpdateReputationUseCase {
 
         Instant occurredAt = event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now();
 
-        // Nếu là giao dịch kết thúc do phán quyết tranh chấp (DISPUTE_RESOLVED_SELLER_WINS),
-        // điểm uy tín thắng/thua đã được xử lý chuyên biệt tại onDisputeResolved.
-        // Tại đây chỉ ghi nhận doanh thu GMV và số giao dịch thành công cho người bán, không cộng điểm giao dịch thông thường cho buyer.
         if (event.getCompletionReason() == CompletionReason.DISPUTE_RESOLVED_SELLER_WINS) {
             if (event.getSellerId() != null) {
-                updateWithRetry(event.getSellerId(), rep -> {
+                updateMetadataOnlyWithRetry(event.getSellerId(), rep -> {
                     rep.setTotalTransactions(getOrDefault(rep.getTotalTransactions()) + 1);
                     rep.setSuccessfulTransactions(getOrDefault(rep.getSuccessfulTransactions()) + 1);
                     BigDecimal currentGmv = rep.getTotalGmv() != null ? rep.getTotalGmv() : BigDecimal.ZERO;
@@ -99,37 +97,45 @@ public class UpdateReputationUseCase {
             return;
         }
 
-        // 1. Cập nhật uy tín người bán: +2 điểm, tăng transactions, cộng GMV, ghi nhận lastTransactionAt
+        String ticketRef = event.getTicketId() != null ? "vé #" + event.getTicketId() : "giao dịch";
+
         if (event.getSellerId() != null) {
-            updateWithRetry(event.getSellerId(), rep -> {
-                rep.setScore(clampScore(getScoreOrDefault(rep).add(POINTS_TRANSACTION_COMPLETED)));
-                rep.setTotalTransactions(getOrDefault(rep.getTotalTransactions()) + 1);
-                rep.setSuccessfulTransactions(getOrDefault(rep.getSuccessfulTransactions()) + 1);
-                BigDecimal currentGmv = rep.getTotalGmv() != null ? rep.getTotalGmv() : BigDecimal.ZERO;
-                BigDecimal salePrice = event.getSalePrice() != null ? event.getSalePrice() : BigDecimal.ZERO;
-                rep.setTotalGmv(currentGmv.add(salePrice).setScale(2, RoundingMode.HALF_UP));
-                rep.setLastTransactionAt(occurredAt);
-            });
+            applyScoreChangeWithRetry(
+                    event.getSellerId(),
+                    POINTS_TRANSACTION_COMPLETED,
+                    REASON_TRANSACTION_COMPLETED,
+                    "Hoàn tất bán " + ticketRef + " thành công (+1 điểm)",
+                    event.getTicketId(),
+                    null,
+                    occurredAt,
+                    rep -> {
+                        rep.setTotalTransactions(getOrDefault(rep.getTotalTransactions()) + 1);
+                        rep.setSuccessfulTransactions(getOrDefault(rep.getSuccessfulTransactions()) + 1);
+                        BigDecimal currentGmv = rep.getTotalGmv() != null ? rep.getTotalGmv() : BigDecimal.ZERO;
+                        BigDecimal salePrice = event.getSalePrice() != null ? event.getSalePrice() : BigDecimal.ZERO;
+                        rep.setTotalGmv(currentGmv.add(salePrice).setScale(2, RoundingMode.HALF_UP));
+                        rep.setLastTransactionAt(occurredAt);
+                    });
         }
 
-        // 2. Cập nhật uy tín người mua: +2 điểm, tăng transactions, ghi nhận lastTransactionAt (không cộng GMV)
         if (event.getBuyerId() != null) {
-            updateWithRetry(event.getBuyerId(), rep -> {
-                rep.setScore(clampScore(getScoreOrDefault(rep).add(POINTS_TRANSACTION_COMPLETED)));
-                rep.setTotalTransactions(getOrDefault(rep.getTotalTransactions()) + 1);
-                rep.setSuccessfulTransactions(getOrDefault(rep.getSuccessfulTransactions()) + 1);
-                rep.setLastTransactionAt(occurredAt);
-            });
+            applyScoreChangeWithRetry(
+                    event.getBuyerId(),
+                    POINTS_TRANSACTION_COMPLETED,
+                    REASON_TRANSACTION_COMPLETED,
+                    "Hoàn tất mua " + ticketRef + " thành công (+1 điểm)",
+                    event.getTicketId(),
+                    null,
+                    occurredAt,
+                    rep -> {
+                        rep.setTotalTransactions(getOrDefault(rep.getTotalTransactions()) + 1);
+                        rep.setSuccessfulTransactions(getOrDefault(rep.getSuccessfulTransactions()) + 1);
+                        rep.setLastTransactionAt(occurredAt);
+                    });
         }
     }
 
-    /**
-     * Lắng nghe sự kiện tranh chấp được phân xử để cộng/trừ điểm hai bên.
-     *
-     * @param event sự kiện do module dispute publish sau khi admin ra quyết định
-     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onDisputeResolved(DisputeResolvedEvent event) {
         if (event == null || event.getOutcome() == null) {
             log.warn("Received null DisputeResolvedEvent or outcome, ignoring");
@@ -139,59 +145,210 @@ public class UpdateReputationUseCase {
         log.info("Processing DisputeResolvedEvent for disputeId={}, outcome={}, sellerId={}, buyerId={}",
                 event.getDisputeId(), event.getOutcome(), event.getSellerId(), event.getBuyerId());
 
+        Instant occurredAt = event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now();
+        String ticketRef = event.getTicketId() != null ? "vé #" + event.getTicketId() : "tranh chấp";
+
         switch (event.getOutcome()) {
             case BUYER_WINS -> {
-                // Người mua thắng: seller -15 điểm, tăng disputesLost; buyer +1 điểm, tăng disputesWon
                 if (event.getSellerId() != null) {
-                    updateWithRetry(event.getSellerId(), rep -> {
-                        rep.setScore(clampScore(getScoreOrDefault(rep).subtract(POINTS_DISPUTE_LOST)));
-                        rep.setDisputesLost(getOrDefault(rep.getDisputesLost()) + 1);
-                    });
+                    applyScoreChangeWithRetry(
+                            event.getSellerId(),
+                            POINTS_DISPUTE_LOST.negate(),
+                            REASON_DISPUTE_LOST,
+                            "Thua tranh chấp " + ticketRef + " (-2 điểm)",
+                            event.getTicketId(),
+                            event.getDisputeId(),
+                            occurredAt,
+                            rep -> rep.setDisputesLost(getOrDefault(rep.getDisputesLost()) + 1));
                 }
                 if (event.getBuyerId() != null) {
-                    updateWithRetry(event.getBuyerId(), rep -> {
-                        rep.setScore(clampScore(getScoreOrDefault(rep).add(POINTS_DISPUTE_WON)));
-                        rep.setDisputesWon(getOrDefault(rep.getDisputesWon()) + 1);
-                    });
+                    applyScoreChangeWithRetry(
+                            event.getBuyerId(),
+                            POINTS_DISPUTE_WON,
+                            REASON_DISPUTE_WON,
+                            "Thắng tranh chấp " + ticketRef + " (giữ nguyên điểm)",
+                            event.getTicketId(),
+                            event.getDisputeId(),
+                            occurredAt,
+                            rep -> rep.setDisputesWon(getOrDefault(rep.getDisputesWon()) + 1));
                 }
             }
             case SELLER_WINS -> {
-                // Người bán thắng: seller +1 điểm, tăng disputesWon; buyer -15 điểm, tăng disputesLost
                 if (event.getSellerId() != null) {
-                    updateWithRetry(event.getSellerId(), rep -> {
-                        rep.setScore(clampScore(getScoreOrDefault(rep).add(POINTS_DISPUTE_WON)));
-                        rep.setDisputesWon(getOrDefault(rep.getDisputesWon()) + 1);
-                    });
+                    applyScoreChangeWithRetry(
+                            event.getSellerId(),
+                            POINTS_DISPUTE_WON,
+                            REASON_DISPUTE_WON,
+                            "Thắng tranh chấp " + ticketRef + " (giữ nguyên điểm)",
+                            event.getTicketId(),
+                            event.getDisputeId(),
+                            occurredAt,
+                            rep -> rep.setDisputesWon(getOrDefault(rep.getDisputesWon()) + 1));
                 }
                 if (event.getBuyerId() != null) {
-                    updateWithRetry(event.getBuyerId(), rep -> {
-                        rep.setScore(clampScore(getScoreOrDefault(rep).subtract(POINTS_DISPUTE_LOST)));
-                        rep.setDisputesLost(getOrDefault(rep.getDisputesLost()) + 1);
-                    });
+                    applyScoreChangeWithRetry(
+                            event.getBuyerId(),
+                            POINTS_DISPUTE_LOST.negate(),
+                            REASON_DISPUTE_LOST,
+                            "Thua tranh chấp " + ticketRef + " (-2 điểm)",
+                            event.getTicketId(),
+                            event.getDisputeId(),
+                            occurredAt,
+                            rep -> rep.setDisputesLost(getOrDefault(rep.getDisputesLost()) + 1));
                 }
             }
             case WITHDRAWN -> {
-                // Rút đơn khiếu nại: không đổi điểm, chỉ tăng disputesOpenedAgainst cho seller
                 if (event.getSellerId() != null) {
-                    updateWithRetry(event.getSellerId(), rep -> {
-                        rep.setDisputesOpenedAgainst(getOrDefault(rep.getDisputesOpenedAgainst()) + 1);
-                    });
+                    updateMetadataOnlyWithRetry(event.getSellerId(), rep ->
+                            rep.setDisputesOpenedAgainst(getOrDefault(rep.getDisputesOpenedAgainst()) + 1));
                 }
             }
         }
     }
 
-    /**
-     * Lấy bản ghi điểm của một người dùng, tạo mới nếu chưa có.
-     *
-     * @param userId id thuần của người dùng
-     * @return bản ghi điểm hiện có hoặc bản ghi vừa khởi tạo
-     */
     @Transactional
     public UserReputationScore getOrCreate(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId must not be null");
         }
+        return findOrCreateInsideCurrentTx(userId);
+    }
+
+    public void recordCancelledListing(Long sellerId, Long ticketId) {
+        if (sellerId == null) {
+            throw new IllegalArgumentException("sellerId must not be null");
+        }
+        String ticketRef = ticketId != null ? "vé #" + ticketId : "vé đang bán";
+        log.info("Recording cancelled listing (-1) for sellerId={}, ticketId={}", sellerId, ticketId);
+        applyScoreChangeWithRetry(
+                sellerId,
+                POINTS_LISTING_CANCELLED.negate(),
+                REASON_CANCELLED_LISTING,
+                "Hủy " + ticketRef + " sau khi người mua đã thanh toán (-1 điểm)",
+                ticketId,
+                null,
+                Instant.now(),
+                rep -> rep.setCancelledListings(getOrDefault(rep.getCancelledListings()) + 1));
+    }
+
+    public void recordCancelledListing(Long sellerId) {
+        recordCancelledListing(sellerId, null);
+    }
+
+    public void recordDepositTimeout(Long sellerId, Long ticketId) {
+        if (sellerId == null) {
+            throw new IllegalArgumentException("sellerId must not be null");
+        }
+        String ticketRef = ticketId != null ? "vé #" + ticketId : "giao dịch";
+        log.warn("[Reputation] Áp chế tài trừ 1 điểm uy tín đối với sellerId={} do quá hạn nạp cọc 30 phút (ticketId={})",
+                sellerId, ticketId);
+        applyScoreChangeWithRetry(
+                sellerId,
+                POINTS_DEPOSIT_TIMEOUT.negate(),
+                REASON_DEPOSIT_TIMEOUT,
+                "Quá hạn nạp cọc 50% (30 phút) cho " + ticketRef + " (-1 điểm)",
+                ticketId,
+                null,
+                Instant.now(),
+                rep -> rep.setDisputesLost(getOrDefault(rep.getDisputesLost()) + 1));
+    }
+
+    public void recordDepositTimeout(Long sellerId) {
+        recordDepositTimeout(sellerId, null);
+    }
+
+    private void applyScoreChangeWithRetry(Long userId,
+                                           BigDecimal rawDelta,
+                                           String reasonCode,
+                                           String description,
+                                           Long ticketId,
+                                           Long disputeId,
+                                           Instant occurredAt,
+                                           Consumer<UserReputationScore> extraMutation) {
+        int attempts = 0;
+        while (attempts < MAX_RETRY) {
+            attempts++;
+            try {
+                runInNewTransaction(() -> applyScoreChangeOnce(
+                        userId, rawDelta, reasonCode, description, ticketId, disputeId, occurredAt, extraMutation));
+                return;
+            } catch (OptimisticLockingFailureException | DataIntegrityViolationException ex) {
+                log.warn("Concurrent conflict when updating reputation for userId {} (attempt {}/{}): {}",
+                        userId, attempts, MAX_RETRY, ex.getMessage());
+                if (attempts >= MAX_RETRY) {
+                    log.error("Failed to update reputation for userId {} after {} attempts due to concurrent modifications",
+                            userId, MAX_RETRY, ex);
+                    throw ex;
+                }
+            }
+        }
+    }
+
+    private void applyScoreChangeOnce(Long userId,
+                                      BigDecimal rawDelta,
+                                      String reasonCode,
+                                      String description,
+                                      Long ticketId,
+                                      Long disputeId,
+                                      Instant occurredAt,
+                                      Consumer<UserReputationScore> extraMutation) {
+        UserReputationScore rep = findOrCreateInsideCurrentTx(userId);
+        BigDecimal scoreBefore = getScoreOrDefault(rep).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal scoreAfter = clampScore(scoreBefore.add(rawDelta));
+        rep.setScore(scoreAfter);
+        if (extraMutation != null) {
+            extraMutation.accept(rep);
+        }
+        reputationRepository.save(rep);
+
+        if (scoreBefore.compareTo(BigDecimal.ZERO) > 0
+                && scoreAfter.compareTo(BigDecimal.ZERO) == 0
+                && eventPublisher != null) {
+            log.warn("[Reputation] userId={} giảm điểm từ {} về 0 — phát ReputationDepletedEvent!",
+                    userId, scoreBefore);
+            eventPublisher.publishEvent(new ReputationDepletedEvent(
+                    userId,
+                    scoreBefore,
+                    scoreAfter,
+                    reasonCode,
+                    description,
+                    ticketId,
+                    disputeId,
+                    occurredAt != null ? occurredAt : Instant.now()
+            ));
+        }
+    }
+
+    private void updateMetadataOnlyWithRetry(Long userId, Consumer<UserReputationScore> updateAction) {
+        int attempts = 0;
+        while (attempts < MAX_RETRY) {
+            attempts++;
+            try {
+                runInNewTransaction(() -> {
+                    UserReputationScore rep = findOrCreateInsideCurrentTx(userId);
+                    updateAction.accept(rep);
+                    reputationRepository.save(rep);
+                });
+                return;
+            } catch (OptimisticLockingFailureException | DataIntegrityViolationException ex) {
+                log.warn("Concurrent conflict when updating reputation metadata for userId {} (attempt {}/{}): {}",
+                        userId, attempts, MAX_RETRY, ex.getMessage());
+                if (attempts >= MAX_RETRY) {
+                    throw ex;
+                }
+            }
+        }
+    }
+
+    private void runInNewTransaction(Runnable action) {
+        if (requiresNewTxTemplate != null) {
+            requiresNewTxTemplate.executeWithoutResult(status -> action.run());
+        } else {
+            action.run();
+        }
+    }
+
+    private UserReputationScore findOrCreateInsideCurrentTx(Long userId) {
         return reputationRepository.findByUserId(userId)
                 .orElseGet(() -> {
                     UserReputationScore newScore = new UserReputationScore();
@@ -206,68 +363,6 @@ public class UpdateReputationUseCase {
                     newScore.setTotalGmv(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
                     return reputationRepository.save(newScore);
                 });
-    }
-
-    /**
-     * Ghi nhận việc người bán huỷ vé đang rao sau khi người mua đã thanh toán.
-     *
-     * @param sellerId id thuần của người bán
-     */
-    @Transactional
-    public void recordCancelledListing(Long sellerId) {
-        if (sellerId == null) {
-            throw new IllegalArgumentException("sellerId must not be null");
-        }
-        log.info("Recording cancelled listing for sellerId={}", sellerId);
-        updateWithRetry(sellerId, rep -> {
-            rep.setScore(clampScore(getScoreOrDefault(rep).subtract(POINTS_LISTING_CANCELLED)));
-            rep.setCancelledListings(getOrDefault(rep.getCancelledListings()) + 1);
-        });
-    }
-
-    /**
-     * Ghi nhận việc người bán để quá hạn nạp cọc 30 phút sau khi người mua đã nạp tiền vào Escrow (UC-04b).
-     * Áp dụng chế tài nghiêm khắc nhất: phạt trừ 15 điểm uy tín (ngang với việc thua tranh chấp).
-     *
-     * @param sellerId id thuần của người bán
-     */
-    @Transactional
-    public void recordDepositTimeout(Long sellerId) {
-        if (sellerId == null) {
-            throw new IllegalArgumentException("sellerId must not be null");
-        }
-        log.warn("[Reputation] Áp chế tài trừ 15 điểm uy tín đối với sellerId={} do quá hạn nạp cọc 30 phút (UC-04b)", sellerId);
-        updateWithRetry(sellerId, rep -> {
-            rep.setScore(clampScore(getScoreOrDefault(rep).subtract(POINTS_DEPOSIT_TIMEOUT)));
-            rep.setDisputesLost(getOrDefault(rep.getDisputesLost()) + 1);
-        });
-    }
-
-    /**
-     * Thực hiện cập nhật điểm uy tín kèm cơ chế retry xử lý OptimisticLockingFailureException.
-     *
-     * @param userId id người dùng cần cập nhật
-     * @param updateAction lambda cập nhật các trường của entity
-     */
-    private void updateWithRetry(Long userId, Consumer<UserReputationScore> updateAction) {
-        int attempts = 0;
-        while (attempts < MAX_RETRY) {
-            attempts++;
-            try {
-                UserReputationScore rep = getOrCreate(userId);
-                updateAction.accept(rep);
-                reputationRepository.save(rep);
-                return;
-            } catch (OptimisticLockingFailureException ex) {
-                log.warn("Optimistic locking conflict when updating reputation for userId {} (attempt {}/{}): {}",
-                        userId, attempts, MAX_RETRY, ex.getMessage());
-                if (attempts >= MAX_RETRY) {
-                    log.error("Failed to update reputation for userId {} after {} attempts due to concurrent modifications",
-                            userId, MAX_RETRY, ex);
-                    throw ex;
-                }
-            }
-        }
     }
 
     private BigDecimal clampScore(BigDecimal score) {

@@ -25,8 +25,6 @@
                     color: var(--color-text-muted);
                 }
 
-
-                /* Ticket Grid */
                 .ticket-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -87,7 +85,6 @@
                     left: 10px;
                 }
 
-                /* Nút đánh sao tròn trên Card vé (Anti-Slop Modern UI) */
                 .btn-star-ticket {
                     position: absolute;
                     top: 10px;
@@ -208,7 +205,6 @@
                     color: var(--color-accent);
                 }
 
-                /* Search Meta Bar */
                 .search-meta-bar {
                     display: flex;
                     align-items: center;
@@ -256,7 +252,6 @@
                     background-color: var(--color-danger-surface);
                 }
 
-                /* Pagination Controls (Anti-Slop Modern UI) */
                 .pagination-container {
                     display: flex;
                     flex-direction: column;
@@ -348,11 +343,8 @@
 
             <div class="page-header">
                 <h1 class="page-title">Sàn Vé Đang Bán</h1>
-                <p class="page-desc">Danh sách vé điện tử chính chủ có ký quỹ bảo vệ từ TicketPass</p>
             </div>
 
-
-            <!-- Search Results Meta Bar -->
             <div th:if="${keyword != null and !keyword.isEmpty()}" class="search-meta-bar">
                 <div class="search-meta-info">
                     <i class="fa-solid fa-magnifying-glass" style="color: var(--color-primary);"></i>
@@ -366,7 +358,6 @@
                 </a>
             </div>
 
-            <!-- Empty State -->
             <div th:if="${#lists.isEmpty(tickets)}" class="empty-state">
                 <div class="empty-icon">
                     <i th:if="${keyword != null and !keyword.isEmpty()}" class="fa-solid fa-magnifying-glass"></i>
@@ -392,10 +383,9 @@
                 </div>
             </div>
 
-            <!-- Ticket Grid -->
             <div th:if="${!#lists.isEmpty(tickets)}" class="ticket-grid">
                 <div th:each="ticket : ${tickets}" class="ticket-card">
-                    <!-- Image Area -->
+
                     <div class="ticket-image-wrapper">
                         <img th:if="${ticket.thumbnailUrl != null and !ticket.thumbnailUrl.isEmpty()}"
                             th:src="${ticket.thumbnailUrl}" th:alt="${ticket.title}" class="ticket-image" />
@@ -411,7 +401,6 @@
                             <span style="font-size: 11px; font-weight: 500;">Ảnh công khai</span>
                         </div>
 
-                        <!-- Type Badge -->
                         <div class="ticket-type-badge-pos">
                             <span th:if="${ticket.ticketType != null and ticket.ticketType.name() == 'MOVIE'}"
                                 class="badge badge-movie">
@@ -427,7 +416,6 @@
                             </span>
                         </div>
 
-                        <!-- Nút Đánh sao nhanh trên ảnh vé -->
                         <th:block sec:authorize="isAuthenticated()">
                             <button type="button" class="btn-star-ticket"
                                 th:classappend="${starredTicketIds != null and starredTicketIds.contains(ticket.id)} ? 'active' : ''"
@@ -439,7 +427,6 @@
                         </th:block>
                     </div>
 
-                    <!-- Body -->
                     <div class="ticket-body">
                         <h2 class="ticket-title" th:text="${ticket.title}">Tên vé niêm yết</h2>
 
@@ -459,7 +446,6 @@
                             </span>
                         </div>
 
-                        <!-- Footer -->
                         <div class="ticket-footer">
                             <div class="ticket-price-box">
                                 <span class="ticket-price-label">Giá chuyển nhượng</span>
@@ -477,16 +463,14 @@
                 </div>
             </div>
 
-            <!-- CSRF Hidden Inputs cho client AJAX -->
             <th:block sec:authorize="isAuthenticated()">
                 <input type="hidden" id="listCsrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                 <input type="hidden" id="listCsrfHeader" th:value="${_csrf.headerName}" />
             </th:block>
 
-            <!-- Pagination (Chỉ hiển thị khi có nhiều hơn 1 trang) -->
             <div th:if="${totalPages > 1}" class="pagination-container">
                 <nav class="pagination-nav" aria-label="Điều hướng phân trang sàn vé">
-                    <!-- Nút Trang trước -->
+
                     <a th:if="${hasPrevious}"
                         th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${currentPage - 1})}"
                         class="page-btn" title="Trang trước" aria-label="Trang trước">
@@ -496,7 +480,6 @@
                         <i class="fa-solid fa-chevron-left" style="font-size: 11px; margin-right: 4px;"></i> Trước
                     </span>
 
-                    <!-- Danh sách các số trang -->
                     <th:block th:each="p : ${pageNumbers}">
                         <a th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${p})}"
                             class="page-btn" th:classappend="${p == currentPage} ? 'active' : ''" th:text="${p + 1}"
@@ -505,7 +488,6 @@
                         </a>
                     </th:block>
 
-                    <!-- Nút Trang sau -->
                     <a th:if="${hasNext}"
                         th:href="@{/tickets(ticketType=${selectedType != null and !selectedType.isEmpty() ? selectedType : null}, keyword=${keyword != null and !keyword.isEmpty() ? keyword : null}, page=${currentPage + 1})}"
                         class="page-btn" title="Trang sau" aria-label="Trang sau">
@@ -516,7 +498,6 @@
                     </span>
                 </nav>
 
-                <!-- Dòng trạng thái tiến độ hiển thị -->
                 <div class="pagination-info">
                     Hiển thị <strong th:text="${startItem}">1</strong>–<strong th:text="${endItem}">16</strong> trong
                     tổng số <strong th:text="${totalElements}">48</strong> vé (Trang <span
@@ -524,15 +505,14 @@
                 </div>
             </div>
 
-            <!-- Client Screen Detector: Tự động đo màn hình và đặt cookie tp_page_size (0 request thừa) -->
             <script>
                 (function () {
                     function getTargetPageSize() {
                         var w = window.innerWidth;
-                        if (w >= 1400) return 20; // 5 cột x 4 dòng
-                        if (w >= 1024) return 16; // 4 cột x 4 dòng
-                        if (w > 640) return 8;    // 2 cột x 4 dòng
-                        return 4;                 // 1 cột x 4 dòng
+                        if (w >= 1400) return 20;
+                        if (w >= 1024) return 16;
+                        if (w > 640) return 8;
+                        return 4;
                     }
                     function syncPageSizeCookie() {
                         var targetSize = getTargetPageSize();
@@ -550,7 +530,6 @@
                     });
                 })();
 
-                // Toggle Đánh sao vé nhanh trên Sàn (Optimistic UI)
                 function toggleStarFromList(btn, event) {
                     if (event) {
                         event.stopPropagation();

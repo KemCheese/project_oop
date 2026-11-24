@@ -25,34 +25,44 @@ class DeliveryTimeoutSchedulerIntegrationTest extends AbstractSystemIntegrationT
     private DeliveryTimeoutScheduler deliveryTimeoutScheduler;
 
     @Test
-    @DisplayName("Scheduler nhận vé: Chuyển vé quá hạn sang AWAITING_USE và bỏ qua hoàn toàn các vé TECHNICAL_ISSUE")
-    void shouldSweepOverdueTicketsAndSkipTechnicalIssueTickets() {
-        // Arrange
+    @DisplayName("Scheduler nhận vé: Chuyển vé TRANSFERRED quá 30p sang AWAITING_USE (BR-09 1B) và giữ nguyên vé chưa quá 30p / đã AWAITING_USE")
+    void shouldSweepOnlyOverdueTransferredTickets() {
         User seller = createAndSaveUser("sched_deliv_seller@test.com", "Password123@", UserRole.USER);
         User buyer = createAndSaveUser("sched_deliv_buyer@test.com", "Password123@", UserRole.USER);
 
-        // Vé 1: TRANSFERRED quá 35 phút
+        Instant overdueEventStart = Instant.now().plus(2, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
         Ticket overdueTicket = createAndSaveTicket(seller.getId(), "Vé Quá Hạn Giao Nhận", TicketType.MOVIE, new BigDecimal("180000.00"), TicketStatus.TRANSFERRED);
         overdueTicket.setBuyerId(buyer.getId());
-        overdueTicket.setTransferredAt(Instant.now().minus(35, ChronoUnit.MINUTES));
+        overdueTicket.setEventStartAt(overdueEventStart);
+        overdueTicket.setTransferredAt(Instant.now().minus(35, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS));
         ticketRepository.save(overdueTicket);
 
-        // Vé 2: Đang báo lỗi kỹ thuật TECHNICAL_ISSUE nhưng transferredAt cũng quá 35 phút
-        Ticket issueTicket = createAndSaveTicket(seller.getId(), "Vé Báo Lỗi QR", TicketType.MOVIE, new BigDecimal("180000.00"), TicketStatus.TECHNICAL_ISSUE);
-        issueTicket.setBuyerId(buyer.getId());
-        issueTicket.setTransferredAt(Instant.now().minus(35, ChronoUnit.MINUTES));
-        ticketRepository.save(issueTicket);
+        Ticket freshTicket = createAndSaveTicket(seller.getId(), "Vé Chưa Quá 30 Phút", TicketType.MOVIE, new BigDecimal("180000.00"), TicketStatus.TRANSFERRED);
+        freshTicket.setBuyerId(buyer.getId());
+        freshTicket.setTransferredAt(Instant.now().minus(10, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS));
+        ticketRepository.save(freshTicket);
 
-        // Act
+        Instant originalReceivedAt = Instant.now().minus(25, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS);
+        Ticket alreadyAwaiting = createAndSaveTicket(seller.getId(), "Vé Đã Nhận Rồi", TicketType.MOVIE, new BigDecimal("180000.00"), TicketStatus.AWAITING_USE);
+        alreadyAwaiting.setBuyerId(buyer.getId());
+        alreadyAwaiting.setTransferredAt(Instant.now().minus(40, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.SECONDS));
+        alreadyAwaiting.setReceivedAt(originalReceivedAt);
+        ticketRepository.save(alreadyAwaiting);
+
         deliveryTimeoutScheduler.scanDeliveryTimeouts();
 
-        // Assert
         Ticket finalTicket1 = ticketRepository.findById(overdueTicket.getId()).orElseThrow();
         assertThat(finalTicket1.getStatus()).isEqualTo(TicketStatus.AWAITING_USE);
         assertThat(finalTicket1.getReceivedAt()).isNotNull();
+        assertThat(finalTicket1.getDisputeWindowClosesAt())
+                .isEqualTo(overdueEventStart.plus(30, ChronoUnit.MINUTES));
 
-        // Vé 2 phải được bảo vệ nguyên vẹn ở trạng thái TECHNICAL_ISSUE
-        Ticket finalTicket2 = ticketRepository.findById(issueTicket.getId()).orElseThrow();
-        assertThat(finalTicket2.getStatus()).isEqualTo(TicketStatus.TECHNICAL_ISSUE);
+        Ticket finalTicket2 = ticketRepository.findById(freshTicket.getId()).orElseThrow();
+        assertThat(finalTicket2.getStatus()).isEqualTo(TicketStatus.TRANSFERRED);
+        assertThat(finalTicket2.getReceivedAt()).isNull();
+
+        Ticket finalTicket3 = ticketRepository.findById(alreadyAwaiting.getId()).orElseThrow();
+        assertThat(finalTicket3.getStatus()).isEqualTo(TicketStatus.AWAITING_USE);
+        assertThat(finalTicket3.getReceivedAt()).isEqualTo(originalReceivedAt);
     }
 }

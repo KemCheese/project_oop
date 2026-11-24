@@ -50,15 +50,14 @@
             <div class="auth-wrapper">
                 <h1 class="auth-title">Đăng Ký Tài Khoản</h1>
                 <p class="auth-sub">
-                    Tham gia sàn giao dịch vé an toàn và nhận ngay 100 điểm uy tín khởi tạo
+                    Tham gia sàn giao dịch vé an toàn với mức uy tín khởi tạo 3 (Bình thường)
                 </p>
 
                 <form method="post" th:action="@{/register}" th:object="${registerRequest}" novalidate>
-                    <!-- Preserve redirect URL for guest users -->
+
                     <input type="hidden" name="redirect" th:value="${redirect != null ? redirect : param.redirect}"
                            th:if="${(redirect != null and !redirect.isEmpty()) or (param.redirect != null and !#strings.isEmpty(param.redirect))}" />
 
-                    <!-- Global errors -->
                     <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}" style="font-size: 13px;">
                         <i class="fa-solid fa-triangle-exclamation"></i>
                         <span th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi đăng ký</span>

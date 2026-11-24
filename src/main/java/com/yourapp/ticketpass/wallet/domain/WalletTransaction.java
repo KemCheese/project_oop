@@ -15,16 +15,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * Thực thể Sổ Cái Giao Dịch (Wallet Ledger Transaction).
- *
- * <p><b>Tính chất bất biến (Append-only & Immutable):</b> Bản ghi này một khi đã tạo ra
- * sẽ không bao giờ bị sửa đổi hay xóa. Nó đóng vai trò là chứng từ kiểm toán (Audit Trail)
- * ghi nhận mọi sự kiện thay đổi số dư trong hệ thống.</p>
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Entity
 @Table(name = "wallet_transactions")
 @Getter

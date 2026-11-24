@@ -3,6 +3,7 @@ package com.yourapp.ticketpass.admin.application;
 import com.yourapp.ticketpass.admin.web.dto.AdminUserModerationView;
 import com.yourapp.ticketpass.admin.web.dto.AdminUserStatsDto;
 import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
+import com.yourapp.ticketpass.reputation.domain.ReputationTier;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.shared.config.ModerationConfig;
 import com.yourapp.ticketpass.user.domain.User;
@@ -20,41 +21,20 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Facade truy vấn chỉ đọc phục vụ màn hình quản trị người dùng ({@code GET /admin/users}).
- *
- * <p>Kết hợp dữ liệu tài khoản từ {@code user.domain.UserRepository} với điểm uy tín từ
- * {@code reputation.domain.ReputationRepository} qua batch query {@code findByUserIdIn}
- * để tránh N+1 query và giữ module {@code user} độc lập hoàn toàn với {@code reputation}.</p>
- *
- * <p>Module: admin</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Service
 @RequiredArgsConstructor
 public class AdminUserModerationQueryService {
 
-    private static final BigDecimal DEFAULT_SCORE = new BigDecimal("100.00");
-    private static final BigDecimal DEFAULT_LOW_THRESHOLD = new BigDecimal("60.00");
+    private static final BigDecimal DEFAULT_SCORE = new BigDecimal("3.00");
+    private static final BigDecimal DEFAULT_LOW_THRESHOLD = new BigDecimal("2.00");
 
     private final UserRepository userRepository;
     private final ReputationRepository reputationRepository;
     private final ModerationConfig moderationConfig;
 
-    /**
-     * Kết quả tổng hợp cho màn hình quản trị tài khoản (thẻ thống kê + danh sách đã lọc).
-     */
     public record ModerationOverview(AdminUserStatsDto stats, List<AdminUserModerationView> users) {
     }
 
-    /**
-     * Tải dữ liệu tổng quan và danh sách tài khoản khớp bộ lọc Admin.
-     *
-     * @param keyword từ khóa tìm theo email, họ tên hoặc SĐT (có thể null)
-     * @param status trạng thái lọc (có thể null)
-     * @param warningOnly {@code true} nếu chỉ hiển thị các tài khoản bị gắn cờ cảnh báo rủi ro
-     * @return bản ghi gồm thẻ thống kê và danh sách người dùng đã ghép điểm uy tín
-     */
     @Transactional(readOnly = true)
     public ModerationOverview loadModerationOverview(String keyword, UserStatus status, boolean warningOnly) {
         boolean hasDbFilter = (keyword != null && !keyword.isBlank()) || status != null;
@@ -110,12 +90,16 @@ public class AdminUserModerationQueryService {
                                          BigDecimal scoreThreshold,
                                          int maxDisputesLost) {
         BigDecimal score = rep != null && rep.getScore() != null ? rep.getScore() : DEFAULT_SCORE;
+        int scoreInt = ReputationTier.normalizeScore(score);
+        ReputationTier tier = ReputationTier.fromScoreInt(scoreInt);
         int totalTx = rep != null && rep.getTotalTransactions() != null ? rep.getTotalTransactions() : 0;
         int disputesLost = rep != null && rep.getDisputesLost() != null ? rep.getDisputesLost() : 0;
         int cancelledListings = rep != null && rep.getCancelledListings() != null ? rep.getCancelledListings() : 0;
 
         boolean isAdmin = user.getRole() == UserRole.ADMIN;
-        boolean lowScore = !isAdmin && score.compareTo(scoreThreshold) < 0;
+        boolean permanentlyBanned = !isAdmin && (user.isPermanentlyBanned()
+                || (user.getStatus() == UserStatus.BANNED && score.compareTo(BigDecimal.ZERO) <= 0));
+        boolean lowScore = !isAdmin && score.compareTo(scoreThreshold) <= 0;
         boolean frequentDisputeLoss = !isAdmin && disputesLost >= maxDisputesLost;
         boolean flaggedRisk = lowScore || frequentDisputeLoss;
         String riskReason = buildRiskReason(lowScore, frequentDisputeLoss, scoreThreshold, maxDisputesLost);
@@ -129,9 +113,13 @@ public class AdminUserModerationQueryService {
                 .status(user.getStatus())
                 .emailVerified(user.isEmailVerified())
                 .reputationScore(score)
+                .reputationScoreInt(scoreInt)
+                .reputationTierName(tier.getDisplayName())
+                .reputationTierColor(tier.getBadgeColor())
                 .totalTransactions(totalTx)
                 .disputesLost(disputesLost)
                 .cancelledListings(cancelledListings)
+                .permanentlyBanned(permanentlyBanned)
                 .flaggedRisk(flaggedRisk)
                 .riskReason(riskReason)
                 .moderationReason(user.getModerationReason())
@@ -145,7 +133,7 @@ public class AdminUserModerationQueryService {
         long total = views.size();
         long active = views.stream().filter(v -> v.getStatus() == UserStatus.ACTIVE).count();
         long locked = views.stream()
-                .filter(v -> v.getStatus() == UserStatus.SUSPENDED || v.getStatus() == UserStatus.BANNED)
+                .filter(v -> v.getStatus() == UserStatus.BANNED)
                 .count();
         long warning = views.stream().filter(AdminUserModerationView::isFlaggedRisk).count();
 
@@ -162,11 +150,11 @@ public class AdminUserModerationQueryService {
                                    BigDecimal scoreThreshold,
                                    int maxDisputesLost) {
         if (lowScore && frequentDisputeLoss) {
-            return "Điểm uy tín < " + scoreThreshold.stripTrailingZeros().toPlainString()
+            return "Điểm uy tín <= " + scoreThreshold.stripTrailingZeros().toPlainString()
                     + " & thua >= " + maxDisputesLost + " tranh chấp";
         }
         if (lowScore) {
-            return "Điểm uy tín thấp (< " + scoreThreshold.stripTrailingZeros().toPlainString() + ")";
+            return "Điểm uy tín thấp (<= " + scoreThreshold.stripTrailingZeros().toPlainString() + ")";
         }
         if (frequentDisputeLoss) {
             return "Thua nhiều tranh chấp (>= " + maxDisputesLost + " lần)";

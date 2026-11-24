@@ -24,12 +24,10 @@ class IdorAndSensitiveDataMaskingTest extends AbstractSystemIntegrationTest {
     @WithMockUser(username = "victim_user@test.com", roles = "USER")
     @DisplayName("Chống IDOR & Data Masking: User chỉ xem hồ sơ của mình từ Principal, STK ngân hàng bị che chỉ hiện 4 số cuối")
     void shouldPreventIdorAndMaskBankAccountInProfile() throws Exception {
-        // Arrange: Tạo User nạn nhân
         User victim = createAndSaveUser("victim_user@test.com", "Password123@", UserRole.USER);
         victim.setBankAccountNumber("190367891234");
         userRepository.save(victim);
 
-        // Act & Assert: Gọi GET /profile
         mockMvc.perform(get("/profile"))
                 .andExpect(status().isOk())
                 .andExpect(model().attributeExists("profile"))
@@ -38,7 +36,6 @@ class IdorAndSensitiveDataMaskingTest extends AbstractSystemIntegrationTest {
                     UserProfileResponse profile = (UserProfileResponse) result.getModelAndView().getModel().get("profile");
                     assertThat(profile.getEmail()).isEqualTo("victim_user@test.com");
 
-                    // Kiểm tra Data Masking 4 số cuối trong model maskedBankAccount
                     String maskedBankAccount = (String) result.getModelAndView().getModel().get("maskedBankAccount");
                     assertThat(maskedBankAccount).isNotNull();
                     assertThat(maskedBankAccount).endsWith("1234");
@@ -49,10 +46,8 @@ class IdorAndSensitiveDataMaskingTest extends AbstractSystemIntegrationTest {
     @Test
     @DisplayName("Bảo vệ dữ liệu nhạy cảm (PRIV-01): Xem điểm uy tín công khai GET /reputation/{id} không làm rò rỉ doanh số GMV")
     void shouldNotExposeSensitiveGmvInPublicReputationView() throws Exception {
-        // Arrange
         User seller = createAndSaveUser("public_seller@test.com", "Password123@", UserRole.USER);
 
-        // Act & Assert
         mockMvc.perform(get("/reputation/" + seller.getId()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("totalGmv"))))

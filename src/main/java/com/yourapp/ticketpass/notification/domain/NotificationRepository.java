@@ -3,15 +3,6 @@ package com.yourapp.ticketpass.notification.domain;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Port (Interface) truy xuất dữ liệu thông báo ở tầng Domain.
- *
- * <p>Tuân thủ Repository Pattern: tách biệt hoàn toàn khỏi Spring Data JPA.
- * Tầng Application chỉ phụ thuộc vào interface này.</p>
- *
- * <p>Module: notification</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 public interface NotificationRepository {
 
     Notification save(Notification notification);

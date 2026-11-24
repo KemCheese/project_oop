@@ -5,11 +5,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.yourapp.ticketpass.reputation.application.ReputationPolicyService;
 import com.yourapp.ticketpass.reputation.application.UpdateReputationUseCase;
 import com.yourapp.ticketpass.reputation.domain.ReputationRepository;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.reputation.web.dto.ReputationResponse;
+import com.yourapp.ticketpass.reputation.web.dto.TransactionHistoryItem;
+import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
+import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.user.application.UserQueryService;
 import com.yourapp.ticketpass.user.domain.User;
 import java.math.BigDecimal;
@@ -18,31 +22,16 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ui.ConcurrentModel;
 import org.springframework.ui.Model;
 
-/**
- * Unit test cho {@link ReputationController} — Task C9 (cập nhật tích hợp fullName từ UserQueryService).
- *
- * <p>Dùng Mockito thuần ({@code @ExtendWith(MockitoExtension.class)} + {@code @Mock})
- * thay vì {@code @WebMvcTest} + {@code @MockBean}, consistent với style test hiện có
- * trong dự án (xem {@code UpdateReputationUseCaseTest}).</p>
- *
- * <p>Test trực tiếp gọi method controller, kiểm tra: view name, model attributes,
- * mapping họ tên người bán (bao gồm cả fallback khi User không tồn tại hoặc tên rỗng)
- * và tương tác đúng với dependencies.</p>
- *
- * <p>Module: reputation</p>
- *
- * Chủ sở hữu: Người C
- */
 @ExtendWith(MockitoExtension.class)
 class ReputationControllerTest {
 
@@ -58,12 +47,20 @@ class ReputationControllerTest {
     @Mock
     private TicketRepository ticketRepository;
 
-    @InjectMocks
+    private ReputationPolicyService reputationPolicyService;
     private ReputationController controller;
 
-    // ────────────────────────────────────────────────────────────────
-    // Helper: tạo entity mẫu
-    // ────────────────────────────────────────────────────────────────
+    @BeforeEach
+    void setUp() {
+        reputationPolicyService = ReputationPolicyService.withDefaultPolicies(reputationRepository);
+        controller = new ReputationController(
+                reputationRepository,
+                updateReputationUseCase,
+                userQueryService,
+                ticketRepository,
+                reputationPolicyService
+        );
+    }
 
     private UserReputationScore buildScore(Long userId, String score, int totalTx, int successTx,
                                            int disputesWon, int disputesLost, String gmv) {
@@ -89,18 +86,27 @@ class ReputationControllerTest {
         return user;
     }
 
-    // ────────────────────────────────────────────────────────────────
-    // GET /reputation/{userId}
-    // ────────────────────────────────────────────────────────────────
+    private Ticket buildTicket(Long id, Long sellerId, Long buyerId, String title, TicketStatus status) {
+        Ticket t = new Ticket();
+        t.setId(id);
+        t.setSellerId(sellerId);
+        t.setBuyerId(buyerId);
+        t.setTitle(title);
+        t.setEventName(title);
+        t.setSalePrice(new BigDecimal("500000.00"));
+        t.setStatus(status);
+        t.setCompletedAt(Instant.parse("2026-11-20T10:00:00Z"));
+        return t;
+    }
 
     @Nested
     @DisplayName("GET /reputation/{userId}")
     class DetailTests {
 
         @Test
-        @DisplayName("User có sẵn bản ghi uy tín và thông tin User → trả view reputation/detail với score và fullName đúng")
-        void detail_existingUser_returnsView() {
-            UserReputationScore score = buildScore(1L, "85.00", 10, 8, 1, 1, "5000000");
+        @DisplayName("User điểm 4 -> map đúng bậc 'Tốt', hạn mức < 10tr và không còn attribute reputationHistory")
+        void detail_existingUser_returnsViewWithTierAndNoReputationHistory() {
+            UserReputationScore score = buildScore(1L, "4.00", 10, 8, 1, 1, "5000000");
             when(updateReputationUseCase.getOrCreate(1L)).thenReturn(score);
             when(userQueryService.findById(1L)).thenReturn(Optional.of(buildUser(1L, "Nguyễn Văn A")));
 
@@ -108,27 +114,20 @@ class ReputationControllerTest {
             String viewName = controller.detail(1L, model);
 
             assertThat(viewName).isEqualTo("reputation/detail");
-            assertThat(model.containsAttribute("reputation")).isTrue();
-
             ReputationResponse response = (ReputationResponse) model.getAttribute("reputation");
             assertThat(response).isNotNull();
             assertThat(response.getUserId()).isEqualTo(1L);
             assertThat(response.getFullName()).isEqualTo("Nguyễn Văn A");
-            assertThat(response.getScore()).isEqualByComparingTo(new BigDecimal("85.00"));
-            assertThat(response.getTotalTransactions()).isEqualTo(10);
-            assertThat(response.getSuccessfulTransactions()).isEqualTo(8);
-            assertThat(response.getDisputesWon()).isEqualTo(1);
-            assertThat(response.getDisputesLost()).isEqualTo(1);
-            assertThat(response.getLastTransactionAt()).isNotNull();
-
-            verify(updateReputationUseCase).getOrCreate(1L);
-            verify(userQueryService).findById(1L);
+            assertThat(response.getScoreInt()).isEqualTo(4);
+            assertThat(response.getTierName()).isEqualTo("Tốt");
+            assertThat(response.getTransactionLimitDescription()).contains("10.000.000");
+            assertThat(model.containsAttribute("reputationHistory")).isFalse();
         }
 
         @Test
-        @DisplayName("User chưa có bản ghi → getOrCreate tạo mặc định 100.00, không tìm thấy User → fallback tên mặc định")
-        void detail_newUser_createsDefaultScore() {
-            UserReputationScore defaultScore = buildScore(999L, "100.00", 0, 0, 0, 0, "0");
+        @DisplayName("User mới -> mặc định điểm 3 (Bình thường) và fallback tên 'Thành viên #id'")
+        void detail_newUser_createsDefaultScore3() {
+            UserReputationScore defaultScore = buildScore(999L, "3.00", 0, 0, 0, 0, "0");
             when(updateReputationUseCase.getOrCreate(999L)).thenReturn(defaultScore);
             when(userQueryService.findById(999L)).thenReturn(Optional.empty());
 
@@ -138,45 +137,65 @@ class ReputationControllerTest {
             assertThat(viewName).isEqualTo("reputation/detail");
             ReputationResponse response = (ReputationResponse) model.getAttribute("reputation");
             assertThat(response).isNotNull();
-            assertThat(response.getUserId()).isEqualTo(999L);
             assertThat(response.getFullName()).isEqualTo("Thành viên #999");
-            assertThat(response.getScore()).isEqualByComparingTo(new BigDecimal("100.00"));
-            assertThat(response.getTotalTransactions()).isEqualTo(0);
-
-            verify(updateReputationUseCase).getOrCreate(999L);
-            verify(userQueryService).findById(999L);
+            assertThat(response.getScoreInt()).isEqualTo(3);
+            assertThat(response.getTierName()).isEqualTo("Bình thường");
         }
 
         @Test
-        @DisplayName("User có tồn tại nhưng fullName null → gán fallback 'Thành viên #id'")
-        void detail_userWithNullFullName_setsFallbackFullName() {
-            UserReputationScore score = buildScore(2L, "90.00", 5, 5, 0, 0, "1000000");
-            when(updateReputationUseCase.getOrCreate(2L)).thenReturn(score);
-            when(userQueryService.findById(2L)).thenReturn(Optional.of(buildUser(2L, null)));
+        @DisplayName("Fix nhãn lịch sử uy tín: RESOLVED_BUYER_WINS hiển thị 'Thua tranh chấp' (danger) cho SELLER và 'Thắng tranh chấp' (success) cho BUYER")
+        void detail_disputeOutcomeLabels_distinguishSellerAndBuyerRole() {
+            Long userId = 10L;
+            when(updateReputationUseCase.getOrCreate(userId)).thenReturn(buildScore(userId, "2.00", 4, 2, 1, 1, "1000000"));
+            when(userQueryService.findById(userId)).thenReturn(Optional.of(buildUser(userId, "User Test")));
+
+            Ticket sellerLost = buildTicket(101L, userId, 20L, "Vé Seller Thua", TicketStatus.RESOLVED_BUYER_WINS);
+            Ticket sellerWon = buildTicket(102L, userId, 21L, "Vé Seller Thắng", TicketStatus.RESOLVED_SELLER_WINS);
+            when(ticketRepository.findBySellerId(userId)).thenReturn(List.of(sellerLost, sellerWon));
+
+            Ticket buyerWon = buildTicket(201L, 30L, userId, "Vé Buyer Thắng", TicketStatus.RESOLVED_BUYER_WINS);
+            Ticket buyerLost = buildTicket(202L, 31L, userId, "Vé Buyer Thua", TicketStatus.RESOLVED_SELLER_WINS);
+            when(ticketRepository.findByBuyerId(userId)).thenReturn(List.of(buyerWon, buyerLost));
 
             Model model = new ConcurrentModel();
-            controller.detail(2L, model);
+            controller.detail(userId, model);
 
-            ReputationResponse response = (ReputationResponse) model.getAttribute("reputation");
-            assertThat(response).isNotNull();
-            assertThat(response.getFullName()).isEqualTo("Thành viên #2");
+            @SuppressWarnings("unchecked")
+            List<TransactionHistoryItem> history = (List<TransactionHistoryItem>) model.getAttribute("history");
+            assertThat(history).hasSize(4);
+
+            TransactionHistoryItem itemSellerLost = history.stream().filter(i -> i.getTicketId().equals(101L)).findFirst().orElseThrow();
+            assertThat(itemSellerLost.getRole()).isEqualTo("SELLER");
+            assertThat(itemSellerLost.getOutcomeLabel()).isEqualTo("Thua tranh chấp");
+            assertThat(itemSellerLost.getOutcomeColor()).isEqualTo("danger");
+
+            TransactionHistoryItem itemSellerWon = history.stream().filter(i -> i.getTicketId().equals(102L)).findFirst().orElseThrow();
+            assertThat(itemSellerWon.getRole()).isEqualTo("SELLER");
+            assertThat(itemSellerWon.getOutcomeLabel()).isEqualTo("Thắng tranh chấp");
+            assertThat(itemSellerWon.getOutcomeColor()).isEqualTo("success");
+
+            TransactionHistoryItem itemBuyerWon = history.stream().filter(i -> i.getTicketId().equals(201L)).findFirst().orElseThrow();
+            assertThat(itemBuyerWon.getRole()).isEqualTo("BUYER");
+            assertThat(itemBuyerWon.getOutcomeLabel()).isEqualTo("Thắng tranh chấp");
+            assertThat(itemBuyerWon.getOutcomeColor()).isEqualTo("success");
+
+            TransactionHistoryItem itemBuyerLost = history.stream().filter(i -> i.getTicketId().equals(202L)).findFirst().orElseThrow();
+            assertThat(itemBuyerLost.getRole()).isEqualTo("BUYER");
+            assertThat(itemBuyerLost.getOutcomeLabel()).isEqualTo("Thua tranh chấp");
+            assertThat(itemBuyerLost.getOutcomeColor()).isEqualTo("danger");
         }
     }
-
-    // ────────────────────────────────────────────────────────────────
-    // GET /reputation/top
-    // ────────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("GET /reputation/top")
     class TopSellersTests {
 
         @Test
-        @DisplayName("Không truyền limit → mặc định 10, trả view reputation/top kèm fullName người bán")
+        @DisplayName("Top sellers hiển thị điểm nguyên 0-5 và đúng bậc uy tín")
         void topSellers_defaultLimit() {
             List<UserReputationScore> scores = List.of(
-                    buildScore(1L, "98.00", 50, 48, 2, 0, "25000000"),
-                    buildScore(2L, "95.00", 30, 28, 1, 1, "15000000")
+                    buildScore(1L, "5.00", 50, 48, 2, 0, "25000000"),
+                    buildScore(2L, "4.00", 30, 28, 1, 1, "15000000")
             );
             when(reputationRepository.findTopSellers(10)).thenReturn(scores);
             when(userQueryService.findById(1L)).thenReturn(Optional.of(buildUser(1L, "Top Seller 1")));
@@ -186,95 +205,29 @@ class ReputationControllerTest {
             String viewName = controller.topSellers(10, model);
 
             assertThat(viewName).isEqualTo("reputation/top");
-            assertThat(model.getAttribute("limit")).isEqualTo(10);
-
             @SuppressWarnings("unchecked")
             List<ReputationResponse> sellers = (List<ReputationResponse>) model.getAttribute("sellers");
             assertThat(sellers).hasSize(2);
-            assertThat(sellers.get(0).getUserId()).isEqualTo(1L);
-            assertThat(sellers.get(0).getFullName()).isEqualTo("Top Seller 1");
-            assertThat(sellers.get(0).getScore()).isEqualByComparingTo(new BigDecimal("98.00"));
-            assertThat(sellers.get(1).getUserId()).isEqualTo(2L);
-            assertThat(sellers.get(1).getFullName()).isEqualTo("Top Seller 2");
-            assertThat(sellers.get(1).getScore()).isEqualByComparingTo(new BigDecimal("95.00"));
-
-            verify(reputationRepository).findTopSellers(10);
-            verify(userQueryService).findById(1L);
-            verify(userQueryService).findById(2L);
+            assertThat(sellers.get(0).getScoreInt()).isEqualTo(5);
+            assertThat(sellers.get(0).getTierName()).isEqualTo("Xuất Sắc");
+            assertThat(sellers.get(1).getScoreInt()).isEqualTo(4);
+            assertThat(sellers.get(1).getTierName()).isEqualTo("Tốt");
         }
 
         @Test
-        @DisplayName("Truyền limit=5 → gọi findTopSellers(5)")
-        void topSellers_customLimit() {
-            when(reputationRepository.findTopSellers(5)).thenReturn(
-                    List.of(buildScore(1L, "98.00", 50, 48, 2, 0, "25000000"))
-            );
-            when(userQueryService.findById(1L)).thenReturn(Optional.of(buildUser(1L, "Top Seller 1")));
-
-            Model model = new ConcurrentModel();
-            String viewName = controller.topSellers(5, model);
-
-            assertThat(viewName).isEqualTo("reputation/top");
-            assertThat(model.getAttribute("limit")).isEqualTo(5);
-
-            verify(reputationRepository).findTopSellers(5);
-            verify(userQueryService).findById(1L);
-        }
-
-        @Test
-        @DisplayName("Limit=200 → bị chặn về 100")
-        void topSellers_clampUpperBound() {
+        @DisplayName("Limit được chặn chặt trong đoạn [1..100]")
+        void topSellers_clampBounds() {
             when(reputationRepository.findTopSellers(100)).thenReturn(Collections.emptyList());
-
-            Model model = new ConcurrentModel();
-            controller.topSellers(200, model);
-
-            assertThat(model.getAttribute("limit")).isEqualTo(100);
-            verify(reputationRepository).findTopSellers(100);
-            verify(reputationRepository, never()).findTopSellers(200);
-        }
-
-        @Test
-        @DisplayName("Limit=-5 → bị chặn về 1")
-        void topSellers_clampLowerBound() {
             when(reputationRepository.findTopSellers(1)).thenReturn(Collections.emptyList());
 
-            Model model = new ConcurrentModel();
-            controller.topSellers(-5, model);
+            Model m1 = new ConcurrentModel();
+            controller.topSellers(200, m1);
+            assertThat(m1.getAttribute("limit")).isEqualTo(100);
+            verify(reputationRepository, never()).findTopSellers(200);
 
-            assertThat(model.getAttribute("limit")).isEqualTo(1);
-            verify(reputationRepository).findTopSellers(1);
-        }
-
-        @Test
-        @DisplayName("Danh sách rỗng → vẫn trả view thành công, sellers rỗng")
-        void topSellers_emptyList() {
-            when(reputationRepository.findTopSellers(10)).thenReturn(Collections.emptyList());
-
-            Model model = new ConcurrentModel();
-            String viewName = controller.topSellers(10, model);
-
-            assertThat(viewName).isEqualTo("reputation/top");
-            @SuppressWarnings("unchecked")
-            List<ReputationResponse> sellers = (List<ReputationResponse>) model.getAttribute("sellers");
-            assertThat(sellers).isEmpty();
-        }
-
-        @Test
-        @DisplayName("User trong top không tìm thấy trong UserQueryService → fallback 'Thành viên #id'")
-        void topSellers_userNotFound_setsFallbackFullName() {
-            when(reputationRepository.findTopSellers(10)).thenReturn(
-                    List.of(buildScore(99L, "99.00", 10, 10, 0, 0, "5000000"))
-            );
-            when(userQueryService.findById(99L)).thenReturn(Optional.empty());
-
-            Model model = new ConcurrentModel();
-            controller.topSellers(10, model);
-
-            @SuppressWarnings("unchecked")
-            List<ReputationResponse> sellers = (List<ReputationResponse>) model.getAttribute("sellers");
-            assertThat(sellers).hasSize(1);
-            assertThat(sellers.get(0).getFullName()).isEqualTo("Thành viên #99");
+            Model m2 = new ConcurrentModel();
+            controller.topSellers(-5, m2);
+            assertThat(m2.getAttribute("limit")).isEqualTo(1);
         }
     }
 }

@@ -35,7 +35,7 @@ class DeliveryTimeoutSchedulerTest {
         Ticket ticket = new Ticket();
         ticket.setId(301L);
         ticket.setStatus(TicketStatus.TRANSFERRED);
-        ticket.setTransferredAt(Instant.now().minusSeconds(1900)); // 31 phút trước
+        ticket.setTransferredAt(Instant.now().minusSeconds(1900));
 
         when(ticketRepository.findOverdueDeliveryTickets(any(Instant.class)))
                 .thenReturn(List.of(ticket));

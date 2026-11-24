@@ -14,6 +14,8 @@ import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.ticket.domain.TicketTypeStatusCount;
+import com.yourapp.ticketpass.wallet.domain.AccountLiquidation;
+import com.yourapp.ticketpass.wallet.domain.AccountLiquidationRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -23,6 +25,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.LinkedHashSet;
@@ -32,28 +35,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Facade tổng hợp số liệu tài chính, thuế, hoa hồng và tỷ lệ vòng đời vé cho Admin Dashboard.
- *
- * <p>Thiết kế tuân thủ ranh giới Modular Monolith:</p>
- * <ul>
- *   <li>Đọc trực tiếp qua các port domain {@link EscrowTransactionRepository},
- *       {@link DepositRepository}, {@link TicketRepository} trong {@code @Transactional(readOnly = true)}.</li>
- *   <li>Số liệu trong kỳ áp dụng Cash-basis ({@code RELEASED.releasedAt} và {@code FORFEITED.forfeitedAt})
- *       theo nửa khoảng {@code [fromDate 00:00, toDate+1 00:00)} múi giờ {@code Asia/Ho_Chi_Minh}.</li>
- *   <li>Tách riêng tiền đang giữ hộ {@code HELD} (live snapshot) và thuế khấu trừ giữ hộ
- *       {@code taxWithheld} (không cộng vào doanh thu sàn).</li>
- * </ul>
- *
- * <p>Module: admin</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Service
-@RequiredArgsConstructor
 public class AdminDashboardService {
 
     public static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -68,22 +54,33 @@ public class AdminDashboardService {
     private final EscrowTransactionRepository escrowTransactionRepository;
     private final DepositRepository depositRepository;
     private final TicketRepository ticketRepository;
+    private final AccountLiquidationRepository accountLiquidationRepository;
     private final Clock clock;
 
-    /**
-     * Khoảng ngày đã chuẩn hóa kèm mốc {@link Instant} nửa khoảng {@code [startInclusive, endExclusive)}.
-     */
+    @Autowired
+    public AdminDashboardService(EscrowTransactionRepository escrowTransactionRepository,
+                                 DepositRepository depositRepository,
+                                 TicketRepository ticketRepository,
+                                 AccountLiquidationRepository accountLiquidationRepository,
+                                 Clock clock) {
+        this.escrowTransactionRepository = escrowTransactionRepository;
+        this.depositRepository = depositRepository;
+        this.ticketRepository = ticketRepository;
+        this.accountLiquidationRepository = accountLiquidationRepository;
+        this.clock = clock;
+    }
+
+    public AdminDashboardService(EscrowTransactionRepository escrowTransactionRepository,
+                                 DepositRepository depositRepository,
+                                 TicketRepository ticketRepository,
+                                 Clock clock) {
+        this(escrowTransactionRepository, depositRepository, ticketRepository, null, clock);
+    }
+
     public record ResolvedDateRange(LocalDate fromDate, LocalDate toDate,
                                     Instant startInclusive, Instant endExclusive) {
     }
 
-    /**
-     * Tổng hợp toàn bộ số liệu KPI, phân tích theo loại vé và sổ cái doanh thu cho Admin Dashboard.
-     *
-     * @param fromDate ngày bắt đầu lọc (inclusive, giờ Việt Nam); null sẽ lấy mặc định 30 ngày gần nhất
-     * @param toDate ngày kết thúc lọc (inclusive, giờ Việt Nam); null sẽ lấy hôm nay
-     * @return dữ liệu tổng hợp dashboard
-     */
     @Transactional(readOnly = true)
     public AdminDashboardSummaryResponse getDashboardSummary(LocalDate fromDate, LocalDate toDate) {
         ResolvedDateRange range = resolveDateRange(fromDate, toDate);
@@ -92,6 +89,7 @@ public class AdminDashboardService {
                 escrowTransactionRepository.findReleasedBetween(range.startInclusive(), range.endExclusive());
         List<Deposit> forfeitedDeposits =
                 depositRepository.findForfeitedBetween(range.startInclusive(), range.endExclusive());
+        List<AccountLiquidation> liquidations = loadLiquidationsWithFee(range.startInclusive(), range.endExclusive());
         BigDecimal liveHeldAmount = nullSafeZero(escrowTransactionRepository.sumHeldAmount());
 
         List<TicketTypeStatusCount> completedCounts =
@@ -115,18 +113,25 @@ public class AdminDashboardService {
             totalForfeitCut = totalForfeitCut.add(nullSafeZero(deposit.getFounderCut()));
         }
 
-        BigDecimal totalPlatformRevenue = totalCommission.add(totalForfeitCut);
+        BigDecimal totalLiquidationFee = BigDecimal.ZERO;
+        for (AccountLiquidation liquidation : liquidations) {
+            totalLiquidationFee = totalLiquidationFee.add(nullSafeZero(liquidation.getFeeAmount()));
+        }
+
+        BigDecimal totalPlatformRevenue = totalCommission.add(totalForfeitCut).add(totalLiquidationFee);
         List<TicketCategoryBreakdownDto> categoryBreakdowns = buildCategoryBreakdowns(completedCounts, liveCounts);
-        List<RevenueLedgerRowDto> ledgerRows = buildLedgerRows(releasedEscrows, forfeitedDeposits, ticketMap);
+        List<RevenueLedgerRowDto> ledgerRows = buildLedgerRows(releasedEscrows, forfeitedDeposits, liquidations, ticketMap);
 
         return AdminDashboardSummaryResponse.builder()
                 .fromDate(range.fromDate())
                 .toDate(range.toDate())
                 .releasedCount(releasedEscrows.size())
                 .forfeitedCount(forfeitedDeposits.size())
+                .liquidationCount(liquidations.size())
                 .totalGmv(totalGmv)
                 .totalCommission(totalCommission)
                 .totalForfeitCut(totalForfeitCut)
+                .totalLiquidationFee(totalLiquidationFee)
                 .totalPlatformRevenue(totalPlatformRevenue)
                 .totalTaxWithheld(totalTaxWithheld)
                 .liveHeldEscrowAmount(liveHeldAmount)
@@ -135,16 +140,6 @@ public class AdminDashboardService {
                 .build();
     }
 
-    /**
-     * Xuất sổ cái doanh thu theo bộ lọc ngày ra mảng byte CSV UTF-8 BOM an toàn cho Excel.
-     *
-     * <p>Chỉ truy vấn dữ liệu sổ cái ({@code RELEASED} + {@code FORFEITED} + vé liên quan),
-     * không chạy thừa các query thống kê biểu đồ/tỷ lệ hoặc snapshot {@code HELD}.</p>
-     *
-     * @param fromDate ngày bắt đầu (có thể null)
-     * @param toDate ngày kết thúc (có thể null)
-     * @return mảng byte file CSV hoàn chỉnh
-     */
     @Transactional(readOnly = true)
     public byte[] exportDashboardCsv(LocalDate fromDate, LocalDate toDate) {
         ResolvedDateRange range = resolveDateRange(fromDate, toDate);
@@ -152,8 +147,9 @@ public class AdminDashboardService {
                 escrowTransactionRepository.findReleasedBetween(range.startInclusive(), range.endExclusive());
         List<Deposit> forfeitedDeposits =
                 depositRepository.findForfeitedBetween(range.startInclusive(), range.endExclusive());
+        List<AccountLiquidation> liquidations = loadLiquidationsWithFee(range.startInclusive(), range.endExclusive());
         Map<Long, Ticket> ticketMap = batchLoadTickets(releasedEscrows, forfeitedDeposits);
-        List<RevenueLedgerRowDto> ledgerRows = buildLedgerRows(releasedEscrows, forfeitedDeposits, ticketMap);
+        List<RevenueLedgerRowDto> ledgerRows = buildLedgerRows(releasedEscrows, forfeitedDeposits, liquidations, ticketMap);
 
         List<String> headers = List.of(
                 "LoaiGiaoDich",
@@ -186,13 +182,6 @@ public class AdminDashboardService {
         return CsvExportUtil.toUtf8BomCsv(headers, rows);
     }
 
-    /**
-     * Chuẩn hóa khoảng ngày mặc định (30 ngày gần nhất theo giờ Việt Nam) và kiểm tra hợp lệ.
-     *
-     * @param fromDate ngày bắt đầu tùy chọn
-     * @param toDate ngày kết thúc tùy chọn
-     * @return khoảng ngày và mốc thời gian nửa khoảng {@code [startInclusive, endExclusive)}
-     */
     public ResolvedDateRange resolveDateRange(LocalDate fromDate, LocalDate toDate) {
         LocalDate today = LocalDate.now(clock.withZone(VIETNAM_ZONE));
         LocalDate effectiveTo = toDate != null ? toDate : today;
@@ -245,8 +234,7 @@ public class AdminDashboardService {
             long liveInProgress = live.getOrDefault(TicketStatus.PAYMENT_ESCROWED, 0L)
                     + live.getOrDefault(TicketStatus.DEPOSIT_LOCKED, 0L)
                     + live.getOrDefault(TicketStatus.TRANSFERRED, 0L)
-                    + live.getOrDefault(TicketStatus.AWAITING_USE, 0L)
-                    + live.getOrDefault(TicketStatus.TECHNICAL_ISSUE, 0L);
+                    + live.getOrDefault(TicketStatus.AWAITING_USE, 0L);
             long liveDisputeReview = live.getOrDefault(TicketStatus.DISPUTE_UNDER_REVIEW, 0L);
 
             result.add(TicketCategoryBreakdownDto.builder()
@@ -282,8 +270,18 @@ public class AdminDashboardService {
         return grouped;
     }
 
+    private List<AccountLiquidation> loadLiquidationsWithFee(Instant startInclusive, Instant endExclusive) {
+        if (accountLiquidationRepository == null) {
+            return Collections.emptyList();
+        }
+        List<AccountLiquidation> result =
+                accountLiquidationRepository.findWithFeeBetween(startInclusive, endExclusive);
+        return result != null ? result : Collections.emptyList();
+    }
+
     private List<RevenueLedgerRowDto> buildLedgerRows(List<EscrowTransaction> escrows,
                                                       List<Deposit> deposits,
+                                                      List<AccountLiquidation> liquidations,
                                                       Map<Long, Ticket> ticketMap) {
         List<RevenueLedgerRowDto> rows = new ArrayList<>();
         for (EscrowTransaction escrow : escrows) {
@@ -330,6 +328,32 @@ public class AdminDashboardService {
                     .taxWithheld(BigDecimal.ZERO)
                     .note(note)
                     .build());
+        }
+
+        if (liquidations != null) {
+            for (AccountLiquidation liquidation : liquidations) {
+                String note = String.format(
+                        "Thanh lý ví tài khoản #%d (Số dư gốc: %,.0f đ · Thực chuyển: %,.0f đ · %s)",
+                        liquidation.getUserId(),
+                        nullSafeZero(liquidation.getGrossBalance()),
+                        nullSafeZero(liquidation.getNetPayoutAmount()),
+                        liquidation.getStatus() != null ? liquidation.getStatus().name() : "");
+
+                rows.add(RevenueLedgerRowDto.builder()
+                        .sourceType("ACCOUNT_LIQUIDATION_FEE")
+                        .sourceLabel("Phí thanh lý (Uy tín = 0)")
+                        .occurredAt(liquidation.getLiquidatedAt())
+                        .occurredAtDisplay(formatInstant(liquidation.getLiquidatedAt()))
+                        .referenceId(liquidation.getId())
+                        .ticketId(null)
+                        .ticketTitle("Thanh lý tài khoản #" + liquidation.getUserId())
+                        .ticketType(null)
+                        .gmv(BigDecimal.ZERO)
+                        .platformRevenue(nullSafeZero(liquidation.getFeeAmount()))
+                        .taxWithheld(BigDecimal.ZERO)
+                        .note(note)
+                        .build());
+            }
         }
 
         rows.sort(Comparator.comparing(

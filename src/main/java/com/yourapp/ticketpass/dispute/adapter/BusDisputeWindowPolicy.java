@@ -9,18 +9,6 @@ import org.springframework.stereotype.Component;
 import com.yourapp.ticketpass.dispute.domain.DisputeWindowPolicy;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 
-/**
- * Cửa sổ khiếu nại cho vé xe khách: <b>3 giờ</b> sau {@code transferredAt}
- * (đọc từ {@code app.dispute.window.bus-hours}).
- *
- * <p>Thời điểm đóng cửa sổ là thời điểm <em>sớm hơn</em> giữa
- * {@code transferredAt + 3h} và {@code eventStartAt}.
- * Nếu xe khởi hành trước khi hết 3 giờ thì cửa sổ đóng ngay tại giờ khởi hành.</p>
- *
- * <p>Module: dispute</p>
- *
- * <p>Chủ sở hữu: Người B</p>
- */
 @Component
 public class BusDisputeWindowPolicy implements DisputeWindowPolicy {
 
@@ -45,30 +33,22 @@ public class BusDisputeWindowPolicy implements DisputeWindowPolicy {
         return window;
     }
 
-    /** Vùng đệm khiếu nại tại cổng (Gate Dispute - BR-09 Revised): 30 phút sau giờ bắt đầu sự kiện. */
     public static final Duration GATE_DISPUTE_BUFFER = Duration.ofMinutes(30);
 
-    /**
-     * Cửa sổ khiếu nại đóng sau thời gian bắt đầu sự kiện 1 ngày (eventStartAt + 1 day).
-     * Nếu không có eventStartAt, fallback theo transferredAt + window.
-     */
     @Override
     public Instant computeWindowClose(Instant transferredAt, Instant eventStartAt) {
         if (eventStartAt != null) {
-            return eventStartAt.plus(Duration.ofDays(1));
+            return eventStartAt.plus(GATE_DISPUTE_BUFFER);
         }
         return transferredAt != null ? transferredAt.plus(window) : Instant.now().plus(window);
     }
 
-    /**
-     * {@code true} khi {@code now} chưa đạt tới thời điểm đóng cửa sổ.
-     */
     @Override
     public boolean isWithinWindow(Instant transferredAt, Instant eventStartAt, Instant now) {
         if (transferredAt == null || now == null) {
             return false;
         }
-        return now.isBefore(computeWindowClose(transferredAt, eventStartAt));
+        return !now.isAfter(computeWindowClose(transferredAt, eventStartAt));
     }
 
     @Override

@@ -6,15 +6,6 @@ import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 
 import lombok.Getter;
 
-/**
- * Ngoại lệ ném ra khi số dư trong ví không đủ để thực hiện giao dịch trừ tiền.
- *
- * <p>Kế thừa {@link BusinessRuleViolationException} để được {@code GlobalExceptionHandler}
- * xử lý tự động thành phản hồi lỗi 400 và hiển thị thông điệp thân thiện.</p>
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 public class InsufficientBalanceException extends BusinessRuleViolationException {
 

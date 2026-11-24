@@ -35,9 +35,6 @@ import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
 import com.yourapp.ticketpass.user.domain.UserRepository;
 
-/**
- * Unit test cho {@link PaymentController} theo phong cách Mockito thuần của dự án.
- */
 @ExtendWith(MockitoExtension.class)
 class PaymentControllerTest {
 

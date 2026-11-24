@@ -1,6 +1,7 @@
 package com.yourapp.ticketpass.user.web;
 
 import com.yourapp.ticketpass.reputation.application.UpdateReputationUseCase;
+import com.yourapp.ticketpass.reputation.domain.ReputationTier;
 import com.yourapp.ticketpass.reputation.domain.UserReputationScore;
 import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
 import com.yourapp.ticketpass.shared.exception.ResourceNotFoundException;
@@ -38,52 +39,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Controller phục vụ các màn hình đăng ký, đăng nhập và hồ sơ cá nhân.
- *
- * <p>
- * Bảng route:
- * </p>
- * 
- * <pre>
- * GET  /login            -&gt; view "auth/login"     (chi hien thi form dang nhap)
- * GET  /register         -&gt; view "auth/register"
- * POST /register         -&gt; xu ly RegisterRequest da validate
- * GET  /profile          -&gt; view "user/profile"
- * POST /profile          -&gt; cap nhat UpdateProfileRequest
- * POST /profile/avatar   -&gt; tai anh dai dien (MultipartFile)
- * POST /profile/bank     -&gt; cap nhat UpdateBankAccountRequest
- * </pre>
- *
- * <p>
- * <b>Lưu ý quan trọng:</b> {@code POST /login} <b>KHÔNG</b> được khai báo ở
- * đây. Việc xác
- * thực do filter của Spring Security (cấu hình {@code formLogin} trong
- * {@code shared.config.SecurityConfig}) đảm nhiệm; controller chỉ trả về trang
- * chứa form.
- * Tương tự, {@code POST /logout} cũng do Spring Security xử lý.
- * </p>
- *
- * <p>
- * Tầng {@code web} là nơi lắp thêm
- * {@code reputationScore}/{@code totalTransactions} từ
- * module {@code reputation} vào {@code UserProfileResponse} trước khi đẩy ra
- * view.
- * </p>
- *
- * <p>
- * <b>RR-4 (IDOR Prevention):</b> Mọi endpoint profile đều lấy {@code userId} từ
- * {@code resolveUserId(principal)} — KHÔNG BAO GIỜ nhận {@code userId} từ URL
- * path hay
- * request parameter. Đảm bảo người dùng chỉ truy cập/sửa đổi hồ sơ chính mình.
- * </p>
- *
- * <p>
- * Module: user
- * </p>
- *
- * Chủ sở hữu: Người C
- */
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -101,12 +56,6 @@ public class UserController {
 
     private final AccountSecurityService accountSecurityService;
 
-    /**
-     * Hiển thị form đăng nhập.
-     *
-     * @param model model của view
-     * @return tên view {@code auth/login}
-     */
     @GetMapping("/login")
     public String loginForm(@RequestParam(value = "redirect", required = false) String redirect,
                             HttpServletRequest request,
@@ -119,14 +68,6 @@ public class UserController {
         return loginForm(null, null, model);
     }
 
-    /**
-     * Hiển thị form đăng ký.
-     *
-     * @param redirect URL đích muốn quay lại sau khi đăng ký thành công
-     * @param request  yêu cầu HTTP chứa header Referer
-     * @param model    model của view
-     * @return tên view {@code auth/register}
-     */
     @GetMapping("/register")
     public String registerForm(@RequestParam(value = "redirect", required = false) String redirect,
                                HttpServletRequest request,
@@ -140,22 +81,6 @@ public class UserController {
         return registerForm(null, null, model);
     }
 
-    /**
-     * Xử lý submit form đăng ký.
-     *
-     * <p>
-     * Bắt {@code BusinessRuleViolationException} từ {@code RegisterUserUseCase} và
-     * phân luồng lỗi vào đúng field tương ứng trên form.
-     * Sau khi đăng ký thành công, bảo lưu tham số {@code redirect} để tự động quay lại
-     * đúng trang người dùng đang xem dở sau khi đăng nhập.
-     * </p>
-     *
-     * @param request       dữ liệu đăng ký
-     * @param bindingResult kết quả Bean Validation
-     * @param redirect      tham số URL chuyển hướng
-     * @param httpRequest   request HTTP để lấy session attribute
-     * @return redirect sang trang đăng nhập khi thành công, hoặc trả lại form khi có lỗi
-     */
     @PostMapping("/register")
     public String register(@Valid RegisterRequest request,
                            BindingResult bindingResult,
@@ -228,13 +153,6 @@ public class UserController {
         }
     }
 
-    /**
-     * Hiển thị trang hồ sơ cá nhân.
-     *
-     * @param principal người dùng đang đăng nhập
-     * @param model     model của view
-     * @return tên view {@code user/profile}
-     */
     @GetMapping("/profile")
     public String profile(Principal principal, Model model) {
         Long userId = resolveUserId(principal);
@@ -242,15 +160,6 @@ public class UserController {
         return "user/profile";
     }
 
-    /**
-     * Cập nhật thông tin cá nhân.
-     *
-     * @param request       dữ liệu mới
-     * @param bindingResult kết quả Bean Validation
-     * @param principal     người dùng đang đăng nhập
-     * @param model         model của view (cần khi có lỗi validation)
-     * @return redirect về trang hồ sơ
-     */
     @PostMapping("/profile")
     public String updateProfile(@Valid UpdateProfileRequest request, BindingResult bindingResult,
             Principal principal, Model model) {
@@ -268,20 +177,6 @@ public class UserController {
         return "redirect:/profile?updated";
     }
 
-    /**
-     * Tải lên ảnh đại diện mới.
-     *
-     * <p>
-     * Sử dụng try-with-resources để tự động đóng {@code InputStream} an toàn.
-     * Ủy quyền hoàn toàn cho {@code UserProfileService.updateAvatar()} tương tác
-     * với
-     * {@code FileStorageService} (Adapter Pattern).
-     * </p>
-     *
-     * @param avatar    tệp ảnh người dùng chọn
-     * @param principal người dùng đang đăng nhập
-     * @return redirect về trang hồ sơ
-     */
     @PostMapping("/profile/avatar")
     public String updateAvatar(@RequestParam("avatar") MultipartFile avatar, Principal principal) {
         if (avatar == null || avatar.isEmpty()) {
@@ -308,15 +203,6 @@ public class UserController {
         return "redirect:/profile?avatarUpdated";
     }
 
-    /**
-     * Cập nhật tài khoản ngân hàng nhận tiền.
-     *
-     * @param request       thông tin ngân hàng
-     * @param bindingResult kết quả Bean Validation
-     * @param principal     người dùng đang đăng nhập
-     * @param model         model của view (cần khi có lỗi validation)
-     * @return redirect về trang hồ sơ
-     */
     @PostMapping("/profile/bank")
     public String updateBankAccount(@Valid UpdateBankAccountRequest request, BindingResult bindingResult,
             Principal principal, Model model) {
@@ -338,22 +224,6 @@ public class UserController {
         return "redirect:/profile?bankUpdated";
     }
 
-    // ═══════════════════════════ HELPER METHODS ════════════════════════
-
-    /**
-     * Tra cứu userId từ Principal đang đăng nhập.
-     *
-     * <p>
-     * <b>RR-4 (IDOR Prevention):</b> Đây là điểm tập trung duy nhất để lấy userId.
-     * Mọi endpoint profile đều gọi method này thay vì nhận userId từ request
-     * parameter.
-     * </p>
-     *
-     * @param principal người dùng đang đăng nhập (email = principal.getName())
-     * @return userId của người dùng
-     * @throws ResourceNotFoundException nếu không tìm thấy user (phiên đăng nhập
-     *                                   bất thường)
-     */
     private Long resolveUserId(Principal principal) {
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {
             throw new BusinessRuleViolationException("Phiên đăng nhập không hợp lệ.");
@@ -364,51 +234,26 @@ public class UserController {
         return user.getId();
     }
 
-    /**
-     * Nạp dữ liệu chung vào Model cho trang hồ sơ cá nhân.
-     *
-     * <p>
-     * Thực hiện 3 việc:
-     * <ol>
-     * <li>Lấy {@code UserProfileResponse} từ {@code UserProfileService}.</li>
-     * <li>Lắp thêm {@code reputationScore} và {@code totalTransactions} từ module
-     * {@code reputation} qua {@code UpdateReputationUseCase.getOrCreate(userId)}.
-     * <b>RR-2 (Side-effect trong GET):</b> {@code getOrCreate} có thể INSERT bản
-     * ghi
-     * mới nếu chưa tồn tại, nhưng Task C6 đã tạo sẵn khi đăng ký → nhánh tạo mới
-     * gần như không xảy ra. Hành vi idempotent, chấp nhận trade-off cho đơn
-     * giản.</li>
-     * <li>Masking số tài khoản ngân hàng theo <b>RR-1</b> và <b>RR-5</b>.</li>
-     * </ol>
-     *
-     * @param model  model của view
-     * @param userId id người dùng đang đăng nhập
-     */
     private void populateProfileModel(Model model, Long userId) {
         UserProfileResponse profile = userProfileService.getProfile(userId);
 
-        // Lắp thêm thông tin uy tín từ module reputation (Decoupling - tầng web ghép
-        // data)
-        // RR-2: getOrCreate có @Transactional, có thể INSERT nếu chưa có bản ghi.
-        // Task C6 đã tạo sẵn khi đăng ký → nhánh tạo mới gần như không bao giờ kích
-        // hoạt.
         UserReputationScore rep = updateReputationUseCase.getOrCreate(userId);
         profile.setReputationScore(rep.getScore());
+        ReputationTier tier = ReputationTier.fromScore(rep.getScore());
+        profile.setReputationTierName(tier.getDisplayName());
+        profile.setReputationTierColor(tier.getBadgeColor());
+        profile.setReputationLimitDescription(tier.getLimitDescription());
         profile.setTotalTransactions(rep.getTotalTransactions());
 
-        // RR-1 & RR-5: Masking số tài khoản ngân hàng trước khi đẩy ra view
         String maskedBankAccount = maskBankAccount(profile.getBankAccountNumber());
 
         model.addAttribute("profile", profile);
         model.addAttribute("maskedBankAccount", maskedBankAccount);
 
-        // Danh sách vé theo dõi (Watchlist / Starred tickets) của người dùng
         List<StarredTicketItemResponse> starredTickets = starredTicketUseCase.getStarredTicketsForUser(userId);
         model.addAttribute("starredTickets", starredTickets);
         model.addAttribute("starredCount", starredTickets.size());
 
-        // Pre-fill form thông tin cá nhân nếu model chưa có (ví dụ khi GET /profile).
-        // Nếu đã có (khi POST /profile bị lỗi validation), giữ nguyên request của user để hiển thị lỗi.
         if (!model.containsAttribute("updateProfileRequest")) {
             UpdateProfileRequest updateProfileRequest = new UpdateProfileRequest();
             updateProfileRequest.setFullName(profile.getFullName());
@@ -416,8 +261,6 @@ public class UserController {
             model.addAttribute("updateProfileRequest", updateProfileRequest);
         }
 
-        // Pre-fill form thông tin ngân hàng nếu model chưa có (ví dụ khi GET /profile).
-        // RR-5: Không pre-fill bankAccountNumber, chỉ điền bankName và bankAccountHolder.
         if (!model.containsAttribute("updateBankAccountRequest")) {
             UpdateBankAccountRequest updateBankAccountRequest = new UpdateBankAccountRequest();
             updateBankAccountRequest.setBankName(profile.getBankName());
@@ -430,17 +273,6 @@ public class UserController {
         }
     }
 
-    /**
-     * Đổi mật khẩu tài khoản của người dùng đang đăng nhập và thu hồi các phiên khác.
-     *
-     * @param request dữ liệu form đổi mật khẩu
-     * @param bindingResult kết quả kiểm tra hợp lệ đầu vào
-     * @param httpRequest HTTP request để lấy ID phiên hiện tại giữ nguyên
-     * @param principal danh tính người dùng hiện tại
-     * @param model model Thymeleaf
-     * @return redirect về {@code /profile?passwordUpdated#password-section} khi thành công
-     *         hoặc trả lại {@code user/profile} kèm lỗi từng field
-     */
     @PostMapping("/profile/password")
     public String changePassword(@Valid @ModelAttribute("changePasswordRequest") ChangePasswordRequest changePasswordRequest,
                                  BindingResult bindingResult,
@@ -470,22 +302,6 @@ public class UserController {
         }
     }
 
-    /**
-     * Che dấu số tài khoản ngân hàng: chỉ hiện 4 ký tự cuối, phần còn lại thay bằng
-     * {@code *}.
-     *
-     * <p>
-     * <b>RR-1 & RR-5:</b> Số tài khoản ngân hàng là dữ liệu nhạy cảm, không được
-     * hiển thị
-     * nguyên văn trên HTML để phòng tránh rò rỉ khi người dùng mở trên máy tính
-     * công cộng
-     * hoặc bị chụp ảnh màn hình.
-     * </p>
-     *
-     * @param raw số tài khoản gốc
-     * @return chuỗi đã che dấu, ví dụ {@code "****5678"}, hoặc {@code null} nếu
-     *         chưa khai báo
-     */
     private String maskBankAccount(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;

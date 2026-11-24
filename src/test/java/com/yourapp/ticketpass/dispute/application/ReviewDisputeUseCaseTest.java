@@ -71,7 +71,6 @@ class ReviewDisputeUseCaseTest {
     @Test
     @DisplayName("resolveSellerWins: Thành công và không gọi lặp transition trạng thái vé sang RESOLVED_SELLER_WINS")
     void testResolveSellerWins_SuccessWithoutDuplicateTransition() {
-        // Arrange
         Long disputeId = 1L;
         Long ticketId = 100L;
         Long adminId = 999L;
@@ -88,36 +87,29 @@ class ReviewDisputeUseCaseTest {
         when(disputeRepository.findById(disputeId)).thenReturn(Optional.of(dispute));
         when(disputeRepository.save(any(Dispute.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Mô phỏng hành vi thực tế: ReleaseFundsUseCase.release(...) đã chuyển trạng thái vé sang RESOLVED_SELLER_WINS
         doAnswer(invocation -> {
             ticketStateMachineService.transition(ticketId, TicketStatus.RESOLVED_SELLER_WINS);
             return null;
         }).when(releaseFundsUseCase).release(eq(ticketId), eq(CompletionReason.DISPUTE_RESOLVED_SELLER_WINS));
 
-        // Nếu ticketStateMachineService bị gọi lần thứ 2 với trạng thái kết thúc RESOLVED_SELLER_WINS, nó sẽ ném lỗi IllegalTicketTransitionException
         when(ticketStateMachineService.transition(ticketId, TicketStatus.RESOLVED_SELLER_WINS))
-                .thenReturn(new Ticket()) // Lần 1: từ ReleaseFundsUseCase -> thành công
-                .thenThrow(new IllegalTicketTransitionException(TicketStatus.RESOLVED_SELLER_WINS, TicketStatus.RESOLVED_SELLER_WINS)); // Lần 2 nếu gọi lại -> lỗi
+                .thenReturn(new Ticket())
+                .thenThrow(new IllegalTicketTransitionException(TicketStatus.RESOLVED_SELLER_WINS, TicketStatus.RESOLVED_SELLER_WINS));
 
-        // Act & Assert
         Dispute result = assertDoesNotThrow(() ->
                 reviewDisputeUseCase.resolveSellerWins(disputeId, adminId, note)
         );
 
-        // Kiểm tra kết quả
         assertNotNull(result);
         assertEquals(DisputeStatus.RESOLVED_SELLER_WINS, result.getStatus());
         assertEquals(DisputeOutcome.SELLER_WINS, result.getOutcome());
         assertEquals(adminId, result.getReviewedByAdminId());
         assertEquals(note, result.getResolutionNote());
 
-        // Xác nhận releaseFundsUseCase được gọi đúng
         verify(releaseFundsUseCase, times(1)).release(ticketId, CompletionReason.DISPUTE_RESOLVED_SELLER_WINS);
 
-        // Quan trọng nhất: transition chỉ được gọi đúng 1 lần duy nhất từ ReleaseFundsUseCase
         verify(ticketStateMachineService, times(1)).transition(ticketId, TicketStatus.RESOLVED_SELLER_WINS);
 
-        // Bắn DisputeResolvedEvent đúng
         ArgumentCaptor<DisputeResolvedEvent> eventCaptor = ArgumentCaptor.forClass(DisputeResolvedEvent.class);
         verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
         DisputeResolvedEvent publishedEvent = eventCaptor.getValue();
@@ -128,7 +120,6 @@ class ReviewDisputeUseCaseTest {
     @Test
     @DisplayName("resolveBuyerWins: Thành công và chuyển trạng thái vé sang RESOLVED_BUYER_WINS đúng hợp đồng")
     void testResolveBuyerWins_Success() {
-        // Arrange
         Long disputeId = 2L;
         Long ticketId = 200L;
         Long adminId = 999L;
@@ -153,10 +144,8 @@ class ReviewDisputeUseCaseTest {
         when(refundBuyerUseCase.refundWithForfeitedDeposit(eq(ticketId), eq(note))).thenReturn(breakdown);
         when(ticketStateMachineService.transition(ticketId, TicketStatus.RESOLVED_BUYER_WINS)).thenReturn(new Ticket());
 
-        // Act
         Dispute result = reviewDisputeUseCase.resolveBuyerWins(disputeId, adminId, note);
 
-        // Assert
         assertNotNull(result);
         assertEquals(DisputeStatus.RESOLVED_BUYER_WINS, result.getStatus());
         assertEquals(DisputeOutcome.BUYER_WINS, result.getOutcome());

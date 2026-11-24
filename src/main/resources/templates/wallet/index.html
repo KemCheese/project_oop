@@ -15,7 +15,6 @@
                     padding: 0 20px;
                 }
 
-                /* Alert Banners */
                 .wallet-alert {
                     display: flex;
                     align-items: center;
@@ -42,11 +41,17 @@
                 }
 
                 @keyframes slideDown {
-                    from { opacity: 0; transform: translateY(-8px); }
-                    to { opacity: 1; transform: translateY(0); }
+                    from {
+                        opacity: 0;
+                        transform: translateY(-8px);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
                 }
 
-                /* Page Header */
                 .wallet-header {
                     display: flex;
                     align-items: center;
@@ -72,7 +77,6 @@
                     margin-top: 4px;
                 }
 
-                /* Layout Grid */
                 .wallet-grid {
                     display: grid;
                     grid-template-columns: 400px 1fr;
@@ -86,7 +90,6 @@
                     }
                 }
 
-                /* Titanium Metallic Glassmorphism Card */
                 .virtual-card-wrapper {
                     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
                     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -136,7 +139,7 @@
                     height: 28px;
                     background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #aa7c11 100%);
                     border-radius: 5px;
-                    box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+                    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
                     position: relative;
                 }
 
@@ -147,7 +150,7 @@
                     left: 0;
                     right: 0;
                     height: 1px;
-                    background: rgba(0,0,0,0.25);
+                    background: rgba(0, 0, 0, 0.25);
                 }
 
                 .card-balance-section {
@@ -168,7 +171,7 @@
                     font-weight: 800;
                     color: #ffffff;
                     letter-spacing: -0.02em;
-                    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
                 }
 
                 .card-bottom {
@@ -197,7 +200,6 @@
                     letter-spacing: 0.5px;
                 }
 
-                /* Quick Top-Up Box */
                 .topup-card {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
@@ -292,7 +294,6 @@
                     transform: translateY(1px);
                 }
 
-                /* Financial Stats Bar */
                 .stats-bar {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
@@ -331,10 +332,14 @@
                     color: var(--color-brand);
                 }
 
-                .stat-income { color: var(--color-success); }
-                .stat-expense { color: #dc2626; }
+                .stat-income {
+                    color: var(--color-success);
+                }
 
-                /* Transaction Statement Table */
+                .stat-expense {
+                    color: #dc2626;
+                }
+
                 .ledger-section {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
@@ -420,8 +425,13 @@
                     white-space: nowrap;
                 }
 
-                .amount-credit { color: #059669; }
-                .amount-debit { color: #dc2626; }
+                .amount-credit {
+                    color: #059669;
+                }
+
+                .amount-debit {
+                    color: #dc2626;
+                }
 
                 .empty-ledger {
                     text-align: center;
@@ -437,7 +447,7 @@
             </style>
 
             <div class="wallet-container">
-                <!-- Alerts -->
+
                 <div th:if="${successMessage}" class="wallet-alert wallet-alert-success">
                     <i class="fa-solid fa-circle-check" style="font-size: 18px;"></i>
                     <span th:text="${successMessage}">Thao tác thành công.</span>
@@ -447,21 +457,20 @@
                     <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
                 </div>
 
-                <!-- Page Header -->
                 <div class="wallet-header">
                     <div class="wallet-title-group">
-                        <h1><i class="fa-solid fa-wallet" style="color: var(--color-primary);"></i> Ví Điện Tử TicketPass</h1>
-                        <p>Quản lý số dư, nạp tiền nhanh và tra cứu biến động số dư giao dịch thời gian thực</p>
+                        <h1><i class="fa-solid fa-wallet" style="color: var(--color-primary);"></i> Ví Điện Tử
+                            TicketPass</h1>
                     </div>
                 </div>
 
-                <!-- Grid: Virtual Card & Quick Top-Up -->
                 <div class="wallet-grid">
-                    <!-- Virtual Titanium Card -->
+
                     <div class="virtual-card-wrapper">
                         <div class="card-top">
                             <div class="card-brand">
-                                <i class="fa-solid fa-asterisk" style="color: var(--color-primary); font-size: 12px;"></i>
+                                <i class="fa-solid fa-asterisk"
+                                    style="color: var(--color-primary); font-size: 12px;"></i>
                                 TicketPass Card
                             </div>
                             <div class="card-chip"></div>
@@ -470,7 +479,8 @@
                         <div class="card-balance-section">
                             <div class="card-balance-label">Số Dư Khả Dụng</div>
                             <div class="card-balance-value">
-                                <span th:text="${#numbers.formatDecimal(wallet.balance, 0, 'COMMA', 0, 'POINT')}">0</span>
+                                <span
+                                    th:text="${#numbers.formatDecimal(wallet.balance, 0, 'COMMA', 0, 'POINT')}">0</span>
                                 <span style="font-size: 20px; font-weight: 600; color: #94a3b8;">VNĐ</span>
                             </div>
                         </div>
@@ -481,26 +491,30 @@
                         </div>
                     </div>
 
-                    <!-- Sandbox Quick Top-Up -->
                     <div class="topup-card">
                         <div class="topup-card-title">
                             <i class="fa-solid fa-bolt" style="color: #eab308;"></i>
-                            Nạp Tiền Nhanh (Sandbox Demo)
+                            Nạp Tiền Nhanh
                         </div>
 
                         <form th:action="@{/wallet/topup}" th:object="${topUpRequest}" method="post">
                             <div class="chip-group">
-                                <button type="button" class="chip-btn" onclick="setTopUpAmount(500000)">+ 500.000 đ</button>
-                                <button type="button" class="chip-btn" onclick="setTopUpAmount(1000000)">+ 1.000.000 đ</button>
-                                <button type="button" class="chip-btn" onclick="setTopUpAmount(2000000)">+ 2.000.000 đ</button>
-                                <button type="button" class="chip-btn" onclick="setTopUpAmount(5000000)">+ 5.000.000 đ</button>
+                                <button type="button" class="chip-btn" onclick="setTopUpAmount(500000)">+ 500.000
+                                    đ</button>
+                                <button type="button" class="chip-btn" onclick="setTopUpAmount(1000000)">+ 1.000.000
+                                    đ</button>
+                                <button type="button" class="chip-btn" onclick="setTopUpAmount(2000000)">+ 2.000.000
+                                    đ</button>
+                                <button type="button" class="chip-btn" onclick="setTopUpAmount(5000000)">+ 5.000.000
+                                    đ</button>
                             </div>
 
-                            <input type="number" id="topupAmountInput" th:field="*{amount}"
-                                   class="custom-amount-input" placeholder="Nhập số tiền nạp (tối thiểu 10.000 VNĐ, có thể nạp tiền lẻ)"
-                                   min="10000" step="1" required />
+                            <input type="number" id="topupAmountInput" th:field="*{amount}" class="custom-amount-input"
+                                placeholder="Nhập số tiền nạp (tối thiểu 10.000 VNĐ, có thể nạp tiền lẻ)" min="10000"
+                                step="1" required />
 
-                            <input type="hidden" th:field="*{note}" id="topupNoteInput" value="Nạp tiền nhanh vào ví TicketPass" />
+                            <input type="hidden" th:field="*{note}" id="topupNoteInput"
+                                value="Nạp tiền nhanh vào ví TicketPass" />
 
                             <button type="submit" class="btn-topup-submit">
                                 <i class="fa-solid fa-arrow-down-to-bracket"></i> Nạp Ngay Vào Số Dư Ví
@@ -509,36 +523,34 @@
                     </div>
                 </div>
 
-                <!-- Financial Stats Summary -->
                 <div class="stats-bar">
                     <div class="stat-box">
                         <div class="stat-box-label">
                             <i class="fa-solid fa-arrow-down" style="color: #0284c7;"></i> Tổng Tiền Nạp
                         </div>
-                        <div class="stat-box-val" th:text="${#numbers.formatDecimal(totalTopUp, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
+                        <div class="stat-box-val"
+                            th:text="${#numbers.formatDecimal(totalTopUp, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-box-label">
-                            <i class="fa-solid fa-arrow-turn-down" style="color: var(--color-success);"></i> Thu Về (Bán & Hoàn Cọc)
+                            <i class="fa-solid fa-arrow-turn-down" style="color: var(--color-success);"></i> Thu Về
                         </div>
-                        <div class="stat-box-val stat-income" th:text="${#numbers.formatDecimal(totalIncome, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
+                        <div class="stat-box-val stat-income"
+                            th:text="${#numbers.formatDecimal(totalIncome, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-box-label">
-                            <i class="fa-solid fa-arrow-turn-up" style="color: #dc2626;"></i> Chi Ra (Ký Quỹ & Cọc)
+                            <i class="fa-solid fa-arrow-turn-up" style="color: #dc2626;"></i> Chi Ra
                         </div>
-                        <div class="stat-box-val stat-expense" th:text="${#numbers.formatDecimal(totalExpense, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
+                        <div class="stat-box-val stat-expense"
+                            th:text="${#numbers.formatDecimal(totalExpense, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</div>
                     </div>
                 </div>
 
-                <!-- Transaction Statement Ledger -->
                 <div class="ledger-section">
                     <div class="ledger-header">
                         <div class="ledger-title">
-                            <i class="fa-solid fa-receipt" style="color: var(--color-primary);"></i> Sổ Cái Biến Động Số Dư
-                        </div>
-                        <div style="font-size: 13px; color: var(--color-text-secondary);">
-                            Ghi nhận bất biến (Append-only Ledger)
+                            <i class="fa-solid fa-receipt" style="color: var(--color-primary);"></i>Biến Động Số Dư
                         </div>
                     </div>
 
@@ -555,30 +567,38 @@
                             </thead>
                             <tbody>
                                 <tr th:each="tx : ${transactions}">
-                                    <td style="color: #64748b; white-space: nowrap;" th:text="${tx.formattedCreatedAt}">00:00:00 01/01/2026</td>
+                                    <td style="color: #64748b; white-space: nowrap;" th:text="${tx.formattedCreatedAt}">
+                                        00:00:00 01/01/2026</td>
                                     <td>
                                         <span class="badge-tx-type"
-                                              th:classappend="${tx.credit} ? 'badge-credit' : 'badge-debit'"
-                                              th:text="${tx.typeDisplayName}">Nạp tiền</span>
+                                            th:classappend="${tx.credit} ? 'badge-credit' : 'badge-debit'"
+                                            th:text="${tx.typeDisplayName}">Nạp tiền</span>
                                     </td>
                                     <td>
-                                        <div style="font-weight: 600; color: var(--color-text-main);" th:text="${tx.description}">Mô tả</div>
-                                        <small style="color: #94a3b8; font-family: monospace;" th:text="${tx.referenceId}">REF-12345</small>
+                                        <div style="font-weight: 600; color: var(--color-text-main);"
+                                            th:text="${tx.description}">Mô tả</div>
+                                        <small style="color: #94a3b8; font-family: monospace;"
+                                            th:text="${tx.referenceId}">REF-12345</small>
                                     </td>
                                     <td style="text-align: right;" class="amount-col"
                                         th:classappend="${tx.credit} ? 'amount-credit' : 'amount-debit'">
                                         <span th:text="${tx.sign}">+</span>
-                                        <span th:text="${#numbers.formatDecimal(tx.amount, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</span>
+                                        <span
+                                            th:text="${#numbers.formatDecimal(tx.amount, 0, 'COMMA', 0, 'POINT')} + ' đ'">0
+                                            đ</span>
                                     </td>
                                     <td style="text-align: right; font-weight: 700; color: var(--color-brand);"
-                                        th:text="${#numbers.formatDecimal(tx.balanceAfter, 0, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                        th:text="${#numbers.formatDecimal(tx.balanceAfter, 0, 'COMMA', 0, 'POINT')} + ' đ'">
+                                        0 đ</td>
                                 </tr>
                             </tbody>
                         </table>
 
                         <div class="empty-ledger" th:if="${transactions == null or transactions.isEmpty()}">
                             <i class="fa-regular fa-folder-open"></i>
-                            <div style="font-size: 15px; font-weight: 600; color: var(--color-brand); margin-bottom: 4px;">Chưa có biến động số dư nào</div>
+                            <div
+                                style="font-size: 15px; font-weight: 600; color: var(--color-brand); margin-bottom: 4px;">
+                                Chưa có biến động số dư nào</div>
                             <div>Hãy nạp tiền vào ví hoặc thực hiện giao dịch mua bán để xem lịch sử tại đây.</div>
                         </div>
                     </div>
@@ -597,4 +617,5 @@
         </content>
     </div>
 </body>
+
 </html>

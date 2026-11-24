@@ -1,19 +1,20 @@
 package com.yourapp.ticketpass.wallet.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.yourapp.ticketpass.shared.dto.ConflictingTicketInfo;
+import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
+import com.yourapp.ticketpass.user.domain.User;
+import com.yourapp.ticketpass.user.domain.UserRepository;
+import com.yourapp.ticketpass.wallet.application.WalletCheckoutUseCase;
+import com.yourapp.ticketpass.wallet.application.WalletCheckoutUseCase.CheckoutResult;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,72 +25,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
-import com.yourapp.ticketpass.payment.application.HoldFundsUseCase;
-import com.yourapp.ticketpass.payment.application.LockDepositUseCase;
-import com.yourapp.ticketpass.payment.domain.Deposit;
-import com.yourapp.ticketpass.payment.domain.DepositRepository;
-import com.yourapp.ticketpass.payment.domain.DepositStatus;
-import com.yourapp.ticketpass.payment.domain.EscrowStatus;
-import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
-import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
-import com.yourapp.ticketpass.payment.domain.PaymentResult;
-import com.yourapp.ticketpass.shared.dto.ConflictingTicketInfo;
-import com.yourapp.ticketpass.shared.exception.BusinessRuleViolationException;
-import com.yourapp.ticketpass.ticket.application.TicketScheduleService;
-import com.yourapp.ticketpass.ticket.domain.Ticket;
-import com.yourapp.ticketpass.ticket.domain.TicketRepository;
-import com.yourapp.ticketpass.ticket.domain.TicketStatus;
-import com.yourapp.ticketpass.user.domain.User;
-import com.yourapp.ticketpass.user.domain.UserRepository;
-import com.yourapp.ticketpass.wallet.application.WalletService;
-import com.yourapp.ticketpass.wallet.domain.Wallet;
-import com.yourapp.ticketpass.wallet.domain.WalletTransactionType;
-
-/**
- * Unit Test cho {@link WalletPaymentController} — Task C14.
- *
- * <p>Kiểm thử các luồng thanh toán 1-click bằng Ví điện tử TicketPass:
- * thanh toán ký quỹ 100% tiền vé, người bán nộp cọc bảo đảm 50%,
- * và thanh toán qua trang xác nhận chuyển khoản. Đặc biệt xác minh kịch bản
- * người mua không đủ số dư ví (tài khoản 0đ) bị từ chối chính xác.</p>
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("WalletPaymentController Test - Điều khiển thanh toán 1-Click bằng Ví")
+@DisplayName("WalletPaymentController Test - MVC Thin Controller ủy quyền WalletCheckoutUseCase")
 class WalletPaymentControllerTest {
 
     @Mock
-    private WalletService walletService;
-
-    @Mock
-    private HoldFundsUseCase holdFundsUseCase;
-
-    @Mock
-    private LockDepositUseCase lockDepositUseCase;
-
-    @Mock
-    private TicketRepository ticketRepository;
+    private WalletCheckoutUseCase walletCheckoutUseCase;
 
     @Mock
     private UserRepository userRepository;
-
-    @Mock
-    private EscrowTransactionRepository escrowTransactionRepository;
-
-    @Mock
-    private DepositRepository depositRepository;
-
-    @Mock
-    private TicketScheduleService ticketScheduleService;
 
     @InjectMocks
     private WalletPaymentController controller;
 
     private User buyer;
     private User seller;
-    private Ticket ticket;
     private Principal buyerPrincipal;
     private Principal sellerPrincipal;
 
@@ -105,281 +55,163 @@ class WalletPaymentControllerTest {
 
         buyerPrincipal = () -> "buyer@test.com";
         sellerPrincipal = () -> "seller@test.com";
-
-        ticket = new Ticket();
-        ticket.setId(100L);
-        ticket.setSellerId(20L);
-        ticket.setTitle("Vé Concert BlackPink VIP");
-        ticket.setSalePrice(new BigDecimal("1000000.00"));
-        ticket.setStatus(TicketStatus.LISTED);
     }
 
     @Nested
-    @DisplayName("Thanh toán ký quỹ 100% bằng Ví (/payment/wallet/pay-escrow)")
+    @DisplayName("POST /payment/wallet/pay-escrow")
     class PayEscrowTests {
 
         @Test
-        @DisplayName("Thanh toán thành công khi số dư ví đủ tiền")
+        @DisplayName("Thành công -> redirect /tickets/{id} kèm successMessage")
         void testPayEscrowSuccess() {
             when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
-            when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
+            when(walletCheckoutUseCase.payEscrowWithWallet(100L, 10L, false))
+                    .thenReturn(CheckoutResult.success(100L, new BigDecimal("1000000.00")));
 
-            Wallet buyerWallet = new Wallet(10L, new BigDecimal("2000000.00"));
-            when(walletService.getOrCreateWallet(10L)).thenReturn(buyerWallet);
+            RedirectAttributesModelMap attrs = new RedirectAttributesModelMap();
+            String view = controller.payEscrowWithWallet(100L, buyerPrincipal, attrs);
 
-            EscrowTransaction escrow = new EscrowTransaction();
-            escrow.setId(50L);
-            escrow.setTicketId(100L);
-            escrow.setBuyerId(10L);
-            escrow.setSellerId(20L);
-            escrow.setStatus(EscrowStatus.PENDING);
-
-            when(escrowTransactionRepository.findByTicketId(100L)).thenReturn(Optional.of(escrow));
-
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payEscrowWithWallet(100L, buyerPrincipal, redirectAttributes);
-
-            assertThat(viewName).isEqualTo("redirect:/tickets/100");
-            assertThat(redirectAttributes.getFlashAttributes()).containsKey("successMessage");
-            assertThat(redirectAttributes.getFlashAttributes().get("successMessage").toString())
+            assertThat(view).isEqualTo("redirect:/tickets/100");
+            assertThat(attrs.getFlashAttributes().get("successMessage").toString())
                     .contains("Thanh toán bằng Ví TicketPass thành công");
-
-            verify(walletService).debit(eq(10L), eq(new BigDecimal("1000000.00")),
-                    eq(WalletTransactionType.ESCROW_PAY), eq("ESCROW_50"), any());
-            verify(holdFundsUseCase).confirmHeld(eq(null), any());
+            verify(walletCheckoutUseCase).payEscrowWithWallet(100L, 10L, false);
         }
 
         @Test
-        @DisplayName("Từ chối thanh toán khi số dư ví không đủ (Tài khoản 0đ / Broke Buyer)")
-        void testPayEscrowInsufficientBalance() {
+        @DisplayName("Không đủ số dư / vi phạm nghiệp vụ -> redirect /tickets/{id} kèm errorMessage sạch")
+        void testPayEscrowBusinessError() {
             when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
-            when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
+            when(walletCheckoutUseCase.payEscrowWithWallet(100L, 10L, false))
+                    .thenThrow(new BusinessRuleViolationException("Số dư ví không đủ để thanh toán."));
 
-            Wallet brokeWallet = new Wallet(10L, BigDecimal.ZERO); // 0đ
-            when(walletService.getOrCreateWallet(10L)).thenReturn(brokeWallet);
+            RedirectAttributesModelMap attrs = new RedirectAttributesModelMap();
+            String view = controller.payEscrowWithWallet(100L, buyerPrincipal, attrs);
 
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payEscrowWithWallet(100L, buyerPrincipal, redirectAttributes);
-
-            assertThat(viewName).isEqualTo("redirect:/tickets/100");
-            assertThat(redirectAttributes.getFlashAttributes()).containsKey("errorMessage");
-            assertThat(redirectAttributes.getFlashAttributes().get("errorMessage").toString())
-                    .contains("Số dư ví không đủ để thanh toán");
-
-            // Không bao giờ được gọi debit hay confirmHeld
-            verify(walletService, never()).debit(anyLong(), any(), any(), any(), any());
-            verify(holdFundsUseCase, never()).confirmHeld(any(), any());
+            assertThat(view).isEqualTo("redirect:/tickets/100");
+            assertThat(attrs.getFlashAttributes().get("errorMessage"))
+                    .isEqualTo("Số dư ví không đủ để thanh toán.");
         }
 
         @Test
-        @DisplayName("Chặn người bán tự mua vé của chính mình")
-        void testPayEscrowSelfBuyPrevented() {
-            when(userRepository.findByEmail("seller@test.com")).thenReturn(Optional.of(seller));
-            when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
+        @DisplayName("Trùng giờ chưa confirm -> redirect ?overlapWarning=true&method=wallet")
+        void testPayEscrowOverlapWarning() {
+            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            ConflictingTicketInfo conflict = new ConflictingTicketInfo(
+                    99L, "Vé phim cũ", "Dune", "CGV", "AWAITING_USE", "Đang giữ vé",
+                    Instant.now(), Instant.now().plusSeconds(7200), false, "13:00 - 15:00"
+            );
+            when(walletCheckoutUseCase.payEscrowWithWallet(100L, 10L, false))
+                    .thenReturn(CheckoutResult.overlapWarning(100L, List.of(conflict)));
 
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payEscrowWithWallet(100L, sellerPrincipal, redirectAttributes);
+            RedirectAttributesModelMap attrs = new RedirectAttributesModelMap();
+            String view = controller.payEscrowWithWallet(100L, false, buyerPrincipal, attrs);
 
-            assertThat(viewName).isEqualTo("redirect:/tickets/100");
-            assertThat(redirectAttributes.getFlashAttributes().get("errorMessage"))
-                    .isEqualTo("Bạn không thể tự mua vé của chính mình.");
-            verify(walletService, never()).debit(anyLong(), any(), any(), any(), any());
+            assertThat(view).isEqualTo("redirect:/tickets/100?overlapWarning=true&method=wallet");
+            assertThat(attrs.getFlashAttributes().get("overlapWarning")).isEqualTo(true);
+            assertThat(attrs.getFlashAttributes().get("pendingPaymentMethod")).isEqualTo("WALLET");
         }
     }
 
     @Nested
-    @DisplayName("Nộp cọc bảo đảm 50% bằng Ví (/payment/wallet/pay-deposit)")
+    @DisplayName("POST /payment/wallet/pay-deposit")
     class PayDepositTests {
 
         @Test
-        @DisplayName("Nộp cọc 50% thành công khi người bán có đủ số dư ví")
+        @DisplayName("Khóa cọc 50% thành công -> redirect /tickets/{id} kèm successMessage")
         void testPayDepositSuccess() {
             when(userRepository.findByEmail("seller@test.com")).thenReturn(Optional.of(seller));
-            when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
+            when(walletCheckoutUseCase.payDepositWithWallet(100L, 20L))
+                    .thenReturn(CheckoutResult.success(100L, new BigDecimal("500000.00")));
 
-            Wallet sellerWallet = new Wallet(20L, new BigDecimal("1000000.00")); // Đủ cọc 500k
-            when(walletService.getOrCreateWallet(20L)).thenReturn(sellerWallet);
+            RedirectAttributesModelMap attrs = new RedirectAttributesModelMap();
+            String view = controller.payDepositWithWallet(100L, sellerPrincipal, attrs);
 
-            Deposit deposit = new Deposit();
-            deposit.setId(70L);
-            deposit.setTicketId(100L);
-            deposit.setSellerId(20L);
-            deposit.setAmount(new BigDecimal("500000.00"));
-            deposit.setStatus(DepositStatus.PENDING);
-
-            when(depositRepository.findByTicketId(100L)).thenReturn(Optional.of(deposit));
-
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payDepositWithWallet(100L, sellerPrincipal, redirectAttributes);
-
-            assertThat(viewName).isEqualTo("redirect:/tickets/100");
-            assertThat(redirectAttributes.getFlashAttributes()).containsKey("successMessage");
-            assertThat(redirectAttributes.getFlashAttributes().get("successMessage").toString())
-                    .contains("Khóa cọc 50% (500,000 VNĐ) bằng Ví thành công");
-
-            verify(walletService).debit(eq(20L), eq(new BigDecimal("500000.00")),
-                    eq(WalletTransactionType.DEPOSIT_LOCK), eq("DEPOSIT_70"), any());
-            verify(lockDepositUseCase).confirmLocked(eq(null), any());
+            assertThat(view).isEqualTo("redirect:/tickets/100");
+            assertThat(attrs.getFlashAttributes().get("successMessage").toString())
+                    .contains("Khóa cọc 50%");
         }
 
         @Test
-        @DisplayName("Chặn khi người mua cố tình nộp cọc cho vé của người khác")
-        void testPayDepositNotOwner() {
+        @DisplayName("Khóa cọc bị từ chối -> redirect /tickets/{id} kèm errorMessage")
+        void testPayDepositRejected() {
             when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
-            when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
+            when(walletCheckoutUseCase.payDepositWithWallet(100L, 10L))
+                    .thenThrow(new BusinessRuleViolationException("Bạn không phải chủ sở hữu của vé này."));
 
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payDepositWithWallet(100L, buyerPrincipal, redirectAttributes);
+            RedirectAttributesModelMap attrs = new RedirectAttributesModelMap();
+            String view = controller.payDepositWithWallet(100L, buyerPrincipal, attrs);
 
-            assertThat(viewName).isEqualTo("redirect:/tickets/100");
-            assertThat(redirectAttributes.getFlashAttributes().get("errorMessage"))
+            assertThat(view).isEqualTo("redirect:/tickets/100");
+            assertThat(attrs.getFlashAttributes().get("errorMessage"))
                     .isEqualTo("Bạn không phải chủ sở hữu của vé này.");
-            verify(walletService, never()).debit(anyLong(), any(), any(), any(), any());
-        }
-
-        @Test
-        @DisplayName("Từ chối nộp cọc khi người bán không đủ số dư ví")
-        void testPayDepositInsufficientBalance() {
-            when(userRepository.findByEmail("seller@test.com")).thenReturn(Optional.of(seller));
-            when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
-
-            Wallet sellerWallet = new Wallet(20L, new BigDecimal("100000.00")); // Chỉ có 100k, thiếu 400k
-            when(walletService.getOrCreateWallet(20L)).thenReturn(sellerWallet);
-
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payDepositWithWallet(100L, sellerPrincipal, redirectAttributes);
-
-            assertThat(viewName).isEqualTo("redirect:/tickets/100");
-            assertThat(redirectAttributes.getFlashAttributes()).containsKey("errorMessage");
-            assertThat(redirectAttributes.getFlashAttributes().get("errorMessage").toString())
-                    .contains("Số dư ví không đủ để nộp cọc 50%");
-            verify(walletService, never()).debit(anyLong(), any(), any(), any(), any());
         }
     }
 
     @Nested
-    @DisplayName("Thanh toán từ trang chuyển khoản (/payment/wallet/pay-from-transfer)")
+    @DisplayName("POST /payment/wallet/pay-from-transfer")
     class PayFromTransferTests {
 
         @Test
-        @DisplayName("Thanh toán ký quỹ trực tiếp từ trang chuyển khoản thành công")
+        @DisplayName("Thanh toán ký quỹ thành công từ trang chuyển khoản")
         void testPayFromTransferEscrowSuccess() {
             when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            when(walletCheckoutUseCase.payFromTransfer(101L, "escrow", 10L, false))
+                    .thenReturn(CheckoutResult.success(100L, new BigDecimal("800000.00")));
 
-            EscrowTransaction escrow = new EscrowTransaction();
-            escrow.setId(101L);
-            escrow.setTicketId(100L);
-            escrow.setBuyerId(10L);
-            escrow.setSalePrice(new BigDecimal("800000.00"));
+            RedirectAttributesModelMap attrs = new RedirectAttributesModelMap();
+            String view = controller.payFromTransfer("101", "escrow", buyerPrincipal, attrs);
 
-            when(escrowTransactionRepository.findById(101L)).thenReturn(Optional.of(escrow));
-
-            Wallet buyerWallet = new Wallet(10L, new BigDecimal("1000000.00"));
-            when(walletService.getOrCreateWallet(10L)).thenReturn(buyerWallet);
-
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payFromTransfer("101", "escrow", buyerPrincipal, redirectAttributes);
-
-            assertThat(viewName).isEqualTo("redirect:/tickets/100");
-            assertThat(redirectAttributes.getFlashAttributes().get("successMessage"))
+            assertThat(view).isEqualTo("redirect:/tickets/100");
+            assertThat(attrs.getFlashAttributes().get("successMessage"))
                     .isEqualTo("Thanh toán ký quỹ thành công qua Ví TicketPass!");
-            verify(walletService).debit(eq(10L), eq(new BigDecimal("800000.00")),
-                    eq(WalletTransactionType.ESCROW_PAY), eq("ESCROW_101"), any());
         }
 
         @Test
-        @DisplayName("Thanh toán cọc bảo đảm trực tiếp từ trang chuyển khoản thành công")
+        @DisplayName("Trùng giờ ở nút pay-from-transfer (escrow) -> redirect cảnh báo trùng giờ, không trừ ví")
+        void testPayFromTransferEscrowOverlapWarning() {
+            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+            ConflictingTicketInfo conflict = new ConflictingTicketInfo(
+                    55L, "Vé trùng giờ", "Bus", "Bến xe", "AWAITING_USE", "Đang giữ vé",
+                    Instant.now(), Instant.now().plusSeconds(3600), false, "18:00 - 20:00"
+            );
+            when(walletCheckoutUseCase.payFromTransfer(101L, "escrow", 10L, false))
+                    .thenReturn(CheckoutResult.overlapWarning(100L, List.of(conflict)));
+
+            RedirectAttributesModelMap attrs = new RedirectAttributesModelMap();
+            String view = controller.payFromTransfer("101", "escrow", false, buyerPrincipal, attrs);
+
+            assertThat(view).isEqualTo("redirect:/tickets/100?overlapWarning=true&method=wallet");
+            assertThat(attrs.getFlashAttributes().get("overlapWarning")).isEqualTo(true);
+        }
+
+        @Test
+        @DisplayName("Thanh toán cọc thành công từ trang chuyển khoản")
         void testPayFromTransferDepositSuccess() {
             when(userRepository.findByEmail("seller@test.com")).thenReturn(Optional.of(seller));
+            when(walletCheckoutUseCase.payFromTransfer(202L, "deposit", 20L, false))
+                    .thenReturn(CheckoutResult.success(100L, new BigDecimal("400000.00")));
 
-            Deposit deposit = new Deposit();
-            deposit.setId(202L);
-            deposit.setTicketId(100L);
-            deposit.setSellerId(20L);
-            deposit.setAmount(new BigDecimal("400000.00"));
+            RedirectAttributesModelMap attrs = new RedirectAttributesModelMap();
+            String view = controller.payFromTransfer("202", "deposit", sellerPrincipal, attrs);
 
-            when(depositRepository.findById(202L)).thenReturn(Optional.of(deposit));
-
-            Wallet sellerWallet = new Wallet(20L, new BigDecimal("500000.00"));
-            when(walletService.getOrCreateWallet(20L)).thenReturn(sellerWallet);
-
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payFromTransfer("202", "deposit", sellerPrincipal, redirectAttributes);
-
-            assertThat(viewName).isEqualTo("redirect:/tickets/100");
-            assertThat(redirectAttributes.getFlashAttributes().get("successMessage"))
+            assertThat(view).isEqualTo("redirect:/tickets/100");
+            assertThat(attrs.getFlashAttributes().get("successMessage"))
                     .isEqualTo("Khóa cọc bảo đảm 50% thành công qua Ví TicketPass!");
-            verify(walletService).debit(eq(20L), eq(new BigDecimal("400000.00")),
-                    eq(WalletTransactionType.DEPOSIT_LOCK), eq("DEPOSIT_202"), any());
         }
 
         @Test
-        @DisplayName("Từ chối khi người dùng không phải chủ giao dịch ký quỹ")
-        void testPayFromTransferEscrowWrongUser() {
+        @DisplayName("Sai chủ sở hữu hoặc lỗi nghiệp vụ -> redirect lại /payment/transfer kèm errorMessage")
+        void testPayFromTransferErrorRedirectsBackToTransferPage() {
             when(userRepository.findByEmail("seller@test.com")).thenReturn(Optional.of(seller));
+            when(walletCheckoutUseCase.payFromTransfer(101L, "escrow", 20L, false))
+                    .thenThrow(new BusinessRuleViolationException("Bạn không phải người mua của giao dịch này."));
 
-            EscrowTransaction escrow = new EscrowTransaction();
-            escrow.setId(101L);
-            escrow.setTicketId(100L);
-            escrow.setBuyerId(10L); // buyer là 10, người gọi là 20
-            escrow.setSalePrice(new BigDecimal("800000.00"));
+            RedirectAttributesModelMap attrs = new RedirectAttributesModelMap();
+            String view = controller.payFromTransfer("101", "escrow", sellerPrincipal, attrs);
 
-            when(escrowTransactionRepository.findById(101L)).thenReturn(Optional.of(escrow));
-
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payFromTransfer("101", "escrow", sellerPrincipal, redirectAttributes);
-
-            assertThat(viewName).isEqualTo("redirect:/payment/transfer?ref=101&type=escrow");
-            assertThat(redirectAttributes.getFlashAttributes().get("errorMessage").toString())
+            assertThat(view).isEqualTo("redirect:/payment/transfer?ref=101&type=escrow");
+            assertThat(attrs.getFlashAttributes().get("errorMessage").toString())
                     .contains("Bạn không phải người mua");
-        }
-    }
-
-    @Nested
-    @DisplayName("Guard kiểm tra trùng khung giờ khi mua bằng Ví")
-    class ScheduleOverlapGuardTests {
-
-        @Test
-        @DisplayName("Trùng giờ và confirmOverlap=false: redirect kèm ?overlapWarning=true và KHÔNG trừ tiền ví")
-        void testPayEscrowBlockedOnUnconfirmedOverlap() {
-            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
-            when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
-
-            ConflictingTicketInfo conflict = new ConflictingTicketInfo(
-                    99L, "Vé phim cũ", "Dune", "CGV", "AWAITING_USE", "Đang giữ vé",
-                    Instant.now(), Instant.now().plusSeconds(7200), false, "13:00 - 15:00 18/11/2026"
-            );
-            when(ticketScheduleService.findConflictingTickets(10L, ticket)).thenReturn(List.of(conflict));
-
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payEscrowWithWallet(100L, false, buyerPrincipal, redirectAttributes);
-
-            assertThat(viewName).isEqualTo("redirect:/tickets/100?overlapWarning=true&method=wallet");
-            assertThat(redirectAttributes.getFlashAttributes().get("overlapWarning")).isEqualTo(true);
-            verify(walletService, never()).debit(anyLong(), any(), any(), any(), any());
-        }
-
-        @Test
-        @DisplayName("Trùng giờ nhưng confirmOverlap=true: cho phép tiếp tục trừ ví và giữ ký quỹ")
-        void testPayEscrowProceedsWhenOverlapConfirmed() {
-            when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
-            when(ticketRepository.findById(100L)).thenReturn(Optional.of(ticket));
-
-            Wallet buyerWallet = new Wallet(10L, new BigDecimal("1000000.00"));
-            when(walletService.getOrCreateWallet(10L)).thenReturn(buyerWallet);
-
-            EscrowTransaction pendingEscrow = new EscrowTransaction();
-            pendingEscrow.setId(555L);
-            pendingEscrow.setStatus(EscrowStatus.PENDING);
-            when(escrowTransactionRepository.findByTicketId(100L)).thenReturn(Optional.of(pendingEscrow));
-
-            RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
-            String viewName = controller.payEscrowWithWallet(100L, true, buyerPrincipal, redirectAttributes);
-
-            assertThat(viewName).isEqualTo("redirect:/tickets/100");
-            verify(walletService).debit(eq(10L), eq(new BigDecimal("1000000.00")),
-                    eq(WalletTransactionType.ESCROW_PAY), eq("ESCROW_555"), any());
-            verify(ticketScheduleService, never()).findConflictingTickets(anyLong(), any());
         }
     }
 }

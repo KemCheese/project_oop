@@ -11,9 +11,6 @@ import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit test cho {@link ForfeitDepositPolicy}.
- */
 class ForfeitDepositPolicyTest {
 
     private ForfeitDepositPolicy policy;
@@ -21,7 +18,6 @@ class ForfeitDepositPolicyTest {
     @BeforeEach
     void setUp() {
         CommissionConfig config = new CommissionConfig();
-        // Cấu hình tỷ lệ 7%, sàn 5.000đ như spec
         config.setFounderForfeitRatePercent(new BigDecimal("7"));
         config.setFounderForfeitMinAmount(new BigDecimal("5000"));
         policy = new ForfeitDepositPolicy(config);
@@ -30,7 +26,6 @@ class ForfeitDepositPolicyTest {
     @Test
     @DisplayName("Normal case: Cọc lớn hơn sàn (100.000đ)")
     void testComputeForfeit_NormalCase() {
-        // Cọc 100.000đ -> 7% = 7.000đ (> 5.000đ) -> founderCut = 7.000đ, buyer = 93.000đ
         ForfeitBreakdown result = policy.computeForfeit(new BigDecimal("100000"));
         
         assertEquals(new BigDecimal("100000"), result.getTotalDeposit());
@@ -41,7 +36,6 @@ class ForfeitDepositPolicyTest {
     @Test
     @DisplayName("Edge case: Cọc nhỏ hơn cả mức sàn (3.000đ)")
     void testComputeForfeit_EdgeCase_UnderMinAmount() {
-        // Cọc 3.000đ -> min(3000, 5000) = 3.000đ -> founderCut = 3.000đ, buyer = 0đ
         ForfeitBreakdown result = policy.computeForfeit(new BigDecimal("3000"));
         
         assertEquals(new BigDecimal("3000"), result.getTotalDeposit());
@@ -52,7 +46,6 @@ class ForfeitDepositPolicyTest {
     @Test
     @DisplayName("Edge case: Tính ra đúng bằng mức sàn (50.000đ)")
     void testComputeForfeit_EdgeCase_ExactlyMinAmount() {
-        // Cọc 50.000đ -> 7% = 3.500đ (< 5.000đ) -> nâng lên sàn 5.000đ -> buyer = 45.000đ
         ForfeitBreakdown result = policy.computeForfeit(new BigDecimal("50000"));
         
         assertEquals(new BigDecimal("50000"), result.getTotalDeposit());

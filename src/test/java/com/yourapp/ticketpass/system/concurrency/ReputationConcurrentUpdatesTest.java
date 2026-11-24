@@ -28,9 +28,11 @@ class ReputationConcurrentUpdatesTest extends AbstractSystemIntegrationTest {
     @Test
     @DisplayName("Nhiều tác vụ đồng thời cập nhật điểm uy tín: Cơ chế retry đảm bảo dữ liệu ghi nhận chính xác")
     void shouldHandleConcurrentReputationUpdatesSafely() throws InterruptedException {
-        // 1. Arrange: Tạo User
         User seller = createAndSaveUser("conc_rep_seller@test.com", "Password123@", UserRole.USER);
         Long sellerId = seller.getId();
+        UserReputationScore initRep = reputationRepository.findByUserId(sellerId).orElseThrow();
+        initRep.setScore(new BigDecimal("5.00"));
+        reputationRepository.save(initRep);
 
         int numberOfThreads = 4;
         ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
@@ -38,22 +40,19 @@ class ReputationConcurrentUpdatesTest extends AbstractSystemIntegrationTest {
         CountDownLatch finishLatch = new CountDownLatch(numberOfThreads);
         AtomicInteger successCounter = new AtomicInteger(0);
 
-        // 2. Kích hoạt 4 luồng đồng thời ghi nhận hành vi huỷ vé (-10 điểm mỗi lần)
         for (int i = 0; i < numberOfThreads; i++) {
             executorService.submit(() -> {
                 try {
-                    startLatch.await(); // Đợi cả 4 luồng cùng sẵn sàng để kích nổ đồng thời
+                    startLatch.await();
                     updateReputationUseCase.recordCancelledListing(sellerId);
                     successCounter.incrementAndGet();
                 } catch (Exception e) {
-                    // Log or track failure
                 } finally {
                     finishLatch.countDown();
                 }
             });
         }
 
-        // Bắt đầu chạy đua
         startLatch.countDown();
         boolean finished = finishLatch.await(10, TimeUnit.SECONDS);
         executorService.shutdown();
@@ -61,11 +60,11 @@ class ReputationConcurrentUpdatesTest extends AbstractSystemIntegrationTest {
         assertThat(finished).isTrue();
         assertThat(successCounter.get()).isGreaterThanOrEqualTo(1);
 
-        // 3. Assert: Kiểm tra bản ghi điểm uy tín cuối cùng trong CSDL
         UserReputationScore finalRep = reputationRepository.findByUserId(sellerId).orElseThrow();
         assertThat(finalRep.getCancelledListings()).isEqualTo(successCounter.get());
-        // Điểm uy tín bị trừ tương ứng với số lần thành công (100 - successCounter * 10)
-        BigDecimal expectedScore = new BigDecimal("100.00").subtract(new BigDecimal("10.00").multiply(new BigDecimal(successCounter.get())));
+        BigDecimal expectedScore = new BigDecimal("5.00")
+                .subtract(BigDecimal.ONE.multiply(new BigDecimal(successCounter.get())))
+                .max(BigDecimal.ZERO);
         assertThat(finalRep.getScore()).isEqualByComparingTo(expectedScore);
     }
 }

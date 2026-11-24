@@ -1,20 +1,9 @@
 <!DOCTYPE html>
-<!--
-  Hồ sơ cá nhân và cài đặt tài khoản của người dùng đang đăng nhập.
-  Route: GET /profile
-  Model attributes:
-    - profile (UserProfileResponse): Thông tin hồ sơ người dùng
-    - maskedBankAccount (String): Số tài khoản ngân hàng đã che dấu (RR-1 & RR-5)
-    - updateProfileRequest (UpdateProfileRequest): Form cập nhật thông tin cá nhân
-    - updateBankAccountRequest (UpdateBankAccountRequest): Form cập nhật tài khoản ngân hàng
 
-  Chủ sở hữu: Người C (controller & business logic), Người A (styling).
--->
 <div th:replace="~{layout/base :: layout('Hồ sơ cá nhân', ~{::content})}">
     <content>
         <h2>Hồ sơ cá nhân</h2>
 
-        <!-- Thông báo trạng thái qua query params -->
         <div th:if="${param.updated != null}" style="color: green; margin-bottom: 15px; padding: 10px; background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 4px;">
             <strong>Thành công:</strong> Thông tin cá nhân đã được cập nhật thành công!
         </div>
@@ -33,9 +22,8 @@
             <span th:unless="${#strings.equals(param.avatarError, 'empty')}">Tải lên ảnh thất bại. Tệp phải là ảnh (JPEG, PNG, WebP) và dung lượng tối đa 5MB!</span>
         </div>
 
-        <!-- KHỐI 1 & 2: TỔNG QUAN TÀI KHOẢN & UY TÍN -->
         <div style="display: flex; gap: 30px; flex-wrap: wrap; margin-bottom: 30px;">
-            <!-- Khối tổng quan tài khoản -->
+
             <div style="flex: 1; min-width: 320px; border: 1px solid #ddd; padding: 20px; border-radius: 6px;">
                 <h3>Thông tin tài khoản</h3>
 
@@ -83,7 +71,6 @@
                 </table>
             </div>
 
-            <!-- Khối chỉ số uy tín -->
             <div style="flex: 1; min-width: 300px; border: 1px solid #ddd; padding: 20px; border-radius: 6px;">
                 <h3>Điểm uy tín & Giao dịch</h3>
                 <table cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse;">
@@ -107,7 +94,6 @@
             </div>
         </div>
 
-        <!-- KHỐI 3: FORM ĐỔI THÔNG TIN CÁ NHÂN -->
         <div style="border: 1px solid #ddd; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
             <h3>Cập nhật thông tin cá nhân</h3>
             <form method="post" th:action="@{/profile}" th:object="${updateProfileRequest}" style="max-width: 500px;">
@@ -133,7 +119,6 @@
             </form>
         </div>
 
-        <!-- KHỐI 4: FORM TẢI LÊN ẢNH ĐẠI DIỆN -->
         <div style="border: 1px solid #ddd; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
             <h3>Thay đổi ảnh đại diện</h3>
             <p style="color: #666; font-size: 14px;">Chọn ảnh định dạng JPEG, PNG hoặc WebP. Kích thước tối đa cho phép là 5MB.</p>
@@ -149,14 +134,12 @@
             </form>
         </div>
 
-        <!-- KHỐI 5: FORM TÀI KHOẢN NGÂN HÀNG (RR-1 & RR-5) -->
         <div style="border: 1px solid #ddd; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
             <h3>Tài khoản ngân hàng nhận tiền</h3>
             <p style="color: #666; font-size: 14px;">
                 Thông tin này được sử dụng để giải ngân số tiền bán vé sau khi giao dịch chuyển nhượng vé hoàn tất thành công.
             </p>
 
-            <!-- Hiển thị tài khoản đã khai báo (che dấu số tài khoản theo RR-1 & RR-5) -->
             <div style="background-color: #fafafa; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px dashed #ccc;">
                 <h4 style="margin-top: 0;">Tài khoản hiện tại:</h4>
                 <div th:if="${maskedBankAccount != null}">
@@ -169,7 +152,6 @@
                 </div>
             </div>
 
-            <!-- Form cập nhật số tài khoản mới (RR-5: không điền sẵn số tài khoản cũ vào ô input) -->
             <form method="post" th:action="@{/profile/bank}" th:object="${updateBankAccountRequest}" style="max-width: 500px;">
                 <div style="margin-bottom: 15px;">
                     <label for="bankName" style="display: block; margin-bottom: 5px; font-weight: bold;">Tên ngân hàng *</label>

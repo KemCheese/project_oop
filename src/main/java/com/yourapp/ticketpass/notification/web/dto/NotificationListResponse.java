@@ -7,12 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * DTO trả về danh sách thông báo kèm số lượng chưa đọc.
- *
- * <p>Module: notification</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @Setter
 @Builder

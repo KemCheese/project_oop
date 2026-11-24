@@ -26,15 +26,6 @@ import com.yourapp.ticketpass.payment.domain.PaymentResult;
 import com.yourapp.ticketpass.wallet.application.WalletService;
 import com.yourapp.ticketpass.wallet.domain.WalletTransactionType;
 
-/**
- * Unit Test cho {@link WalletPaymentGatewayAdapter} — Task C14.
- *
- * <p>Kiểm thử việc chuyển đổi hợp đồng PaymentGateway của Dev B sang nghiệp vụ
- * ghi nợ/ghi có của Ví điện tử TicketPass (Dev C), bảo đảm tính tương thích hoàn toàn.</p>
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("WalletPaymentGatewayAdapter Test - Bộ điều hợp cổng thanh toán Ví")
 class WalletPaymentGatewayAdapterTest {
@@ -129,6 +120,27 @@ class WalletPaymentGatewayAdapterTest {
         }
 
         @Test
+        @DisplayName("refund hỗ trợ fallback tìm theo ID số của EscrowTransaction khi gatewayTransactionId rỗng trên DB")
+        void testRefundFallbackByNumericEscrowId() {
+            EscrowTransaction escrow = new EscrowTransaction();
+            escrow.setId(55L);
+            escrow.setBuyerId(42L);
+            when(escrowTransactionRepository.findByGatewayTransactionId("55")).thenReturn(Optional.empty());
+            when(escrowTransactionRepository.findById(55L)).thenReturn(Optional.of(escrow));
+
+            PaymentResult result = adapter.refund("55", new BigDecimal("300000.00"), "Hoàn tiền kỹ thuật");
+
+            assertThat(result.isSuccess()).isTrue();
+            verify(walletService).credit(
+                    eq(42L),
+                    eq(new BigDecimal("300000.00")),
+                    eq(WalletTransactionType.ESCROW_REFUND),
+                    eq("55"),
+                    eq("Hoàn tiền ký quỹ: Hoàn tiền kỹ thuật")
+            );
+        }
+
+        @Test
         @DisplayName("refund an toàn khi không tìm thấy EscrowTransaction, không gọi walletService")
         void testRefundWithoutEscrow() {
             String gatewayTxId = "NON_EXISTING_TX";
@@ -139,8 +151,8 @@ class WalletPaymentGatewayAdapterTest {
 
             PaymentResult result = adapter.refund(gatewayTxId, amount, "Test");
 
-            assertThat(result.isSuccess()).isTrue();
-            assertThat(result.getGatewayStatus()).isEqualTo("REFUNDED");
+            assertThat(result.isSuccess()).isFalse();
+            assertThat(result.getGatewayStatus()).isEqualTo("REFUND_FAILED");
             verify(walletService, never()).credit(any(), any(), any(), any(), any());
         }
     }
@@ -204,6 +216,27 @@ class WalletPaymentGatewayAdapterTest {
                     eq(WalletTransactionType.COMPENSATION_RECEIVE),
                     eq(ref),
                     eq("Nhận tiền bồi thường khiếu nại (" + ref + ")")
+            );
+        }
+        @Test
+        @DisplayName("payout nhận diện đúng mã gạch ngang REFUND-DEPOSIT và FORFEIT-COMPENSATION từ payment module")
+        void testPayoutMatchesHyphenReferencesFromPaymentModule() {
+            adapter.payout(55L, new BigDecimal("250000.00"), "REFUND-DEPOSIT-12");
+            verify(walletService).credit(
+                    eq(55L),
+                    eq(new BigDecimal("250000.00")),
+                    eq(WalletTransactionType.DEPOSIT_REFUND),
+                    eq("REFUND-DEPOSIT-12"),
+                    eq("Hoàn cọc bảo đảm 50% (REFUND-DEPOSIT-12)")
+            );
+
+            adapter.payout(77L, new BigDecimal("200000.00"), "FORFEIT-COMPENSATION-99");
+            verify(walletService).credit(
+                    eq(77L),
+                    eq(new BigDecimal("200000.00")),
+                    eq(WalletTransactionType.COMPENSATION_RECEIVE),
+                    eq("FORFEIT-COMPENSATION-99"),
+                    eq("Nhận tiền bồi thường khiếu nại (FORFEIT-COMPENSATION-99)")
             );
         }
     }

@@ -11,12 +11,6 @@ import com.yourapp.ticketpass.wallet.domain.Wallet;
 
 import jakarta.persistence.LockModeType;
 
-/**
- * Spring Data JPA Repository cho thực thể {@link Wallet}.
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 public interface WalletJpaRepository extends JpaRepository<Wallet, Long> {
 
     Optional<Wallet> findByUserId(Long userId);

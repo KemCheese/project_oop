@@ -35,63 +35,25 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Điểm vào HTTP cho người mua và người bán trong quy trình khiếu nại.
- *
- * <p><b>Các tuyến đường:</b></p>
- * <pre>
- * GET  /disputes/new?ticketId=  -&gt; form mo khieu nai (view "dispute/create")
- * POST /disputes                -&gt; buyer mo khieu nai (@Valid FileDisputeRequest + MultipartFile[] evidences)
- * GET  /disputes/{id}           -&gt; chi tiet khieu nai (view "dispute/detail")
- * POST /disputes/{id}/respond   -&gt; seller phan hoi
- * POST /disputes/{id}/withdraw  -&gt; buyer rut khieu nai
- * </pre>
- *
- * <p><b>Kiểm soát truy cập:</b> mọi tuyến ở đây đều phải xác minh người đăng nhập đúng là một
- * bên của khiếu nại — người mua với các thao tác mở và rút, người bán với thao tác giải trình.
- * ID người dùng luôn lấy từ {@link Principal}, không bao giờ nhận từ dữ liệu gửi lên.</p>
- *
- * <p>Controller chỉ điều phối: xác thực đầu vào, gọi use case, chọn view. Toàn bộ quy tắc nghiệp
- * vụ nằm ở {@code dispute.application}.</p>
- *
- * <p>Module: dispute</p>
- *
- * <p>Chủ sở hữu: Người B</p>
- */
 @Controller
 @RequestMapping("/disputes")
 @RequiredArgsConstructor
 public class DisputeController {
 
-    /** Use case mở khiếu nại và đính kèm bằng chứng. */
     private final FileDisputeUseCase fileDisputeUseCase;
 
-    /** Use case người bán giải trình và người mua rút khiếu nại. */
     private final RespondToDisputeUseCase respondToDisputeUseCase;
 
-    /** Cổng truy cập dữ liệu khiếu nại. */
     private final DisputeRepository disputeRepository;
 
-    /** Cổng truy cập dữ liệu bằng chứng. */
     private final DisputeEvidenceRepository disputeEvidenceRepository;
 
-    /** Cổng lưu trữ tệp để dựng publicUrl. */
     private final FileStorageService fileStorageService;
 
-    /** Cổng truy cập dữ liệu vé. */
     private final com.yourapp.ticketpass.ticket.domain.TicketRepository ticketRepository;
 
-    /** Cổng truy cập người dùng. */
     private final com.yourapp.ticketpass.user.domain.UserRepository userRepository;
 
-    /**
-     * Tiện ích chuyển hướng tới khiếu nại của một vé.
-     * Nếu vé đã có khiếu nại, chuyển hướng tới trang chi tiết khiếu nại.
-     * Nếu chưa có khiếu nại, chuyển hướng tới trang tạo khiếu nại mới.
-     *
-     * @param ticketId ID của vé
-     * @return URL chuyển hướng tương ứng
-     */
     @GetMapping("/ticket/{ticketId}")
     public String redirectToDisputeByTicket(@PathVariable Long ticketId) {
         return disputeRepository.findByTicketId(ticketId)
@@ -99,14 +61,6 @@ public class DisputeController {
                 .orElse("redirect:/disputes/new?ticketId=" + ticketId);
     }
 
-    /**
-     * Hiển thị biểu mẫu mở khiếu nại cho một vé.
-     *
-     * @param ticketId  ID vé cần khiếu nại
-     * @param model     model để đổ dữ liệu ra view
-     * @param principal người dùng đang đăng nhập
-     * @return tên view {@code "dispute/create"}
-     */
     @GetMapping("/new")
     public String showCreateForm(@RequestParam Long ticketId, Model model, Principal principal) {
         var ticket = ticketRepository.findById(ticketId)
@@ -139,14 +93,6 @@ public class DisputeController {
         return "dispute/create";
     }
 
-    /**
-     * Người mua nộp khiếu nại kèm các tệp bằng chứng.
-     *
-     * @param request   dữ liệu khiếu nại đã được kiểm tra ràng buộc
-     * @param evidences các tệp bằng chứng người mua tải lên, có thể rỗng
-     * @param principal người dùng đang đăng nhập, dùng để suy ra ID người mua
-     * @return chuyển hướng tới trang chi tiết khiếu nại hoặc chi tiết vé
-     */
     @PostMapping
     public String fileDispute(@Valid FileDisputeRequest request,
                               BindingResult bindingResult,
@@ -204,7 +150,6 @@ public class DisputeController {
         }
     }
 
-    /** Overload phục vụ gọi nội bộ hoặc kiểm thử đơn vị. */
     public String fileDispute(FileDisputeRequest request, MultipartFile[] evidences, Principal principal) {
         return fileDispute(request, new org.springframework.validation.BeanPropertyBindingResult(request, "request"), evidences, new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap(), principal);
     }
@@ -219,14 +164,6 @@ public class DisputeController {
         return user.getId();
     }
 
-    /**
-     * Xem chi tiết một khiếu nại kèm bằng chứng của cả hai bên.
-     *
-     * @param id        ID khiếu nại
-     * @param model     model để đổ dữ liệu ra view
-     * @param principal người dùng đang đăng nhập
-     * @return tên view {@code "dispute/detail"}
-     */
     @GetMapping("/{id}")
     public String showDetail(@PathVariable Long id, Model model, Principal principal) {
         Dispute dispute = disputeRepository.findById(id)
@@ -262,14 +199,6 @@ public class DisputeController {
         return "dispute/detail";
     }
 
-    /**
-     * Người bán gửi giải trình cho khiếu nại.
-     *
-     * @param id        ID khiếu nại
-     * @param request   nội dung giải trình
-     * @param principal người dùng đang đăng nhập, dùng để suy ra ID người bán
-     * @return chuyển hướng về trang chi tiết khiếu nại
-     */
     @PostMapping("/{id}/respond")
     public String respond(@PathVariable Long id,
                           @Valid RespondToDisputeRequest request,
@@ -302,19 +231,10 @@ public class DisputeController {
         return "redirect:/disputes/" + id;
     }
 
-    /** Overload phục vụ gọi nội bộ hoặc kiểm thử đơn vị. */
     public String respond(Long id, RespondToDisputeRequest request, Principal principal) {
         return respond(id, request, new org.springframework.validation.BeanPropertyBindingResult(request, "request"), new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap(), principal);
     }
 
-    /**
-     * Người mua rút khiếu nại đã mở.
-     *
-     * @param id        ID khiếu nại
-     * @param reason    lý do rút khiếu nại
-     * @param principal người dùng đang đăng nhập, dùng để suy ra ID người mua
-     * @return chuyển hướng về trang chi tiết khiếu nại
-     */
     @PostMapping("/{id}/withdraw")
     public String withdraw(@PathVariable Long id,
                            @RequestParam(required = false, defaultValue = "Người mua tự nguyện rút khiếu nại") String reason,
@@ -338,14 +258,10 @@ public class DisputeController {
         return "redirect:/disputes/" + id;
     }
 
-    /** Overload phục vụ gọi nội bộ hoặc kiểm thử đơn vị. */
     public String withdraw(Long id, String reason, Principal principal) {
         return withdraw(id, reason, new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap(), principal);
     }
 
-    /**
-     * Chuyển đổi entity {@link Dispute} sang {@link DisputeResponse} DTO.
-     */
     private DisputeResponse mapToResponse(Dispute dispute, List<DisputeEvidence> evidences) {
         DisputeResponse resp = new DisputeResponse();
         resp.setId(dispute.getId());

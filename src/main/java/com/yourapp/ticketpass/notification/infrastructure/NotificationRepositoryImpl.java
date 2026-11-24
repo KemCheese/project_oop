@@ -9,12 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-/**
- * Adapter triển khai NotificationRepository qua Spring Data JPA.
- *
- * <p>Module: notification</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Repository
 @RequiredArgsConstructor
 public class NotificationRepositoryImpl implements NotificationRepository {

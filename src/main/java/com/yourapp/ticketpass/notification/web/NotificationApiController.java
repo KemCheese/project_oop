@@ -22,12 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * REST API phục vụ tải thông báo và thao tác đã đọc cho Navbar Dropdown & AJAX Polling.
- *
- * <p>Module: notification</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/notifications")
@@ -37,9 +31,6 @@ public class NotificationApiController {
     private final NotificationService notificationService;
     private final UserQueryService userQueryService;
 
-    /**
-     * Lấy 5-10 thông báo mới nhất kèm số lượng chưa đọc cho Dropdown.
-     */
     @GetMapping("/recent")
     public ResponseEntity<NotificationListResponse> getRecent(
             @RequestParam(defaultValue = "10") int limit,
@@ -64,9 +55,6 @@ public class NotificationApiController {
                 .build());
     }
 
-    /**
-     * Lấy số lượng thông báo chưa đọc phục vụ badge Polling (mỗi 25-30 giây).
-     */
     @GetMapping("/unread-count")
     public ResponseEntity<Map<String, Object>> getUnreadCount(Principal principal) {
         if (principal == null) {
@@ -78,9 +66,6 @@ public class NotificationApiController {
         return ResponseEntity.ok(Map.of("unreadCount", unreadCount));
     }
 
-    /**
-     * Đánh dấu 1 thông báo là đã đọc.
-     */
     @PostMapping("/{id}/read")
     public ResponseEntity<NotificationResponse> markAsRead(
             @PathVariable Long id,
@@ -94,9 +79,6 @@ public class NotificationApiController {
         return ResponseEntity.ok(NotificationResponse.fromEntity(updated));
     }
 
-    /**
-     * Đánh dấu tất cả thông báo của người dùng là đã đọc.
-     */
     @PostMapping("/read-all")
     public ResponseEntity<Map<String, Object>> markAllAsRead(Principal principal) {
         if (principal == null) {

@@ -82,7 +82,6 @@ class LockDepositUseCaseTest {
             assertTrue(result.isSuccess());
             assertEquals("https://test-payment.momo.vn/pay/deposit-123", result.getPayUrl());
 
-            // Kiểm tra PaymentRequest
             ArgumentCaptor<PaymentRequest> reqCaptor = ArgumentCaptor.forClass(PaymentRequest.class);
             verify(paymentGateway).initPayment(reqCaptor.capture());
             PaymentRequest sentReq = reqCaptor.getValue();
@@ -91,7 +90,6 @@ class LockDepositUseCaseTest {
             assertEquals(new BigDecimal("150000.00"), sentReq.getAmount());
             assertTrue(sentReq.getOrderInfo().contains(String.valueOf(ticketId)));
 
-            // Kiểm tra Deposit đã lưu
             ArgumentCaptor<Deposit> depositCaptor = ArgumentCaptor.forClass(Deposit.class);
             verify(depositRepository, atLeastOnce()).save(depositCaptor.capture());
             Deposit savedDeposit = depositCaptor.getValue();
@@ -256,7 +254,6 @@ class LockDepositUseCaseTest {
             assertEquals("momo_dep_tx_123", result.getGatewayTransactionId());
             assertNotNull(result.getLockedAt());
 
-            // Kiểm tra gọi đồng bộ sang module ticket
             verify(transferTicketService).markDepositLocked(ticketId, 5L);
             verify(depositRepository).save(deposit);
         }

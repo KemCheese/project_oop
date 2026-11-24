@@ -101,7 +101,6 @@
                     </p>
                 </div>
 
-                <!-- Leaderboard Card -->
                 <div class="leaderboard-card">
                     <div th:if="${#lists.isEmpty(sellers)}" class="empty-state"
                         style="margin: 0; border: none; border-radius: 0;">
@@ -127,7 +126,7 @@
                             </thead>
                             <tbody>
                                 <tr th:each="seller, iterStat : ${sellers}">
-                                    <!-- Rank Number -->
+
                                     <td style="text-align: center;">
                                         <span th:if="${iterStat.count == 1}" class="rank-badge rank-1">
                                             <i class="fa-solid fa-crown" style="font-size: 13px;"></i>
@@ -144,7 +143,6 @@
                                         </span>
                                     </td>
 
-                                    <!-- Seller ID -->
                                     <td>
                                         <div style="display: flex; align-items: center; gap: 10px;">
                                             <div
@@ -164,22 +162,22 @@
                                         </div>
                                     </td>
 
-                                    <!-- Score -->
                                     <td style="text-align: center;">
-                                        <span style="font-size: 16px; font-weight: 800; color: var(--color-success);"
-                                            th:text="${seller.score != null ? seller.score.intValue() : 100}">
-                                            100
-                                        </span>
-                                        <span style="font-size: 11px; color: var(--color-text-muted);">/100</span>
+                                        <div style="font-size: 18px; font-weight: 800; color: var(--color-success);"
+                                            th:text="${seller.score != null ? seller.score.intValue() : 3}">
+                                            3
+                                        </div>
+                                        <div style="font-size: 11px; color: var(--color-text-muted); font-weight: 600;"
+                                            th:text="${seller.tierName ?: 'Bình thường'}">
+                                            Bình thường
+                                        </div>
                                     </td>
 
-                                    <!-- Successful Transactions -->
                                     <td style="text-align: center; font-weight: 600;"
                                         th:text="${seller.successfulTransactions ?: 0}">
                                         0
                                     </td>
 
-                                    <!-- Link to Detail -->
                                     <td style="text-align: right;">
                                         <a th:href="@{/reputation/{id}(id=${seller.userId})}"
                                             class="btn btn-outline btn-sm">
@@ -192,7 +190,6 @@
                     </div>
                 </div>
 
-                <!-- Footer Back Action -->
                 <div style="text-align: center; margin-top: 24px;">
                     <a th:href="@{/tickets}" class="btn btn-primary btn-sm">
                         <i class="fa-solid fa-tags"></i> Khám phá vé đang bán trên sàn

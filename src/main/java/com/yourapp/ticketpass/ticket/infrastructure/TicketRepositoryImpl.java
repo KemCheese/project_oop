@@ -15,23 +15,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-/**
- * Hien thuc port {@link TicketRepository} bang Spring Data JPA.
- *
- * <p>
- * Day la glue code thuan: moi method chi delegate sang
- * {@link TicketJpaRepository}. Nho lop nay,
- * tang domain va application khong biet gi ve Spring Data, va co the thay bang
- * hien thuc in-memory
- * khi viet unit test.
- * </p>
- *
- * <p>
- * Module: ticket
- * </p>
- *
- * Chu so huu: Nguoi A
- */
 @Repository
 @RequiredArgsConstructor
 public class TicketRepositoryImpl implements TicketRepository {
@@ -61,6 +44,11 @@ public class TicketRepositoryImpl implements TicketRepository {
     @Override
     public List<Ticket> findByStatus(TicketStatus status) {
         return ticketJpaRepository.findByStatus(status);
+    }
+
+    @Override
+    public long countByStatus(TicketStatus status) {
+        return status != null ? ticketJpaRepository.countByStatus(status) : 0L;
     }
 
     @Override

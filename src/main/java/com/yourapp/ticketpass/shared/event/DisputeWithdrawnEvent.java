@@ -4,13 +4,6 @@ import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/**
- * Sự kiện: Người mua chủ động rút khiếu nại.
- * Người bán cần nhận thông báo để biết giao dịch tiếp tục.
- *
- * <p>Module: shared</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @AllArgsConstructor
 public class DisputeWithdrawnEvent {

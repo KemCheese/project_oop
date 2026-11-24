@@ -9,15 +9,12 @@
     <div th:replace="~{layout/base :: layout('Tiến trình xử lý tranh chấp vé - TicketPass', ~{::content})}">
         <content>
             <style>
-                /* ==========================================================================
-                   USER DISPUTE TRACKING & RESOLUTION STYLES
-                   ========================================================================== */
+
                 .dispute-wrapper {
                     max-width: 1200px;
                     margin: 0 auto;
                 }
 
-                /* Header & Status Section */
                 .dispute-hero-header {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
@@ -35,7 +32,6 @@
                     gap: 16px;
                 }
 
-                /* Resolution Outcome Banner */
                 .outcome-banner {
                     border-radius: var(--radius-lg);
                     padding: 24px;
@@ -87,7 +83,6 @@
                     color: #ffffff;
                 }
 
-                /* 4-Step Animated Pipeline */
                 .pipeline-container {
                     background-color: var(--color-surface);
                     border: 1px solid var(--color-border);
@@ -162,7 +157,6 @@
                     margin-top: 2px;
                 }
 
-                /* Live Countdown Digital Clock */
                 .countdown-card {
                     background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
                     color: #ffffff;
@@ -193,7 +187,6 @@
                     letter-spacing: 0.05em;
                 }
 
-                /* Layout Dual Column */
                 .dispute-body-layout {
                     display: grid;
                     grid-template-columns: 1fr 340px;
@@ -232,7 +225,6 @@
                     color: var(--color-text-main);
                 }
 
-                /* Evidence Gallery */
                 .evidence-list-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -273,7 +265,6 @@
                     border-radius: var(--radius-sm);
                 }
 
-                /* Financial Stake Overview */
                 .stake-row {
                     display: flex;
                     justify-content: space-between;
@@ -286,7 +277,6 @@
                     border-bottom: none;
                 }
 
-                /* Modal Lightbox */
                 .modal-lightbox {
                     display: none;
                     position: fixed;
@@ -351,14 +341,13 @@
             </style>
 
             <div class="dispute-wrapper">
-                <!-- Navigation Top -->
+
                 <div style="margin-bottom: 16px;">
                     <a th:href="@{/tickets}" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
                         <i class="fa-solid fa-arrow-left"></i> Quay lại danh sách vé
                     </a>
                 </div>
 
-                <!-- Flash Alerts -->
                 <div th:if="${errorMessage != null}" class="alert alert-danger" style="margin-bottom: 20px; padding: 14px 18px; border-radius: var(--radius-md); background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     <span th:text="${errorMessage}"></span>
@@ -368,7 +357,6 @@
                     <span th:text="${successMessage}"></span>
                 </div>
 
-                <!-- Header Case Summary -->
                 <div class="dispute-hero-header">
                     <div class="dispute-title-row">
                         <div>
@@ -385,7 +373,6 @@
                             </h1>
                         </div>
 
-                        <!-- Current Status Badge -->
                         <div>
                             <span th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'OPEN'}" class="badge badge-warning" style="font-size: 13px; padding: 6px 14px;">
                                 <i class="fa-solid fa-bell"></i> Mới tiếp nhận
@@ -412,7 +399,6 @@
                     </div>
                 </div>
 
-                <!-- Outcome Grand Banner (Khi đã hoàn tất) -->
                 <div th:if="${dispute != null and dispute.status != null and dispute.status.name() == 'RESOLVED_BUYER_WINS'}" class="outcome-banner buyer-won">
                     <div class="outcome-icon">
                         <i class="fa-solid fa-award"></i>
@@ -427,8 +413,8 @@
                         </p>
                         <div style="display: flex; gap: 16px; font-size: 13px; font-weight: 700; color: #166534;">
                             <span><i class="fa-solid fa-rotate-left"></i> Hoàn tiền: 100% Escrow</span>
-                            <span><i class="fa-solid fa-shield"></i> Người bán: -15 điểm uy tín</span>
-                            <span><i class="fa-solid fa-user-plus"></i> Người mua: +1 điểm uy tín</span>
+                            <span><i class="fa-solid fa-shield"></i> Người bán: -2 điểm uy tín</span>
+                            <span><i class="fa-solid fa-user-check"></i> Người mua: giữ nguyên điểm uy tín</span>
                         </div>
                     </div>
                 </div>
@@ -448,7 +434,7 @@
                         <div style="display: flex; gap: 16px; font-size: 13px; font-weight: 700; color: #1e40af;">
                             <span><i class="fa-solid fa-money-bill-transfer"></i> Giải ngân tiền bán vé</span>
                             <span><i class="fa-solid fa-rotate-left"></i> Hoàn trả 100% cọc cho Seller</span>
-                            <span><i class="fa-solid fa-user-minus"></i> Người mua: -15 điểm uy tín</span>
+                            <span><i class="fa-solid fa-user-minus"></i> Người mua: -2 điểm uy tín</span>
                         </div>
                     </div>
                 </div>
@@ -468,10 +454,9 @@
                     </div>
                 </div>
 
-                <!-- 4-Step Animated Pipeline -->
                 <div class="pipeline-container">
                     <div class="pipeline-grid">
-                        <!-- Step 1: Open Dispute -->
+
                         <div class="pipeline-step completed">
                             <div class="pipeline-step-icon">
                                 <i class="fa-solid fa-file-circle-check"></i>
@@ -483,7 +468,6 @@
                             </div>
                         </div>
 
-                        <!-- Step 2: Seller Response -->
                         <div class="pipeline-step"
                              th:classappend="${dispute != null and dispute.sellerResponse != null and !dispute.sellerResponse.isEmpty() ? 'completed' : (dispute != null and (dispute.status.name() == 'OPEN' or dispute.status.name() == 'AWAITING_SELLER_RESPONSE') ? 'active' : '')}">
                             <div class="pipeline-step-icon">
@@ -496,7 +480,6 @@
                             </div>
                         </div>
 
-                        <!-- Step 3: Admin Review -->
                         <div class="pipeline-step"
                              th:classappend="${dispute != null and dispute.status != null and dispute.status.name() == 'UNDER_REVIEW' ? 'active' : (dispute != null and (dispute.status.name() == 'RESOLVED_BUYER_WINS' or dispute.status.name() == 'RESOLVED_SELLER_WINS' or dispute.status.name() == 'WITHDRAWN') ? 'completed' : '')}">
                             <div class="pipeline-step-icon">
@@ -506,7 +489,6 @@
                             <div class="pipeline-step-sub">Trọng tài thẩm định</div>
                         </div>
 
-                        <!-- Step 4: Resolution Execution -->
                         <div class="pipeline-step"
                              th:classappend="${dispute != null and (dispute.status.name() == 'RESOLVED_BUYER_WINS' or dispute.status.name() == 'RESOLVED_SELLER_WINS' or dispute.status.name() == 'WITHDRAWN') ? 'completed' : ''}">
                             <div class="pipeline-step-icon">
@@ -518,7 +500,6 @@
                     </div>
                 </div>
 
-                <!-- 24h Live Countdown Clock (Khi đang chờ Seller giải trình) -->
                 <div th:if="${dispute != null and (dispute.sellerResponse == null or dispute.sellerResponse.isEmpty()) and (dispute.status.name() == 'OPEN' or dispute.status.name() == 'AWAITING_SELLER_RESPONSE')}"
                      class="countdown-card"
                      th:attr="data-deadline=${dispute.sellerResponseDeadline != null ? dispute.sellerResponseDeadline.toString() : ''}">
@@ -540,11 +521,10 @@
                     </div>
                 </div>
 
-                <!-- Dual Column Layout: Content + Action Sidebar -->
                 <div class="dispute-body-layout">
-                    <!-- Left Column: Claim & Response Details -->
+
                     <div class="main-column">
-                        <!-- Card 1: Khiếu nại từ người mua -->
+
                         <div class="section-card">
                             <div class="section-card-title">
                                 <i class="fa-solid fa-user-tag" style="color: var(--color-primary);"></i>
@@ -571,7 +551,6 @@
                                 </div>
                             </div>
 
-                            <!-- Buyer Evidences List -->
                             <div>
                                 <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px;">
                                     Bằng chứng đã đính kèm
@@ -597,14 +576,12 @@
                             </div>
                         </div>
 
-                        <!-- Card 2: Giải trình từ người bán -->
                         <div class="section-card">
                             <div class="section-card-title">
                                 <i class="fa-solid fa-reply-all" style="color: var(--color-info);"></i>
                                 Phần Giải Trình Của Người Bán
                             </div>
 
-                            <!-- Case A: Seller has already submitted response -->
                             <div th:if="${dispute != null and dispute.sellerResponse != null and !dispute.sellerResponse.isEmpty()}">
                                 <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px;">
                                     Nội dung giải trình đã gửi
@@ -615,9 +592,8 @@
                                 </div>
                             </div>
 
-                            <!-- Case B: Seller hasn't responded yet -->
                             <div th:if="${dispute == null or dispute.sellerResponse == null or dispute.sellerResponse.isEmpty()}">
-                                <!-- If viewing user IS Seller: Show submission form -->
+
                                 <div th:if="${isSeller}">
                                     <div class="alert alert-warning" style="margin-bottom: 16px; font-size: 13px; line-height: 1.6;">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
@@ -639,7 +615,6 @@
                                     </form>
                                 </div>
 
-                                <!-- If viewing user is NOT Seller: Show waiting state -->
                                 <div th:unless="${isSeller}" style="padding: 20px; background-color: #fafbfc; border: 1px dashed #cbd5e1; border-radius: var(--radius-md); text-align: center;">
                                     <i class="fa-regular fa-clock fa-2x" style="color: var(--color-warning); margin-bottom: 8px;"></i>
                                     <div style="font-size: 14px; font-weight: 700; color: var(--color-brand);">
@@ -653,9 +628,8 @@
                         </div>
                     </div>
 
-                    <!-- Right Column: Financial Protection & User Actions -->
                     <div class="sidebar-column">
-                        <!-- Financial Safeguard Card -->
+
                         <div class="section-card">
                             <div style="font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
                                 <i class="fa-solid fa-shield-halved" style="color: var(--color-success);"></i> Cơ Chế Bảo Vệ Tài Chính
@@ -689,7 +663,6 @@
                             </div>
                         </div>
 
-                        <!-- Buyer Withdraw Dispute Option (Khi hai bên tự thương lượng được) -->
                         <div th:if="${isBuyer != null and isBuyer and dispute != null and dispute.status != null and dispute.status.name() != 'RESOLVED_BUYER_WINS' and dispute.status.name() != 'RESOLVED_SELLER_WINS' and dispute.status.name() != 'WITHDRAWN'}"
                              class="section-card">
                             <div style="font-size: 14px; font-weight: 700; color: var(--color-brand); margin-bottom: 6px;">
@@ -711,7 +684,6 @@
                             </form>
                         </div>
 
-                        <!-- Ticket Navigation -->
                         <div style="display: flex; flex-direction: column; gap: 8px;">
                             <a th:if="${dispute != null and dispute.ticketId != null}" th:href="@{/tickets/{id}(id=${dispute.ticketId})}"
                                class="btn btn-outline btn-sm" style="width: 100%; text-align: center;">
@@ -722,7 +694,6 @@
                 </div>
             </div>
 
-            <!-- Lightbox Modal -->
             <div id="lightboxModal" class="modal-lightbox" onclick="closeLightbox()">
                 <div class="modal-lightbox-content" onclick="event.stopPropagation()">
                     <button class="modal-close-btn" onclick="closeLightbox()">&times;</button>
@@ -745,7 +716,6 @@
                     if (e.key === 'Escape') closeLightbox();
                 });
 
-                // Digital Countdown Timer for 24h Seller Response
                 (function initCountdown() {
                     var countdownCard = document.querySelector('.countdown-card');
                     if (!countdownCard) return;

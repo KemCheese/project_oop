@@ -41,7 +41,6 @@
                     gap: 16px;
                 }
 
-                /* Ticket Type Radio Cards */
                 .type-selector-grid {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
@@ -71,7 +70,7 @@
                     display: none;
                 }
 
-                .type-card-input:checked + .type-card-label {
+                .type-card-input:checked+.type-card-label {
                     border-color: var(--color-primary);
                     background-color: var(--color-primary-surface);
                     color: var(--color-primary);
@@ -94,14 +93,16 @@
                 }
 
                 @media (max-width: 640px) {
-                    .type-selector-grid, .form-row {
+
+                    .type-selector-grid,
+                    .form-row {
                         grid-template-columns: 1fr;
                     }
                 }
             </style>
 
             <div class="create-wrapper">
-                <!-- Page Title -->
+
                 <div style="margin-bottom: 24px; text-align: center;">
                     <h1 style="font-size: 28px; font-weight: 800; color: var(--color-brand); margin-bottom: 6px;">
                         Đăng Bán Vé Mới
@@ -111,8 +112,18 @@
                     </p>
                 </div>
 
-                <form th:action="@{/tickets}" th:object="${createTicketRequest}" method="post" enctype="multipart/form-data">
-                    <!-- KHỐI 1: CHỌN LOẠI VÉ -->
+                <div class="alert alert-danger" th:if="${errorMessage != null}" style="margin-bottom: 20px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span th:text="${errorMessage}">Không thể đăng bán vé</span>
+                </div>
+
+                <form th:action="@{/tickets}" th:object="${createTicketRequest}" method="post"
+                    enctype="multipart/form-data">
+                    <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}" style="margin-bottom: 20px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi dữ liệu</span>
+                    </div>
+
                     <div class="form-section-card">
                         <div class="form-section-title">
                             <i class="fa-solid fa-layer-group" style="color: var(--color-primary);"></i>
@@ -120,37 +131,38 @@
                         </div>
 
                         <div class="type-selector-grid">
-                            <!-- Movie -->
+
                             <div>
-                                <input type="radio" id="type_movie" th:field="*{ticketType}" value="MOVIE" class="type-card-input" checked />
+                                <input type="radio" id="type_movie" th:field="*{ticketType}" value="MOVIE"
+                                    class="type-card-input" checked />
                                 <label for="type_movie" class="type-card-label">
                                     <i class="fa-solid fa-film fa-2x" style="color: var(--color-primary);"></i>
                                     <span>Vé Xem Phim</span>
                                 </label>
                             </div>
 
-                            <!-- Concert -->
                             <div>
-                                <input type="radio" id="type_concert" th:field="*{ticketType}" value="CONCERT" class="type-card-input" />
+                                <input type="radio" id="type_concert" th:field="*{ticketType}" value="CONCERT"
+                                    class="type-card-input" />
                                 <label for="type_concert" class="type-card-label">
                                     <i class="fa-solid fa-music fa-2x" style="color: #7c3aed;"></i>
                                     <span>Vé Concert</span>
                                 </label>
                             </div>
 
-                            <!-- Bus -->
                             <div>
-                                <input type="radio" id="type_bus" th:field="*{ticketType}" value="BUS" class="type-card-input" />
+                                <input type="radio" id="type_bus" th:field="*{ticketType}" value="BUS"
+                                    class="type-card-input" />
                                 <label for="type_bus" class="type-card-label">
                                     <i class="fa-solid fa-bus fa-2x" style="color: #0891b2;"></i>
                                     <span>Vé Xe Khách</span>
                                 </label>
                             </div>
                         </div>
-                        <div th:if="${#fields.hasErrors('ticketType')}" class="form-error" th:errors="*{ticketType}"></div>
+                        <div th:if="${#fields.hasErrors('ticketType')}" class="form-error" th:errors="*{ticketType}">
+                        </div>
                     </div>
 
-                    <!-- KHỐI 2: THÔNG TIN CHI TIẾT THEO LOẠI VÉ -->
                     <div class="form-section-card">
                         <div class="form-section-title">
                             <i class="fa-solid fa-circle-info" style="color: var(--color-info);"></i>
@@ -158,10 +170,11 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="title">Tiêu đề tin đăng <span class="required">*</span></label>
+                            <label class="form-label" for="title">Tiêu đề tin đăng <span
+                                    class="required">*</span></label>
                             <input type="text" id="title" th:field="*{title}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('title')} ? 'is-invalid' : ''"
-                                   placeholder="Ví dụ: Cần pass 2 vé CGV suất chiếu sớm tối nay..." />
+                                th:classappend="${#fields.hasErrors('title')} ? 'is-invalid' : ''"
+                                placeholder="Ví dụ: Cần pass 2 vé CGV suất chiếu sớm tối nay..." />
                             <div th:if="${#fields.hasErrors('title')}" class="form-error" th:errors="*{title}"></div>
                         </div>
 
@@ -171,9 +184,10 @@
                                     Tên phim / Tên sự kiện <span class="required">*</span>
                                 </label>
                                 <input type="text" id="eventName" th:field="*{eventName}" class="form-control"
-                                       th:classappend="${#fields.hasErrors('eventName')} ? 'is-invalid' : ''"
-                                       placeholder="Ví dụ: Dune Part Two / Anh Trai Say Hi" />
-                                <div th:if="${#fields.hasErrors('eventName')}" class="form-error" th:errors="*{eventName}"></div>
+                                    th:classappend="${#fields.hasErrors('eventName')} ? 'is-invalid' : ''"
+                                    placeholder="Ví dụ: Dune Part Two / Anh Trai Say Hi" />
+                                <div th:if="${#fields.hasErrors('eventName')}" class="form-error"
+                                    th:errors="*{eventName}"></div>
                             </div>
 
                             <div class="form-group">
@@ -181,9 +195,10 @@
                                     Địa điểm / Rạp chiếu / Tuyến xe
                                 </label>
                                 <input type="text" id="venue" th:field="*{venue}" class="form-control"
-                                       th:classappend="${#fields.hasErrors('venue')} ? 'is-invalid' : ''"
-                                       placeholder="Ví dụ: CGV Vincom Bà Triệu / Sân vận động Mỹ Đình" />
-                                <div th:if="${#fields.hasErrors('venue')}" class="form-error" th:errors="*{venue}"></div>
+                                    th:classappend="${#fields.hasErrors('venue')} ? 'is-invalid' : ''"
+                                    placeholder="Ví dụ: CGV Vincom Bà Triệu / Sân vận động Mỹ Đình" />
+                                <div th:if="${#fields.hasErrors('venue')}" class="form-error" th:errors="*{venue}">
+                                </div>
                             </div>
                         </div>
 
@@ -193,9 +208,10 @@
                                     Vị trí ghế / Hạng vé / Số giường
                                 </label>
                                 <input type="text" id="seatInfo" th:field="*{seatInfo}" class="form-control"
-                                       th:classappend="${#fields.hasErrors('seatInfo')} ? 'is-invalid' : ''"
-                                       placeholder="Ví dụ: Ghế H12, H13 / Fanzone A - Line 1 / Giường A05" />
-                                <div th:if="${#fields.hasErrors('seatInfo')}" class="form-error" th:errors="*{seatInfo}"></div>
+                                    th:classappend="${#fields.hasErrors('seatInfo')} ? 'is-invalid' : ''"
+                                    placeholder="Ví dụ: Ghế H12, H13 / Fanzone A - Line 1 / Giường A05" />
+                                <div th:if="${#fields.hasErrors('seatInfo')}" class="form-error"
+                                    th:errors="*{seatInfo}"></div>
                             </div>
                         </div>
 
@@ -204,23 +220,33 @@
                                 <label class="form-label" for="eventStartAt">
                                     Thời gian bắt đầu / Giờ khởi hành <span class="required">*</span>
                                 </label>
-                                <input type="datetime-local" id="eventStartAt" th:field="*{eventStartAt}" class="form-control"
-                                       th:classappend="${#fields.hasErrors('eventStartAt')} ? 'is-invalid' : ''" />
-                                <div th:if="${#fields.hasErrors('eventStartAt')}" class="form-error" th:errors="*{eventStartAt}"></div>
+                                <input type="datetime-local" id="eventStartAt" th:field="*{eventStartAt}"
+                                    class="form-control"
+                                    th:classappend="${#fields.hasErrors('eventStartAt')} ? 'is-invalid' : ''" />
+                                <div th:if="${#fields.hasErrors('eventStartAt')}" class="form-error"
+                                    th:errors="*{eventStartAt}"></div>
                             </div>
 
                             <div class="form-group">
                                 <label class="form-label" for="eventEndAt">
                                     Thời gian kết thúc dự kiến <span class="required">*</span>
                                 </label>
-                                <input type="datetime-local" id="eventEndAt" th:field="*{eventEndAt}" class="form-control"
-                                       th:classappend="${#fields.hasErrors('eventEndAt')} ? 'is-invalid' : ''" />
+                                <input type="datetime-local" id="eventEndAt" th:field="*{eventEndAt}"
+                                    class="form-control"
+                                    th:classappend="${#fields.hasErrors('eventEndAt')} ? 'is-invalid' : ''" />
                                 <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
-                                    <button type="button" class="btn btn-outline" style="font-size: 11px; padding: 3px 8px; min-height: 24px;" onclick="applyPresetDuration(120)">+2h (Phim)</button>
-                                    <button type="button" class="btn btn-outline" style="font-size: 11px; padding: 3px 8px; min-height: 24px;" onclick="applyPresetDuration(180)">+3h (Concert)</button>
-                                    <button type="button" class="btn btn-outline" style="font-size: 11px; padding: 3px 8px; min-height: 24px;" onclick="applyPresetDuration(240)">+4h (Xe khách)</button>
+                                    <button type="button" class="btn btn-outline"
+                                        style="font-size: 11px; padding: 3px 8px; min-height: 24px;"
+                                        onclick="applyPresetDuration(120)">+2h (Phim)</button>
+                                    <button type="button" class="btn btn-outline"
+                                        style="font-size: 11px; padding: 3px 8px; min-height: 24px;"
+                                        onclick="applyPresetDuration(180)">+3h (Concert)</button>
+                                    <button type="button" class="btn btn-outline"
+                                        style="font-size: 11px; padding: 3px 8px; min-height: 24px;"
+                                        onclick="applyPresetDuration(240)">+4h (Xe khách)</button>
                                 </div>
-                                <div th:if="${#fields.hasErrors('eventEndAt')}" class="form-error" th:errors="*{eventEndAt}"></div>
+                                <div th:if="${#fields.hasErrors('eventEndAt')}" class="form-error"
+                                    th:errors="*{eventEndAt}"></div>
                             </div>
                         </div>
 
@@ -228,49 +254,54 @@
                             <div class="form-group">
                                 <label class="form-label" for="providerName">Nhà phát hành / Hãng xe</label>
                                 <input type="text" id="providerName" th:field="*{providerName}" class="form-control"
-                                       placeholder="Ví dụ: CGV Cinemas / Ticketbox / Phương Trang" />
+                                    placeholder="Ví dụ: CGV Cinemas / Ticketbox / Phương Trang" />
                             </div>
 
                             <div class="form-group">
                                 <label class="form-label" for="providerOrderCode">Mã đặt vé gốc (tùy chọn)</label>
-                                <input type="text" id="providerOrderCode" th:field="*{providerOrderCode}" class="form-control"
-                                       placeholder="Ví dụ: CGV-883719" />
+                                <input type="text" id="providerOrderCode" th:field="*{providerOrderCode}"
+                                    class="form-control" placeholder="Ví dụ: CGV-883719" />
                             </div>
                         </div>
                     </div>
 
-                    <!-- KHỐI 3: GIÁ VÉ & CHỐNG ĐẦU CƠ -->
                     <div class="form-section-card">
                         <div class="form-section-title">
                             <i class="fa-solid fa-tag" style="color: var(--color-accent);"></i>
-                            3. Giá Bán &amp; Quy Tắc Chống Phe Vé
+                            3. Giá Bán và Quy Tắc Chống Phe Vé
                         </div>
 
                         <div class="alert alert-info" style="font-size: 13px; margin-bottom: 16px;">
                             <i class="fa-solid fa-circle-exclamation"></i>
-                            <strong>Quy tắc BR-01.1:</strong> Giá bán phải nhỏ hơn hoặc bằng giá gốc niêm yết (salePrice &le; originalPrice).
+                            <strong>Quy tắc BR-01.1:</strong> Giá bán phải nhỏ hơn hoặc bằng giá gốc niêm yết (salePrice
+                            &le; originalPrice).
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label" for="originalPrice">Giá gốc niêm yết (VNĐ) <span class="required">*</span></label>
-                                <input type="number" id="originalPrice" th:field="*{originalPrice}" class="form-control" min="0" step="1000"
-                                       th:classappend="${#fields.hasErrors('originalPrice')} ? 'is-invalid' : ''"
-                                       placeholder="Ví dụ: 250000" />
-                                <div th:if="${#fields.hasErrors('originalPrice')}" class="form-error" th:errors="*{originalPrice}"></div>
+                                <label class="form-label" for="originalPrice">Giá gốc niêm yết (VNĐ) <span
+                                        class="required">*</span></label>
+                                <input type="number" id="originalPrice" th:field="*{originalPrice}" class="form-control"
+                                    min="0" step="1000"
+                                    th:classappend="${#fields.hasErrors('originalPrice')} ? 'is-invalid' : ''"
+                                    placeholder="Ví dụ: 250000" />
+                                <div th:if="${#fields.hasErrors('originalPrice')}" class="form-error"
+                                    th:errors="*{originalPrice}"></div>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label" for="salePrice">Giá chuyển nhượng lại (VNĐ) <span class="required">*</span></label>
-                                <input type="number" id="salePrice" th:field="*{salePrice}" class="form-control" min="1000" step="1000"
-                                       th:classappend="${#fields.hasErrors('salePrice')} ? 'is-invalid' : ''"
-                                       placeholder="Ví dụ: 180000" />
-                                <div th:if="${#fields.hasErrors('salePrice')}" class="form-error" th:errors="*{salePrice}"></div>
+                                <label class="form-label" for="salePrice">Giá chuyển nhượng lại (VNĐ) <span
+                                        class="required">*</span></label>
+                                <input type="number" id="salePrice" th:field="*{salePrice}" class="form-control"
+                                    min="1000" step="1000"
+                                    th:classappend="${#fields.hasErrors('salePrice')} ? 'is-invalid' : ''"
+                                    placeholder="Ví dụ: 180000" />
+                                <div th:if="${#fields.hasErrors('salePrice')}" class="form-error"
+                                    th:errors="*{salePrice}"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- KHỐI 4: TẢI LÊN 2 ẢNH VÉ -->
                     <div class="form-section-card">
                         <div class="form-section-title">
                             <i class="fa-solid fa-images" style="color: var(--color-success);"></i>
@@ -282,12 +313,15 @@
                                 (1) Ảnh vé công khai <span class="required">*</span>
                             </label>
                             <p class="form-text" style="margin-bottom: 8px;">
-                                Ảnh chụp màn hình thông tin vé (tên phim, số ghế, ngày giờ) để người mua xem trước khi quyết định mua. Vui lòng che bớt mã vạch bí mật nếu có.
+                                Ảnh chụp màn hình thông tin vé (tên phim, số ghế, ngày giờ) để người mua xem trước khi
+                                quyết định mua. Vui lòng che bớt mã vạch bí mật nếu có.
                             </p>
                             <div class="upload-box">
-                                <input type="file" id="ticketImage" name="ticketImage" accept="image/*" style="width: 100%; cursor: pointer;" />
+                                <input type="file" id="ticketImage" name="ticketImage" accept="image/*"
+                                    style="width: 100%; cursor: pointer;" />
                             </div>
-                            <div th:if="${#fields.hasErrors('ticketImageStorageKey')}" class="form-error" th:errors="*{ticketImageStorageKey}"></div>
+                            <div th:if="${#fields.hasErrors('ticketImageStorageKey')}" class="form-error"
+                                th:errors="*{ticketImageStorageKey}"></div>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 0;">
@@ -295,16 +329,18 @@
                                 (2) Ảnh mã QR check-in ẩn (Mã vé thật) <span class="required">*</span>
                             </label>
                             <p class="form-text" style="margin-bottom: 8px;">
-                                Ảnh mã QR check-in bí mật dùng để vào cổng. Sàn lưu trữ an toàn và CHỈ hiển thị cho người mua sau khi họ nạp ký quỹ 100% và bạn đã khóa cọc 50%.
+                                Ảnh mã QR check-in bí mật dùng để vào cổng. Sàn lưu trữ an toàn và CHỈ hiển thị cho
+                                người mua sau khi họ nạp ký quỹ 100% và bạn đã khóa cọc 50%.
                             </p>
                             <div class="upload-box" style="border-color: #bbf7d0; background-color: #f0fdf4;">
-                                <input type="file" id="qrImage" name="qrImage" accept="image/*" style="width: 100%; cursor: pointer;" />
+                                <input type="file" id="qrImage" name="qrImage" accept="image/*"
+                                    style="width: 100%; cursor: pointer;" />
                             </div>
-                            <div th:if="${#fields.hasErrors('qrImageStorageKey')}" class="form-error" th:errors="*{qrImageStorageKey}"></div>
+                            <div th:if="${#fields.hasErrors('qrImageStorageKey')}" class="form-error"
+                                th:errors="*{qrImageStorageKey}"></div>
                         </div>
                     </div>
 
-                    <!-- Submit Actions -->
                     <div style="display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 40px;">
                         <a th:href="@{/tickets}" class="btn btn-outline">
                             Hủy bỏ

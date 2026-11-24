@@ -31,17 +31,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * Unit test cho {@link UserProfileService} — Task C7.
- *
- * <p>Sử dụng Mockito mock cho {@code UserRepository} và {@code FileStorageService},
- * không cần khởi động Spring context. Tuân thủ Repository Pattern và Adapter Pattern:
- * test chỉ cần biết interface, không phụ thuộc hạ tầng thật.</p>
- *
- * <p>Module: user</p>
- *
- * Chủ sở hữu: Người C
- */
 @ExtendWith(MockitoExtension.class)
 class UserProfileServiceTest {
 
@@ -71,9 +60,6 @@ class UserProfileServiceTest {
         sampleUser.setIdentityVerified(false);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 1. getProfile
-    // ════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("getProfile")
@@ -82,16 +68,13 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("Trả về hồ sơ đầy đủ khi user tồn tại và có avatar")
         void getProfile_withAvatar_returnsProfileWithAvatarUrl() {
-            // Arrange
             sampleUser.setAvatarStorageKey("avatars/abc-123.jpg");
             when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
             when(fileStorageService.buildPublicUrl("avatars/abc-123.jpg"))
                     .thenReturn("/files/avatars/abc-123.jpg");
 
-            // Act
             UserProfileResponse response = userProfileService.getProfile(1L);
 
-            // Assert
             assertThat(response.getId()).isEqualTo(1L);
             assertThat(response.getEmail()).isEqualTo("ngoc@test.com");
             assertThat(response.getFullName()).isEqualTo("Hoàng Thế Ngọc");
@@ -100,7 +83,6 @@ class UserProfileServiceTest {
             assertThat(response.getStatus()).isEqualTo(UserStatus.ACTIVE);
             assertThat(response.isEmailVerified()).isTrue();
             assertThat(response.getAvatarUrl()).isEqualTo("/files/avatars/abc-123.jpg");
-            // reputationScore và totalTransactions để null cho tầng web lắp
             assertThat(response.getReputationScore()).isNull();
             assertThat(response.getTotalTransactions()).isNull();
 
@@ -110,13 +92,10 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("Trả về hồ sơ với avatarUrl = null khi user chưa có avatar")
         void getProfile_withoutAvatar_returnsProfileWithNullAvatarUrl() {
-            // Arrange — avatarStorageKey mặc định null
             when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
 
-            // Act
             UserProfileResponse response = userProfileService.getProfile(1L);
 
-            // Assert
             assertThat(response.getAvatarUrl()).isNull();
             verify(fileStorageService, never()).buildPublicUrl(anyString());
         }
@@ -124,18 +103,13 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("Ném ResourceNotFoundException khi user không tồn tại")
         void getProfile_userNotFound_throwsException() {
-            // Arrange
             when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
-            // Act & Assert
             assertThatThrownBy(() -> userProfileService.getProfile(999L))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 2. updateProfile
-    // ════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("updateProfile")
@@ -144,38 +118,32 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("Cập nhật bình thường — số điện thoại không đổi → phoneVerified giữ nguyên")
         void updateProfile_phoneUnchanged_preservesPhoneVerified() {
-            // Arrange
             when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
             when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateProfileRequest request = new UpdateProfileRequest();
             request.setFullName("Ngọc Hoàng");
-            request.setPhoneNumber("0901234567"); // giống số cũ
+            request.setPhoneNumber("0901234567");
 
-            // Act
             UserProfileResponse response = userProfileService.updateProfile(1L, request);
 
-            // Assert
             assertThat(response.getFullName()).isEqualTo("Ngọc Hoàng");
-            assertThat(sampleUser.isPhoneVerified()).isTrue(); // không bị reset
+            assertThat(sampleUser.isPhoneVerified()).isTrue();
             verify(userRepository).save(sampleUser);
         }
 
         @Test
         @DisplayName("Thay đổi số điện thoại → reset phoneVerified = false")
         void updateProfile_phoneChanged_resetsPhoneVerified() {
-            // Arrange
             when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
             when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
             UpdateProfileRequest request = new UpdateProfileRequest();
             request.setFullName("Ngọc Hoàng");
-            request.setPhoneNumber("0987654321"); // số mới
+            request.setPhoneNumber("0987654321");
 
-            // Act
             userProfileService.updateProfile(1L, request);
 
-            // Assert
             assertThat(sampleUser.getPhoneNumber()).isEqualTo("0987654321");
             assertThat(sampleUser.isPhoneVerified()).isFalse();
         }
@@ -183,7 +151,6 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("Cập nhật với số điện thoại rỗng / blank → chuyển thành null và reset phoneVerified")
         void updateProfile_phoneBlank_normalizesToNullAndResetsPhoneVerified() {
-            // Arrange
             sampleUser.setPhoneNumber("0901234567");
             sampleUser.setPhoneVerified(true);
             when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
@@ -191,12 +158,10 @@ class UserProfileServiceTest {
 
             UpdateProfileRequest request = new UpdateProfileRequest();
             request.setFullName("Ngọc Hoàng Mới");
-            request.setPhoneNumber("   "); // chuỗi rỗng / khoảng trắng
+            request.setPhoneNumber("   ");
 
-            // Act
             UserProfileResponse response = userProfileService.updateProfile(1L, request);
 
-            // Assert
             assertThat(response.getFullName()).isEqualTo("Ngọc Hoàng Mới");
             assertThat(sampleUser.getPhoneNumber()).isNull();
             assertThat(sampleUser.isPhoneVerified()).isFalse();
@@ -206,21 +171,16 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("Ném ResourceNotFoundException khi user không tồn tại")
         void updateProfile_userNotFound_throwsException() {
-            // Arrange
             when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
             UpdateProfileRequest request = new UpdateProfileRequest();
             request.setFullName("Test");
 
-            // Act & Assert
             assertThatThrownBy(() -> userProfileService.updateProfile(999L, request))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 3. updateAvatar
-    // ════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("updateAvatar")
@@ -233,7 +193,6 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("Upload thành công — có avatar cũ → lưu mới rồi xóa cũ")
         void updateAvatar_withOldAvatar_storesNewAndDeletesOld() {
-            // Arrange
             sampleUser.setAvatarStorageKey("avatars/old-avatar.jpg");
             when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
             when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -244,10 +203,8 @@ class UserProfileServiceTest {
                     any(InputStream.class), eq(1024L), eq("image/png")))
                     .thenReturn(newRef);
 
-            // Act
             userProfileService.updateAvatar(1L, "photo.png", "image/png", 1024L, dummyContent());
 
-            // Assert
             assertThat(sampleUser.getAvatarStorageKey()).isEqualTo("avatars/new-avatar.png");
             verify(fileStorageService).store(eq("avatars"), eq("photo.png"),
                     any(InputStream.class), eq(1024L), eq("image/png"));
@@ -258,7 +215,6 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("Upload thành công — chưa có avatar cũ → không gọi delete")
         void updateAvatar_noOldAvatar_doesNotCallDelete() {
-            // Arrange — avatarStorageKey = null
             when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
             when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -268,10 +224,8 @@ class UserProfileServiceTest {
                     any(InputStream.class), eq(500_000L), eq("image/jpeg")))
                     .thenReturn(newRef);
 
-            // Act
             userProfileService.updateAvatar(1L, "me.jpg", "image/jpeg", 500_000L, dummyContent());
 
-            // Assert
             assertThat(sampleUser.getAvatarStorageKey()).isEqualTo("avatars/first-avatar.jpeg");
             verify(fileStorageService, never()).delete(anyString());
         }
@@ -305,9 +259,6 @@ class UserProfileServiceTest {
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 4. updateBankAccount
-    // ════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("updateBankAccount")
@@ -316,14 +267,11 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("Cập nhật ngân hàng thành công")
         void updateBankAccount_success_savesAllFields() {
-            // Arrange
             when(userRepository.findById(1L)).thenReturn(Optional.of(sampleUser));
             when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            // Act
             userProfileService.updateBankAccount(1L, "Vietcombank", "1234567890", "HOANG THE NGOC");
 
-            // Assert
             assertThat(sampleUser.getBankName()).isEqualTo("Vietcombank");
             assertThat(sampleUser.getBankAccountNumber()).isEqualTo("1234567890");
             assertThat(sampleUser.getBankAccountHolder()).isEqualTo("HOANG THE NGOC");
@@ -333,10 +281,8 @@ class UserProfileServiceTest {
         @Test
         @DisplayName("Ném ResourceNotFoundException khi user không tồn tại")
         void updateBankAccount_userNotFound_throwsException() {
-            // Arrange
             when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
-            // Act & Assert
             assertThatThrownBy(() -> userProfileService.updateBankAccount(
                     999L, "ACB", "111222333", "TESTER"))
                     .isInstanceOf(ResourceNotFoundException.class);

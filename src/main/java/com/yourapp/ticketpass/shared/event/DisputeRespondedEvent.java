@@ -4,13 +4,6 @@ import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/**
- * Sự kiện: Người bán đã nộp giải trình cho khiếu nại.
- * Người mua cần nhận thông báo để theo dõi tiến độ phân xử.
- *
- * <p>Module: shared</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @AllArgsConstructor
 public class DisputeRespondedEvent {

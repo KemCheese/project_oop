@@ -42,9 +42,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Kiểm thử đơn vị cho {@link DisputeController}.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DisputeController Unit Tests")
 class DisputeControllerTest {

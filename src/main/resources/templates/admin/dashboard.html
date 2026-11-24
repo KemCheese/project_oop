@@ -42,13 +42,6 @@
                     align-items: flex-end;
                 }
 
-                .preset-buttons {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 8px;
-                    align-items: center;
-                }
-
                 .kpi-grid {
                     display: grid;
                     grid-template-columns: repeat(4, 1fr);
@@ -143,30 +136,6 @@
                     background-color: #f8fafc;
                 }
 
-                .pill-live {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                    padding: 2px 8px;
-                    border-radius: var(--radius-full);
-                    font-size: 11px;
-                    font-weight: 700;
-                    background-color: #eef2ff;
-                    color: #3730a3;
-                }
-
-                .pill-tax {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                    padding: 2px 8px;
-                    border-radius: var(--radius-full);
-                    font-size: 11px;
-                    font-weight: 700;
-                    background-color: #fef3c7;
-                    color: #92400e;
-                }
-
                 @media (max-width: 1024px) {
                     .kpi-grid {
                         grid-template-columns: repeat(2, 1fr);
@@ -182,16 +151,8 @@
 
             <div class="admin-header">
                 <div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                        <span class="badge" style="background-color: #0f172a; color: #fff;">
-                            <i class="fa-solid fa-lock"></i> ROLE_ADMIN
-                        </span>
-                        <span style="font-size: 13px; color: var(--color-text-muted);">
-                            Kế toán cơ sở thực thu (Cash-basis) · Múi giờ Việt Nam (UTC+7)
-                        </span>
-                    </div>
                     <h1 style="font-size: 26px; font-weight: 800; color: var(--color-brand);">
-                        Dashboard Tài Chính, Hoa Hồng &amp; Thuế
+                        Bảng Tài Chính
                     </h1>
                 </div>
 
@@ -203,13 +164,12 @@
                         <i class="fa-solid fa-shield-halved"></i> Tranh chấp
                     </a>
                     <a th:href="@{/admin/dashboard/export.csv(fromDate=${summary.fromDate},toDate=${summary.toDate})}"
-                       class="btn btn-primary btn-sm">
+                        class="btn btn-primary btn-sm">
                         <i class="fa-solid fa-file-csv"></i> Xuất báo cáo CSV
                     </a>
                 </div>
             </div>
 
-            <!-- Date Validation Error Inline -->
             <div class="alert alert-danger" th:if="${dateError != null}" style="margin-bottom: 20px;">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <span th:text="${dateError}">Khoảng ngày lọc không hợp lệ.</span>
@@ -218,86 +178,81 @@
                 </span>
             </div>
 
-            <!-- Filter Bar -->
             <div class="filter-panel">
                 <form method="get" th:action="@{/admin/dashboard}" id="dashboardFilterForm" class="filter-row">
                     <div class="filter-inputs">
                         <div>
                             <label for="fromDateInput" class="form-label" style="margin-bottom: 4px;">Từ ngày</label>
                             <input type="date" id="fromDateInput" name="fromDate" th:value="${fromDateValue}"
-                                   class="form-control" style="min-width: 160px;" />
+                                class="form-control" style="min-width: 160px;" />
                         </div>
                         <div>
                             <label for="toDateInput" class="form-label" style="margin-bottom: 4px;">Đến ngày</label>
                             <input type="date" id="toDateInput" name="toDate" th:value="${toDateValue}"
-                                   class="form-control" style="min-width: 160px;" />
+                                class="form-control" style="min-width: 160px;" />
                         </div>
                         <button type="submit" class="btn btn-primary btn-sm">
                             <i class="fa-solid fa-filter"></i> Áp dụng lọc
                         </button>
-                        <a th:href="@{/admin/dashboard}" class="btn btn-outline btn-sm">Mặc định 30 ngày</a>
-                    </div>
-
-                    <div class="preset-buttons">
-                        <span style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">Chọn nhanh:</span>
-                        <button type="button" class="btn btn-outline btn-sm" onclick="applyDatePreset(0)">Hôm nay</button>
-                        <button type="button" class="btn btn-outline btn-sm" onclick="applyDatePreset(6)">7 ngày</button>
-                        <button type="button" class="btn btn-outline btn-sm" onclick="applyDatePreset(29)">30 ngày</button>
-                        <button type="button" class="btn btn-outline btn-sm" onclick="applyDatePreset(364)">1 năm</button>
                     </div>
                 </form>
             </div>
 
-            <!-- 4 KPI Cards -->
             <div class="kpi-grid">
                 <div class="kpi-card">
                     <span class="kpi-label">Tổng Giá Trị Giao Dịch (GMV)</span>
                     <span class="kpi-value" style="color: var(--color-brand);"
-                          th:text="${#numbers.formatDecimal(summary.totalGmv, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</span>
-                    <span class="kpi-sub">
-                        Từ <strong th:text="${summary.releasedCount}">0</strong> giao dịch giải ngân thành công (RELEASED)
-                    </span>
+                        th:text="${#numbers.formatDecimal(summary.totalGmv, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</span>
                 </div>
 
                 <div class="kpi-card">
                     <span class="kpi-label">Tổng Doanh Thu Sàn</span>
                     <span class="kpi-value" style="color: var(--color-success);"
-                          th:text="${#numbers.formatDecimal(summary.totalPlatformRevenue, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</span>
+                        th:text="${#numbers.formatDecimal(summary.totalPlatformRevenue, 1, 'COMMA', 0, 'POINT')} + ' đ'">0
+                        đ</span>
                     <span class="kpi-sub">
-                        Hoa hồng: <strong th:text="${#numbers.formatDecimal(summary.totalCommission, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</strong>
-                        · Phí phạt cọc: <strong th:text="${#numbers.formatDecimal(summary.totalForfeitCut, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</strong>
+                        Hoa hồng: <strong
+                            th:text="${#numbers.formatDecimal(summary.totalCommission, 1, 'COMMA', 0, 'POINT')} + ' đ'">0
+                            đ</strong>
+                        · Phí phạt cọc: <strong
+                            th:text="${#numbers.formatDecimal(summary.totalForfeitCut, 1, 'COMMA', 0, 'POINT')} + ' đ'">0
+                            đ</strong>
                         (<span th:text="${summary.forfeitedCount}">0</span> đơn)
+                        <th:block
+                            th:if="${summary.totalLiquidationFee != null and summary.totalLiquidationFee.signum() > 0}">
+                            · Phí thanh lý: <strong
+                                th:text="${#numbers.formatDecimal(summary.totalLiquidationFee, 1, 'COMMA', 0, 'POINT')} + ' đ'">0
+                                đ</strong>
+                            (<span th:text="${summary.liquidationCount}">0</span> TK)
+                        </th:block>
                     </span>
                 </div>
 
                 <div class="kpi-card">
                     <span class="kpi-label">Thuế Khấu Trừ Giữ Hộ (Mock)</span>
                     <span class="kpi-value" style="color: #b45309;"
-                          th:text="${#numbers.formatDecimal(summary.totalTaxWithheld, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</span>
-                    <span class="kpi-sub">
-                        <span class="pill-tax"><i class="fa-solid fa-scale-balanced"></i> Tách riêng khỏi doanh thu sàn</span>
-                    </span>
+                        th:text="${#numbers.formatDecimal(summary.totalTaxWithheld, 1, 'COMMA', 0, 'POINT')} + ' đ'">0
+                        đ</span>
                 </div>
 
                 <div class="kpi-card">
                     <span class="kpi-label">Ký Quỹ Đang Tạm Giữ Hộ</span>
                     <span class="kpi-value" style="color: var(--color-primary);"
-                          th:text="${#numbers.formatDecimal(summary.liveHeldEscrowAmount, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</span>
-                    <span class="kpi-sub">
-                        <span class="pill-live"><i class="fa-solid fa-bolt"></i> Snapshot LIVE toàn sàn (không lọc ngày)</span>
-                    </span>
+                        th:text="${#numbers.formatDecimal(summary.liveHeldEscrowAmount, 1, 'COMMA', 0, 'POINT')} + ' đ'">0
+                        đ</span>
                 </div>
             </div>
 
-            <!-- Category Breakdown Table -->
             <div class="section-card">
                 <div class="section-header">
                     <div>
                         <div class="section-title">
-                            Phân Tích Giao Dịch Theo Loại Vé (<span th:text="${summary.fromDate}"></span> → <span th:text="${summary.toDate}"></span>)
+                            Phân Tích Giao Dịch Theo Loại Vé (<span th:text="${summary.fromDate}"></span> → <span
+                                th:text="${summary.toDate}"></span>)
                         </div>
                         <div style="font-size: 12px; color: var(--color-text-muted); margin-top: 2px;">
-                            Tỷ lệ hoàn tất / tranh chấp / hủy lọc theo ngày kết thúc <code>completedAt</code>; 3 cột cuối là trạng thái đang vận hành tức thời (Live).
+                            Tỷ lệ hoàn tất / tranh chấp / hủy lọc theo ngày kết thúc <code>completedAt</code>; 3 cột
+                            cuối là trạng thái đang vận hành tức thời (Live).
                         </div>
                     </div>
                 </div>
@@ -320,26 +275,33 @@
                             <tr th:each="row : ${summary.categoryBreakdowns}">
                                 <td>
                                     <strong th:text="${row.displayName}">Vé xem phim</strong>
-                                    <div style="font-size: 11px; color: var(--color-text-muted);" th:text="${row.ticketType}">MOVIE</div>
+                                    <div style="font-size: 11px; color: var(--color-text-muted);"
+                                        th:text="${row.ticketType}">MOVIE</div>
                                 </td>
                                 <td><strong th:text="${row.periodTotalCount}">0</strong> vé</td>
                                 <td>
-                                    <strong style="color: var(--color-success);" th:text="${row.completionRatePercent} + '%'">0.0%</strong>
-                                    <span style="font-size: 12px; color: var(--color-text-muted);" th:text="'(' + ${row.completedCount} + ')'">(0)</span>
+                                    <strong style="color: var(--color-success);"
+                                        th:text="${row.completionRatePercent} + '%'">0.0%</strong>
+                                    <span style="font-size: 12px; color: var(--color-text-muted);"
+                                        th:text="'(' + ${row.completedCount} + ')'">(0)</span>
                                 </td>
                                 <td>
-                                    <strong style="color: var(--color-danger);" th:text="${row.disputeRatePercent} + '%'">0.0%</strong>
-                                    <span style="font-size: 12px; color: var(--color-text-muted);" th:text="'(' + ${row.buyerWonDisputeCount} + ')'">(0)</span>
+                                    <strong style="color: var(--color-danger);"
+                                        th:text="${row.disputeRatePercent} + '%'">0.0%</strong>
+                                    <span style="font-size: 12px; color: var(--color-text-muted);"
+                                        th:text="'(' + ${row.buyerWonDisputeCount} + ')'">(0)</span>
                                 </td>
                                 <td>
-                                    <strong style="color: var(--color-text-secondary);" th:text="${row.cancelRatePercent} + '%'">0.0%</strong>
-                                    <span style="font-size: 12px; color: var(--color-text-muted);" th:text="'(' + ${row.cancelledCount} + ')'">(0)</span>
+                                    <strong style="color: var(--color-text-secondary);"
+                                        th:text="${row.cancelRatePercent} + '%'">0.0%</strong>
+                                    <span style="font-size: 12px; color: var(--color-text-muted);"
+                                        th:text="'(' + ${row.cancelledCount} + ')'">(0)</span>
                                 </td>
                                 <td style="background-color: #f8faff;" th:text="${row.liveListedCount}">0</td>
                                 <td style="background-color: #f8faff;" th:text="${row.liveInProgressCount}">0</td>
                                 <td style="background-color: #f8faff;">
                                     <span th:if="${row.liveDisputeReviewCount > 0}" class="badge badge-danger"
-                                          th:text="${row.liveDisputeReviewCount}">0</span>
+                                        th:text="${row.liveDisputeReviewCount}">0</span>
                                     <span th:unless="${row.liveDisputeReviewCount > 0}">0</span>
                                 </td>
                             </tr>
@@ -348,18 +310,20 @@
                 </div>
             </div>
 
-            <!-- Financial Ledger Table -->
             <div class="section-card">
                 <div class="section-header">
                     <div class="section-title">
-                        Sổ Cái Doanh Thu Sàn Trong Kỳ (<span th:text="${#lists.size(summary.ledgerRows)}">0</span> bút toán)
+                        Sổ Cái Doanh Thu Sàn Trong Kỳ (<span th:text="${#lists.size(summary.ledgerRows)}">0</span> bút
+                        toán)
                     </div>
                     <div style="font-size: 12px; color: var(--color-text-muted);">
-                        Dòng tịch thu cọc ghi nhận GMV = 0 đ và Thuế = 0 đ, chỉ cộng phần Phí phạt cọc vào Doanh thu sàn.
+                        Dòng tịch thu cọc ghi nhận GMV = 0 đ và Thuế = 0 đ, chỉ cộng phần Phí phạt cọc vào Doanh thu
+                        sàn.
                     </div>
                 </div>
 
-                <div th:if="${#lists.isEmpty(summary.ledgerRows)}" style="padding: 36px 20px; text-align: center; color: var(--color-text-muted);">
+                <div th:if="${#lists.isEmpty(summary.ledgerRows)}"
+                    style="padding: 36px 20px; text-align: center; color: var(--color-text-muted);">
                     <i class="fa-regular fa-folder-open" style="font-size: 28px; margin-bottom: 8px;"></i>
                     <div>Chưa có giao dịch giải ngân hay tịch thu cọc nào trong khoảng thời gian đã chọn.</div>
                 </div>
@@ -380,54 +344,42 @@
                         </thead>
                         <tbody>
                             <tr th:each="item : ${summary.ledgerRows}">
-                                <td style="white-space: nowrap;" th:text="${item.occurredAtDisplay}">01/01/2026 12:00</td>
+                                <td style="white-space: nowrap;" th:text="${item.occurredAtDisplay}">01/01/2026 12:00
+                                </td>
                                 <td>
                                     <span th:if="${item.sourceType == 'ESCROW_RELEASED'}" class="badge badge-success"
-                                          th:text="${item.sourceLabel}">Giải ngân ký quỹ</span>
+                                        th:text="${item.sourceLabel}">Giải ngân ký quỹ</span>
                                     <span th:if="${item.sourceType == 'DEPOSIT_FORFEITED'}" class="badge badge-warning"
-                                          th:text="${item.sourceLabel}">Tịch thu cọc</span>
+                                        th:text="${item.sourceLabel}">Tịch thu cọc</span>
+                                    <span th:if="${item.sourceType == 'ACCOUNT_LIQUIDATION_FEE'}"
+                                        class="badge badge-danger" th:text="${item.sourceLabel}">Phí thanh lý (Uy tín =
+                                        0)</span>
                                 </td>
                                 <td style="font-family: monospace;" th:text="${item.referenceCode}">ESC-1</td>
                                 <td>
                                     <a th:if="${item.ticketId != null}" th:href="@{/tickets/{id}(id=${item.ticketId})}"
-                                       style="font-weight: 600; color: var(--color-brand);" th:text="${item.ticketTitle}">Vé #1</a>
+                                        style="font-weight: 600; color: var(--color-brand);"
+                                        th:text="${item.ticketTitle}">Vé #1</a>
                                     <span th:unless="${item.ticketId != null}" th:text="${item.ticketTitle}">Vé</span>
-                                    <span th:if="${item.ticketType != null}" style="font-size: 11px; color: var(--color-text-muted);"
-                                          th:text="' · ' + ${item.ticketType}"></span>
+                                    <span th:if="${item.ticketType != null}"
+                                        style="font-size: 11px; color: var(--color-text-muted);"
+                                        th:text="' · ' + ${item.ticketType}"></span>
                                 </td>
                                 <td style="text-align: right; white-space: nowrap;"
-                                    th:text="${#numbers.formatDecimal(item.gmv, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                    th:text="${#numbers.formatDecimal(item.gmv, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ
+                                </td>
                                 <td style="text-align: right; white-space: nowrap; font-weight: 700; color: var(--color-success);"
-                                    th:text="${#numbers.formatDecimal(item.platformRevenue, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                    th:text="${#numbers.formatDecimal(item.platformRevenue, 1, 'COMMA', 0, 'POINT')} + ' đ'">
+                                    0 đ</td>
                                 <td style="text-align: right; white-space: nowrap; color: #b45309;"
-                                    th:text="${#numbers.formatDecimal(item.taxWithheld, 1, 'COMMA', 0, 'POINT')} + ' đ'">0 đ</td>
+                                    th:text="${#numbers.formatDecimal(item.taxWithheld, 1, 'COMMA', 0, 'POINT')} + ' đ'">
+                                    0 đ</td>
                                 <td style="max-width: 260px;" th:text="${item.note}">Bậc phí</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-
-            <script>
-                function applyDatePreset(daysBack) {
-                    const vnFormatter = new Intl.DateTimeFormat('en-CA', {
-                        timeZone: 'Asia/Ho_Chi_Minh',
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit'
-                    });
-                    const now = new Date();
-                    const todayStr = vnFormatter.format(now);
-                    const [year, month, day] = todayStr.split('-').map(Number);
-                    const utcToday = new Date(Date.UTC(year, month - 1, day));
-                    const utcFrom = new Date(utcToday.getTime() - daysBack * 86400000);
-
-                    const fromStr = utcFrom.toISOString().slice(0, 10);
-                    document.getElementById('fromDateInput').value = fromStr;
-                    document.getElementById('toDateInput').value = todayStr;
-                    document.getElementById('dashboardFilterForm').submit();
-                }
-            </script>
         </content>
     </div>
 </body>

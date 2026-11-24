@@ -22,16 +22,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * Unit test cho {@link UserQueryService} — Task C10.
- *
- * <p>Kiểm thử việc tra cứu người dùng và ánh xạ sang DTO công khai an toàn mà không làm rò rỉ
- * mật khẩu hay số tài khoản ngân hàng (RR-1).</p>
- *
- * <p>Module: user</p>
- *
- * Chủ sở hữu: Người C
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserQueryService Test - Tra cứu người dùng an toàn")
 class UserQueryServiceTest {

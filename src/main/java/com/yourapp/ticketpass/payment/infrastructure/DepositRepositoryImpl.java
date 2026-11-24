@@ -12,21 +12,10 @@ import com.yourapp.ticketpass.payment.domain.DepositStatus;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Hiện thực cổng {@link DepositRepository} bằng Spring Data JPA.
- *
- * <p>Lớp này chỉ uỷ quyền từng lời gọi xuống {@link DepositJpaRepository}, không chứa logic
- * nghiệp vụ, giữ cho tầng {@code payment.application} độc lập với Spring Data.</p>
- *
- * <p>Module: payment</p>
- *
- * <p>Chủ sở hữu: Người B</p>
- */
 @Repository
 @RequiredArgsConstructor
 public class DepositRepositoryImpl implements DepositRepository {
 
-    /** Repository Spring Data thực hiện truy vấn xuống cơ sở dữ liệu. */
     private final DepositJpaRepository jpaRepository;
 
     @Override

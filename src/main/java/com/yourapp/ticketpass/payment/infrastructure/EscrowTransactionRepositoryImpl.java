@@ -13,23 +13,10 @@ import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Hiện thực cổng {@link EscrowTransactionRepository} bằng Spring Data JPA.
- *
- * <p>Lớp này là bản lề giữa tầng domain và hạ tầng: nó chỉ uỷ quyền từng lời gọi xuống
- * {@link EscrowTransactionJpaRepository}, không chứa bất kỳ logic nghiệp vụ nào. Nhờ lớp mỏng
- * này, tầng {@code payment.application} chỉ biết tới interface trong {@code payment.domain} và
- * có thể được kiểm thử bằng một hiện thực giả trong bộ nhớ.</p>
- *
- * <p>Module: payment</p>
- *
- * <p>Chủ sở hữu: Người B</p>
- */
 @Repository
 @RequiredArgsConstructor
 public class EscrowTransactionRepositoryImpl implements EscrowTransactionRepository {
 
-    /** Repository Spring Data thực hiện truy vấn xuống cơ sở dữ liệu. */
     private final EscrowTransactionJpaRepository jpaRepository;
 
     @Override

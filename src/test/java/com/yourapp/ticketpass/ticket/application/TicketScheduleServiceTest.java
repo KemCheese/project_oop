@@ -56,9 +56,9 @@ class TicketScheduleServiceTest {
     @Test
     @DisplayName("Biên tiếp xúc 13:00-15:00 và 15:00-17:00 -> KHÔNG cảnh báo trùng")
     void testBoundaryContactReturnsEmptyConflicts() {
-        Instant t13 = Instant.parse("2026-11-18T06:00:00Z"); // 13:00 VN
-        Instant t15 = Instant.parse("2026-11-18T08:00:00Z"); // 15:00 VN
-        Instant t17 = Instant.parse("2026-11-18T10:00:00Z"); // 17:00 VN
+        Instant t13 = Instant.parse("2026-11-18T06:00:00Z");
+        Instant t15 = Instant.parse("2026-11-18T08:00:00Z");
+        Instant t17 = Instant.parse("2026-11-18T10:00:00Z");
 
         Ticket existing = ticket(1L, TicketType.MOVIE, TicketStatus.AWAITING_USE, t13, t15);
         Ticket target = ticket(2L, TicketType.MOVIE, TicketStatus.LISTED, t15, t17);
@@ -73,9 +73,9 @@ class TicketScheduleServiceTest {
     @DisplayName("Fallback đa hình khi vé cũ thiếu eventEndAt: Movie 120p, Concert 180p, Bus 240p")
     void testFallbackDefaultDurationByTicketType() {
         Instant t1300 = Instant.parse("2026-11-18T06:00:00Z");
-        Instant t1430 = Instant.parse("2026-11-18T07:30:00Z"); // nằm trong 2h Movie (13:00-15:00)
-        Instant t1530 = Instant.parse("2026-11-18T08:30:00Z"); // nằm trong 3h Concert (13:00-16:00)
-        Instant t1630 = Instant.parse("2026-11-18T09:30:00Z"); // nằm trong 4h Bus (13:00-17:00)
+        Instant t1430 = Instant.parse("2026-11-18T07:30:00Z");
+        Instant t1530 = Instant.parse("2026-11-18T08:30:00Z");
+        Instant t1630 = Instant.parse("2026-11-18T09:30:00Z");
         Instant t1800 = Instant.parse("2026-11-18T11:00:00Z");
 
         Ticket oldMovie = ticket(10L, TicketType.MOVIE, TicketStatus.DEPOSIT_LOCKED, t1300, null);
@@ -91,21 +91,21 @@ class TicketScheduleServiceTest {
 
         Ticket targetAt1530 = ticket(21L, TicketType.MOVIE, TicketStatus.LISTED, t1530, t1630);
         when(ticketRepository.findPotentialScheduleConflicts(eq(200L), any(), eq(t1630), eq(t1530), eq(21L)))
-                .thenReturn(List.of(oldMovie, oldConcert)); // oldMovie (13-15) không trùng, oldConcert (13-16) trùng
+                .thenReturn(List.of(oldMovie, oldConcert));
         List<ConflictingTicketInfo> concertConflicts = scheduleService.findConflictingTickets(200L, targetAt1530);
         assertThat(concertConflicts).hasSize(1);
         assertThat(concertConflicts.get(0).getTicketId()).isEqualTo(11L);
 
         Ticket targetAt1630 = ticket(22L, TicketType.MOVIE, TicketStatus.LISTED, t1630, t1800);
         when(ticketRepository.findPotentialScheduleConflicts(eq(200L), any(), eq(t1800), eq(t1630), eq(22L)))
-                .thenReturn(List.of(oldConcert, oldBus)); // oldConcert (13-16) không trùng, oldBus (13-17) trùng
+                .thenReturn(List.of(oldConcert, oldBus));
         List<ConflictingTicketInfo> busConflicts = scheduleService.findConflictingTickets(200L, targetAt1630);
         assertThat(busConflicts).hasSize(1);
         assertThat(busConflicts.get(0).getTicketId()).isEqualTo(12L);
     }
 
     @Test
-    @DisplayName("Loại trừ CANCELLED, RESOLVED_BUYER_WINS, DISPUTE_UNDER_REVIEW, TECHNICAL_ISSUE và chính vé đang xem")
+    @DisplayName("Loại trừ LISTED, CANCELLED, RESOLVED_BUYER_WINS, DISPUTE_UNDER_REVIEW và chính vé đang xem")
     void testExcludesNonEffectiveStatusesAndSelfTicket() {
         Instant t13 = Instant.parse("2026-11-18T06:00:00Z");
         Instant t15 = Instant.parse("2026-11-18T08:00:00Z");
@@ -113,13 +113,13 @@ class TicketScheduleServiceTest {
         Ticket target = ticket(100L, TicketType.MOVIE, TicketStatus.LISTED, t13, t15);
 
         Ticket self = ticket(100L, TicketType.MOVIE, TicketStatus.PAYMENT_ESCROWED, t13, t15);
+        Ticket listed = ticket(104L, TicketType.MOVIE, TicketStatus.LISTED, t13, t15);
         Ticket cancelled = ticket(101L, TicketType.MOVIE, TicketStatus.CANCELLED, t13, t15);
         Ticket buyerWon = ticket(102L, TicketType.MOVIE, TicketStatus.RESOLVED_BUYER_WINS, t13, t15);
         Ticket dispute = ticket(103L, TicketType.MOVIE, TicketStatus.DISPUTE_UNDER_REVIEW, t13, t15);
-        Ticket tech = ticket(104L, TicketType.MOVIE, TicketStatus.TECHNICAL_ISSUE, t13, t15);
 
         when(ticketRepository.findPotentialScheduleConflicts(eq(200L), any(), eq(t15), eq(t13), eq(100L)))
-                .thenReturn(List.of(self, cancelled, buyerWon, dispute, tech));
+                .thenReturn(List.of(self, listed, cancelled, buyerWon, dispute));
 
         assertThat(scheduleService.findConflictingTickets(200L, target)).isEmpty();
     }

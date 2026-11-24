@@ -8,14 +8,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/**
- * Repository Spring Data JPA cho bảng {@code user_starred_tickets}.
- *
- * <p>Chi tiết hạ tầng kỹ thuật, chỉ được {@link StarredTicketRepositoryImpl} sử dụng.</p>
- *
- * <p>Module: user</p>
- * <p>Chủ sở hữu: Người C</p>
- */
 public interface StarredTicketJpaRepository extends JpaRepository<StarredTicket, Long> {
 
     boolean existsByUserIdAndTicketId(Long userId, Long ticketId);

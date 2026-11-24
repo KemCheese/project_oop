@@ -15,13 +15,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * REST API Controller phục vụ tương tác Đánh sao vé (Toggle Star) qua AJAX.
- *
- * <p>Endpoint: {@code POST /api/tickets/{ticketId}/star}</p>
- * <p>Module: user</p>
- * <p>Chủ sở hữu: Người C</p>
- */
 @RestController
 @RequestMapping("/api/tickets")
 @RequiredArgsConstructor
@@ -31,13 +24,6 @@ public class StarredTicketApiController {
     private final StarredTicketUseCase starredTicketUseCase;
     private final UserQueryService userQueryService;
 
-    /**
-     * Bật/tắt trạng thái sao của vé cho người dùng hiện tại.
-     *
-     * @param ticketId  ID của vé cần thao tác
-     * @param principal thông tin người dùng đăng nhập hiện tại
-     * @return {@link ToggleStarResponse} chứa trạng thái sao mới và thông điệp
-     */
     @PostMapping("/{ticketId}/star")
     public ResponseEntity<ToggleStarResponse> toggleStar(
             @PathVariable Long ticketId,

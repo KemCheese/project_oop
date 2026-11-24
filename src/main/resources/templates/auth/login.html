@@ -88,7 +88,6 @@
             <div class="auth-wrapper">
                 <h1 class="auth-title">Đăng Nhập TicketPass</h1>
 
-                <!-- Alerts -->
                 <div class="auth-alert error" th:if="${param.error}">
                     <i class="fa-solid fa-triangle-exclamation"></i> Email hoặc mật khẩu không chính xác.
                 </div>
@@ -96,14 +95,14 @@
                     <i class="fa-solid fa-circle-check"></i> Bạn đã đăng xuất thành công khỏi hệ thống.
                 </div>
                 <div class="auth-alert success" th:if="${param.registered}">
-                    <i class="fa-solid fa-circle-check"></i> Đăng ký thành công! Bạn được cấp 100 điểm uy tín ban đầu.
+                    <i class="fa-solid fa-circle-check"></i> Đăng ký thành công! Bạn được cấp mức uy tín khởi tạo 3 (Bình thường).
                 </div>
                 <div class="auth-alert error" th:if="${param.expired}">
                     <i class="fa-solid fa-circle-exclamation"></i> Phiên đăng nhập của bạn đã hết hạn hoặc bị thu hồi do thay đổi bảo mật tài khoản. Vui lòng đăng nhập lại.
                 </div>
 
                 <form method="post" th:action="@{/login}">
-                    <!-- Preserve redirect URL for guest users -->
+
                     <input type="hidden" name="redirect" th:value="${redirect != null ? redirect : param.redirect}"
                            th:if="${(redirect != null and !redirect.isEmpty()) or (param.redirect != null and !#strings.isEmpty(param.redirect))}" />
 
@@ -128,7 +127,6 @@
                     Chưa có tài khoản? <a th:href="@{/register(redirect=${redirect != null ? redirect : param.redirect})}" style="color: var(--color-primary); font-weight: 600;">Đăng ký ngay</a>
                 </div>
 
-                <!-- Test Accounts Quick Fill Box -->
                 <div class="demo-accounts-box">
                     <div style="font-weight: 700; color: var(--color-brand); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
                         <i class="fa-solid fa-flask" style="color: var(--color-info);"></i>

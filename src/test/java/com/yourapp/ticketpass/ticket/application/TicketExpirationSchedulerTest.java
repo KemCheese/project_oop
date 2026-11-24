@@ -117,7 +117,6 @@ class TicketExpirationSchedulerTest {
 
         scheduler.scanExpiredListedTickets();
 
-        // ticket1 bị lỗi nhưng ticket2 vẫn được xử lý bình thường
         verify(ticketStateMachineService).transition(202L, TicketStatus.CANCELLED);
 
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);

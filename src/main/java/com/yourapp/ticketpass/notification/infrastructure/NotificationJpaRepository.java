@@ -9,12 +9,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/**
- * Spring Data JPA Repository cho entity Notification.
- *
- * <p>Module: notification</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 public interface NotificationJpaRepository extends JpaRepository<Notification, Long> {
 
     @Query("SELECT n FROM Notification n WHERE n.userId = :userId ORDER BY n.createdAt DESC")

@@ -100,7 +100,7 @@ class ValidateTicketServiceTest {
     @DisplayName("validateForPurchase dùng Clock tiêm vào để chặn vé đã quá giờ")
     void testValidateForPurchaseUsesInjectedClock() {
         Ticket expiredTicket = buildValidMovieTicket();
-        expiredTicket.setEventStartAt(fixedClock.instant()); // không sau now
+        expiredTicket.setEventStartAt(fixedClock.instant());
 
         when(ticketRepository.findById(1L)).thenReturn(Optional.of(expiredTicket));
 

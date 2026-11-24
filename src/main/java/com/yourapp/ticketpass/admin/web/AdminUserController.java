@@ -20,13 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Controller quản trị người dùng, theo dõi điểm uy tín / cảnh báo gian lận và thực hiện
- * khóa, cấm hoặc mở khóa tài khoản dành riêng cho vai trò {@code ROLE_ADMIN}.
- *
- * <p>Module: admin</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Controller
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
@@ -36,16 +29,6 @@ public class AdminUserController {
     private final AccountSecurityService accountSecurityService;
     private final UserQueryService userQueryService;
 
-    /**
-     * Hiển thị danh sách người dùng kèm điểm uy tín, lịch sử thua tranh chấp và nút kiểm duyệt.
-     *
-     * @param keyword từ khóa tìm theo email, họ tên hoặc số điện thoại
-     * @param statusRaw chuỗi {@link UserStatus} tùy chọn
-     * @param warningOnlyRaw tham số {@code true/false} lọc tài khoản có cờ cảnh báo rủi ro
-     * @param principal thông tin Admin đang đăng nhập
-     * @param model model Thymeleaf
-     * @return tên view {@code admin/users}
-     */
     @GetMapping
     public String listUsers(@RequestParam(value = "keyword", required = false) String keyword,
                             @RequestParam(value = "status", required = false) String statusRaw,
@@ -78,33 +61,6 @@ public class AdminUserController {
         return "admin/users";
     }
 
-    /**
-     * Tạm khóa tài khoản người dùng ({@link UserStatus#SUSPENDED}) và đá văng mọi phiên hoạt động.
-     */
-    @PostMapping("/{id}/suspend")
-    public String suspendUser(@PathVariable("id") Long targetUserId,
-                              @RequestParam(value = "reason", required = false) String reason,
-                              @RequestParam(value = "keyword", required = false) String keyword,
-                              @RequestParam(value = "status", required = false) String statusFilter,
-                              @RequestParam(value = "warningOnly", required = false) Boolean warningOnly,
-                              Principal principal,
-                              RedirectAttributes redirectAttributes) {
-        return handleModeration(
-                targetUserId,
-                UserStatus.SUSPENDED,
-                reason,
-                "Đã tạm khóa tài khoản #" + targetUserId + " và hủy toàn bộ phiên đăng nhập.",
-                keyword,
-                statusFilter,
-                warningOnly,
-                principal,
-                redirectAttributes
-        );
-    }
-
-    /**
-     * Cấm tài khoản người dùng ({@link UserStatus#BANNED}) và đá văng mọi phiên hoạt động.
-     */
     @PostMapping("/{id}/ban")
     public String banUser(@PathVariable("id") Long targetUserId,
                           @RequestParam(value = "reason", required = false) String reason,
@@ -117,7 +73,7 @@ public class AdminUserController {
                 targetUserId,
                 UserStatus.BANNED,
                 reason,
-                "Đã cấm tài khoản #" + targetUserId + " và hủy toàn bộ phiên đăng nhập.",
+                "Đã khóa tài khoản #" + targetUserId + " và hủy toàn bộ phiên đăng nhập.",
                 keyword,
                 statusFilter,
                 warningOnly,
@@ -126,9 +82,6 @@ public class AdminUserController {
         );
     }
 
-    /**
-     * Mở khóa / kích hoạt lại tài khoản ({@link UserStatus#ACTIVE}) và phát thông báo hệ thống.
-     */
     @PostMapping("/{id}/activate")
     public String activateUser(@PathVariable("id") Long targetUserId,
                                @RequestParam(value = "reason", required = false) String reason,

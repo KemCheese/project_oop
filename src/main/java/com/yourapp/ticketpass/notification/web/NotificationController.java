@@ -16,12 +16,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- * Controller hiển thị trang quản lý thông báo toàn màn hình (/notifications).
- *
- * <p>Module: notification</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Controller
 @RequestMapping("/notifications")
 @RequiredArgsConstructor

@@ -45,17 +45,13 @@ import com.yourapp.ticketpass.user.domain.UserRole;
 import com.yourapp.ticketpass.user.domain.UserStatus;
 import com.yourapp.ticketpass.user.infrastructure.StarredTicketJpaRepository;
 import com.yourapp.ticketpass.user.infrastructure.UserJpaRepository;
+import com.yourapp.ticketpass.wallet.domain.AccountLiquidationRepository;
+import com.yourapp.ticketpass.wallet.domain.WalletRepository;
+import com.yourapp.ticketpass.wallet.domain.WalletTransactionRepository;
+import com.yourapp.ticketpass.wallet.infrastructure.AccountLiquidationJpaRepository;
+import com.yourapp.ticketpass.wallet.infrastructure.WalletJpaRepository;
+import com.yourapp.ticketpass.wallet.infrastructure.WalletTransactionJpaRepository;
 
-/**
- * Lớp cơ sở tích hợp hệ thống toàn diện (System Test Harness) cho toàn sàn TicketPass.
- *
- * <p>Cung cấp môi trường SpringBootTest với H2 Database in-memory, MockMvc và các
- * factory methods chuẩn hoá để khởi tạo dữ liệu kiểm thử nhanh chóng, an toàn.
- * Sử dụng cơ chế ID Tracking để chỉ dọn dẹp các bản ghi do test sinh ra, bảo toàn nguyên
- * vẹn dữ liệu mẫu ban đầu của DataInitializer (chống ô nhiễm dữ liệu giữa các test suite).</p>
- *
- * <p>Module sở hữu: shared / root (Quản trị bởi Dev C).</p>
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -107,6 +103,24 @@ public abstract class AbstractSystemIntegrationTest {
     protected ReputationJpaRepository reputationJpaRepository;
 
     @Autowired
+    protected AccountLiquidationRepository accountLiquidationRepository;
+
+    @Autowired
+    protected AccountLiquidationJpaRepository accountLiquidationJpaRepository;
+
+    @Autowired
+    protected WalletRepository walletRepository;
+
+    @Autowired
+    protected WalletJpaRepository walletJpaRepository;
+
+    @Autowired
+    protected WalletTransactionRepository walletTransactionRepository;
+
+    @Autowired
+    protected WalletTransactionJpaRepository walletTransactionJpaRepository;
+
+    @Autowired
     protected StarredTicketRepository starredTicketRepository;
 
     @Autowired
@@ -126,9 +140,6 @@ public abstract class AbstractSystemIntegrationTest {
         cleanAllTestData();
     }
 
-    /**
-     * Dọn dẹp có chọn lọc chỉ các bản ghi do test tạo ra, bảo vệ dữ liệu khởi tạo mặc định.
-     */
     protected void cleanAllTestData() {
         try {
             if (!createdDisputeIds.isEmpty()) {
@@ -151,19 +162,22 @@ public abstract class AbstractSystemIntegrationTest {
             }
             if (!createdUserIds.isEmpty()) {
                 for (Long uid : createdUserIds) {
+                    accountLiquidationRepository.findByTriggerKey("ZERO_REPUTATION_" + uid)
+                            .ifPresent(l -> accountLiquidationJpaRepository.deleteById(l.getId()));
+                    walletRepository.findByUserId(uid).ifPresent(w -> {
+                        walletTransactionRepository.findByWalletIdOrderByCreatedAtDesc(w.getId())
+                                .forEach(tx -> walletTransactionJpaRepository.deleteById(tx.getId()));
+                        walletJpaRepository.deleteById(w.getId());
+                    });
                     reputationRepository.findByUserId(uid).ifPresent(r -> reputationJpaRepository.deleteById(r.getId()));
                 }
                 userJpaRepository.deleteAllById(createdUserIds);
                 createdUserIds.clear();
             }
         } catch (Exception ignored) {
-            // Safe fallback during test execution
         }
     }
 
-    /**
-     * Tạo và lưu người dùng hợp lệ vào CSDL, ghi nhận ID để dọn dẹp sau test.
-     */
     protected User createAndSaveUser(String email, String rawPassword, UserRole role) {
         Optional<User> existing = userRepository.findByEmail(email);
         if (existing.isPresent()) {
@@ -185,11 +199,10 @@ public abstract class AbstractSystemIntegrationTest {
         User savedUser = userRepository.save(user);
         createdUserIds.add(savedUser.getId());
 
-        // Khởi tạo điểm uy tín ban đầu nếu chưa có
         if (reputationRepository.findByUserId(savedUser.getId()).isEmpty()) {
             UserReputationScore rep = new UserReputationScore();
             rep.setUserId(savedUser.getId());
-            rep.setScore(new BigDecimal("100.00"));
+            rep.setScore(new BigDecimal("3.00"));
             rep.setTotalTransactions(0);
             rep.setSuccessfulTransactions(0);
             rep.setCancelledListings(0);
@@ -203,9 +216,6 @@ public abstract class AbstractSystemIntegrationTest {
         return savedUser;
     }
 
-    /**
-     * Tạo và lưu vé sự kiện vào CSDL, ghi nhận ID để dọn dẹp sau test.
-     */
     protected Ticket createAndSaveTicket(Long sellerId, String title, TicketType type, BigDecimal price, TicketStatus status) {
         Ticket ticket = new Ticket();
         ticket.setSellerId(sellerId);
@@ -229,9 +239,6 @@ public abstract class AbstractSystemIntegrationTest {
         return savedTicket;
     }
 
-    /**
-     * Tạo và lưu giao dịch Escrow vào CSDL, ghi nhận ID để dọn dẹp sau test.
-     */
     protected EscrowTransaction createAndSaveEscrow(Long ticketId, Long buyerId, BigDecimal amount, EscrowStatus status) {
         Ticket ticket = ticketRepository.findById(ticketId).orElse(null);
         Long sellerId = ticket != null ? ticket.getSellerId() : 1L;
@@ -256,9 +263,6 @@ public abstract class AbstractSystemIntegrationTest {
         return savedEscrow;
     }
 
-    /**
-     * Tạo và lưu khoản Cọc 50% của người bán vào CSDL, ghi nhận ID để dọn dẹp sau test.
-     */
     protected Deposit createAndSaveDeposit(Long ticketId, Long sellerId, BigDecimal amount, DepositStatus status) {
         Deposit deposit = new Deposit();
         deposit.setTicketId(ticketId);
@@ -274,9 +278,6 @@ public abstract class AbstractSystemIntegrationTest {
         return savedDeposit;
     }
 
-    /**
-     * Tạo và lưu hồ sơ khiếu nại (Dispute) vào CSDL, ghi nhận ID để dọn dẹp sau test.
-     */
     protected Dispute createAndSaveDispute(Long ticketId, Long buyerId, Long sellerId, DisputeReason reason, DisputeStatus status) {
         Dispute dispute = new Dispute();
         dispute.setTicketId(ticketId);

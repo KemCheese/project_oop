@@ -67,7 +67,7 @@ class FileDisputeUseCaseTest {
     @DisplayName("Gate Dispute: Nộp khiếu nại sau giờ sự kiện mà KHÔNG có bằng chứng -> Từ chối (AC-03.2)")
     void testGateDisputeWithoutEvidenceRejected() {
         Instant now = Instant.now();
-        Instant eventStartAt = now.minus(Duration.ofMinutes(10)); // sự kiện đã bắt đầu 10 phút trước
+        Instant eventStartAt = now.minus(Duration.ofMinutes(10));
 
         Ticket ticket = new Ticket();
         ticket.setId(501L);
@@ -124,7 +124,7 @@ class FileDisputeUseCaseTest {
     @DisplayName("Gate Dispute: Nộp khiếu nại sau giờ sự kiện có VIDEO hợp lệ -> Chấp nhận & cấp Seller 24h (AC-03.2, AC-03.3)")
     void testGateDisputeWithVideoSuccess() {
         Instant now = Instant.now();
-        Instant eventStartAt = now.minus(Duration.ofMinutes(10)); // sau giờ diễn 10 phút, còn trong buffer 30m
+        Instant eventStartAt = now.minus(Duration.ofMinutes(10));
 
         Ticket ticket = new Ticket();
         ticket.setId(503L);
@@ -171,11 +171,8 @@ class FileDisputeUseCaseTest {
         assertNotNull(result);
         assertEquals(888L, result.getId());
         assertEquals(DisputeStatus.OPEN, result.getStatus());
-        // AC-03.3: Seller được cấp 24 giờ phản hồi
         assertTrue(result.getSellerResponseDeadline().isAfter(now.plus(Duration.ofHours(23))));
-        // Khóa tiền vé
         verify(ticketStateMachineService).transition(503L, TicketStatus.DISPUTE_UNDER_REVIEW);
-        // Lưu video
         verify(fileStorageService).store(eq("disputes"), eq("gate_scan_failure.mp4"), any(), anyLong(), eq("video/mp4"));
         verify(disputeEvidenceRepository).save(any(DisputeEvidence.class));
     }

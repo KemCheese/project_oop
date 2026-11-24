@@ -4,6 +4,7 @@ import com.yourapp.ticketpass.shared.storage.FileStorageException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -11,9 +12,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -187,6 +190,38 @@ class GlobalExceptionHandlerTest {
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(res.getBody()).isNotNull();
         assertThat(res.getBody().getMessage()).contains("sự cố lưu trữ");
+    }
+
+    @Test
+    @DisplayName("Xử lý NoResourceFoundException (route không tồn tại): trả về HTTP 404 thay vì 500")
+    void handleNoResourceFound_returns404() {
+        request.addHeader("Accept", "application/json");
+        NoResourceFoundException ex = new NoResourceFoundException(HttpMethod.POST, "/admin/users/1/suspend");
+
+        Object response = exceptionHandler.handleNoResourceFound(ex, request);
+
+        assertThat(response).isInstanceOf(ResponseEntity.class);
+        @SuppressWarnings("unchecked")
+        ResponseEntity<ErrorResponse> res = (ResponseEntity<ErrorResponse>) response;
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(res.getBody()).isNotNull();
+        assertThat(res.getBody().getStatus()).isEqualTo(404);
+    }
+
+    @Test
+    @DisplayName("Xử lý HttpRequestMethodNotSupportedException: trả về HTTP 405 Method Not Allowed")
+    void handleMethodNotSupported_returns405() {
+        request.addHeader("Accept", "application/json");
+        HttpRequestMethodNotSupportedException ex = new HttpRequestMethodNotSupportedException("DELETE");
+
+        Object response = exceptionHandler.handleMethodNotSupported(ex, request);
+
+        assertThat(response).isInstanceOf(ResponseEntity.class);
+        @SuppressWarnings("unchecked")
+        ResponseEntity<ErrorResponse> res = (ResponseEntity<ErrorResponse>) response;
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+        assertThat(res.getBody()).isNotNull();
+        assertThat(res.getBody().getStatus()).isEqualTo(405);
     }
 
     @Test

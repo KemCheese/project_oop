@@ -9,12 +9,6 @@ import com.yourapp.ticketpass.wallet.domain.WalletStatus;
 import lombok.Builder;
 import lombok.Getter;
 
-/**
- * DTO phản hồi thông tin tổng quan ví điện tử.
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @Builder
 public class WalletResponse {
@@ -29,7 +23,6 @@ public class WalletResponse {
         if (wallet == null) {
             return null;
         }
-        // Định dạng số tài khoản ví ảo dạng chuẩn fintech TP-xxxx-xxxx
         String accountNum = String.format("TP-%04d-%04d", (wallet.getUserId() * 17) % 10000, wallet.getId() % 10000);
         return WalletResponse.builder()
                 .id(wallet.getId())

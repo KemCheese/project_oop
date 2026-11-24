@@ -15,9 +15,6 @@ import com.yourapp.ticketpass.payment.domain.PaymentRequest;
 import com.yourapp.ticketpass.payment.domain.PaymentResult;
 import com.yourapp.ticketpass.shared.config.PaymentGatewayConfig;
 
-/**
- * Unit test cho {@link ManualTransferGatewayAdapter}.
- */
 class ManualTransferGatewayAdapterTest {
 
     private PaymentGatewayConfig config;

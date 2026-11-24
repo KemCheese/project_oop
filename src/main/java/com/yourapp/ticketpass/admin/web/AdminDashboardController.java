@@ -18,13 +18,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- * Controller cung cấp Dashboard Tài chính (Doanh thu, Hoa hồng, Thuế, Snapshot Escrow)
- * và xuất báo cáo CSV dành riêng cho vai trò {@code ROLE_ADMIN}.
- *
- * <p>Module: admin</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Controller
 @RequestMapping("/admin/dashboard")
 @RequiredArgsConstructor
@@ -34,18 +27,6 @@ public class AdminDashboardController {
 
     private final AdminDashboardService adminDashboardService;
 
-    /**
-     * Hiển thị màn hình thống kê doanh thu, hoa hồng, thuế và tỷ lệ giao dịch theo loại vé.
-     *
-     * <p>Nếu người dùng nhập sai định dạng ngày hoặc {@code fromDate > toDate}, lỗi được hiển thị
-     * inline ngay trên view {@code admin/dashboard} kèm dữ liệu mặc định 30 ngày gần nhất thay vì
-     * trả trang lỗi chung.</p>
-     *
-     * @param fromDateRaw ngày bắt đầu ({@code YYYY-MM-DD}) tùy chọn
-     * @param toDateRaw ngày kết thúc ({@code YYYY-MM-DD}) tùy chọn
-     * @param model model Thymeleaf
-     * @return tên view {@code admin/dashboard}
-     */
     @GetMapping
     public String dashboard(@RequestParam(value = "fromDate", required = false) String fromDateRaw,
                             @RequestParam(value = "toDate", required = false) String toDateRaw,
@@ -88,13 +69,6 @@ public class AdminDashboardController {
         return "admin/dashboard";
     }
 
-    /**
-     * Xuất sổ cái doanh thu sàn ra file CSV mã hóa UTF-8 BOM an toàn cho Excel.
-     *
-     * @param fromDateRaw ngày bắt đầu ({@code YYYY-MM-DD}) tùy chọn
-     * @param toDateRaw ngày kết thúc ({@code YYYY-MM-DD}) tùy chọn
-     * @return phản hồi tải file CSV ({@code text/csv; charset=UTF-8})
-     */
     @GetMapping("/export.csv")
     public ResponseEntity<byte[]> exportCsv(
             @RequestParam(value = "fromDate", required = false) String fromDateRaw,

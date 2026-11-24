@@ -9,12 +9,6 @@ import com.yourapp.ticketpass.wallet.domain.WalletRepository;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Hiện thực domain port {@link WalletRepository} ủy quyền sang {@link WalletJpaRepository}.
- *
- * <p>Module: wallet</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Repository
 @RequiredArgsConstructor
 public class WalletRepositoryImpl implements WalletRepository {

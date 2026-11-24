@@ -5,13 +5,6 @@ import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/**
- * Sự kiện: Người mua đã nạp tiền ký quỹ thành công (PAYMENT_ESCROWED).
- * Người bán cần nhận thông báo để vào đóng cọc 50%.
- *
- * <p>Module: shared</p>
- * <p>Chủ sở hữu: Người C (Dev C)</p>
- */
 @Getter
 @AllArgsConstructor
 public class TicketEscrowPaidEvent {

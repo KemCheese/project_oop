@@ -1,13 +1,5 @@
 <!DOCTYPE html>
-<!--
-  Layout khung của toàn bộ giao diện TicketPass.
-  Bao gồm: Header (Navbar), Footer, và bộ Design Tokens (CSS Variables) chuẩn tập trung.
 
-  Cách dùng ở các view con:
-      <div th:replace="~{layout/base :: layout('Tiêu đề trang', ~{::content})}">
-          <content> Nội dung chính của trang </content>
-      </div>
--->
 <html xmlns:th="http://www.thymeleaf.org" th:fragment="layout(title, content)" lang="vi">
 
 <head>
@@ -15,52 +7,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${title}">TicketPass</title>
 
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Font Awesome 6.4.0 for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* ==========================================================================
-           DESIGN SYSTEM TOKENS (Quy chuẩn thiết kế tập trung)
-           ========================================================================== */
         :root {
-            /* Typography */
+
             --font-base: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-            /* Brand & Primary Actions */
             --color-brand: #0f172a;
-            /* Slate 900 - Nền nã, uy quyền, cao cấp */
+
             --color-brand-hover: #1e293b;
             --color-brand-surface: #f1f5f9;
 
             --color-primary: #e71a0f;
-            /* CGV Red - Sắc nét, hành động mua/đăng vé */
+
             --color-primary-hover: #cc150b;
             --color-primary-surface: #fef2f2;
             --color-primary-border: #fecaca;
 
             --color-accent: #ea580c;
-            /* Orange 600 - Điểm nhấn giá tiền, giao dịch */
+
             --color-accent-hover: #c2410c;
 
-            /* Semantic Status */
             --color-success: #16a34a;
-            /* Xanh lá - Hoàn tất, vé khả dụng, uy tín cao */
+
             --color-success-hover: #15803d;
             --color-success-surface: #f0fdf4;
             --color-success-border: #bbf7d0;
 
             --color-warning: #d97706;
-            /* Vàng hổ phách - Chờ cọc, chờ xác nhận */
+
             --color-warning-surface: #fffbeb;
             --color-warning-border: #fde68a;
 
             --color-danger: #dc2626;
-            /* Đỏ - Tranh chấp, hủy vé, cảnh báo lừa đảo */
+
             --color-danger-surface: #fef2f2;
             --color-danger-border: #fecaca;
 
@@ -68,40 +53,32 @@
             --color-info-surface: #f0f9ff;
             --color-info-border: #bae6fd;
 
-            /* Background & Surfaces */
             --color-bg: #fcf9f8;
-            /* Slate 50 - Nền sáng hiện đại, thanh thoát */
+
             --color-surface: #ffffff;
-            /* Trắng thuần cho Card và Container */
+
             --color-border: #e2e8f0;
-            /* Slate 200 */
+
             --color-border-hover: #cbd5e1;
 
-            /* Text */
             --color-text-main: #0f172a;
-            /* Slate 900 */
-            --color-text-secondary: #475569;
-            /* Slate 600 */
-            --color-text-muted: #64748b;
-            /* Slate 500 */
 
-            /* Layout & Radius (Fluid Adaptive: tự co giãn theo mọi kích thước màn hình) */
+            --color-text-secondary: #475569;
+
+            --color-text-muted: #64748b;
+
             --container-max-width: min(92vw, 1600px);
             --radius-sm: 6px;
             --radius-md: 10px;
             --radius-lg: 16px;
             --radius-full: 9999px;
 
-            /* Shadows & Motion (Restrained Motion: 2/10) */
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
             --shadow-hover: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
             --transition-base: 150ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* ==========================================================================
-           RESET & GLOBAL STYLES
-           ========================================================================== */
         *,
         *::before,
         *::after {
@@ -133,9 +110,6 @@
             display: block;
         }
 
-        /* ==========================================================================
-           HEADER & NAVIGATION (CGV Inspired Trust-First Header)
-           ========================================================================== */
         .site-header {
             background-color: var(--color-surface);
             position: sticky;
@@ -218,7 +192,6 @@
             font-size: 14px;
         }
 
-        /* Header Search Form */
         .nav-search-form {
             display: flex;
             align-items: center;
@@ -286,7 +259,6 @@
             transform: scale(0.95);
         }
 
-        /* Search Suggestions Dropdown */
         .search-suggestions-dropdown {
             position: absolute;
             top: calc(100% + 8px);
@@ -447,9 +419,6 @@
             box-shadow: 0 4px 8px rgba(231, 26, 15, 0.3);
         }
 
-        /* ==========================================================================
-           MAIN CONTENT AREA
-           ========================================================================== */
         .site-main {
             flex: 1;
             width: 100%;
@@ -458,10 +427,6 @@
             padding: 32px 24px;
         }
 
-        /* ==========================================================================
-           COMMON UI COMPONENTS
-           ========================================================================== */
-        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -556,7 +521,6 @@
             min-height: 48px;
         }
 
-        /* Cards */
         .card {
             background-color: var(--color-surface);
             border: 1px solid var(--color-border);
@@ -589,7 +553,6 @@
             background-color: #fafbfc;
         }
 
-        /* Badges */
         .badge {
             display: inline-flex;
             align-items: center;
@@ -643,7 +606,6 @@
             border: 1px solid var(--color-border);
         }
 
-        /* Form Controls */
         .form-group {
             margin-bottom: 20px;
         }
@@ -699,7 +661,6 @@
             font-weight: 500;
         }
 
-        /* Alerts */
         .alert {
             padding: 14px 18px;
             border-radius: var(--radius-md);
@@ -734,7 +695,6 @@
             border: 1px solid var(--color-info-border);
         }
 
-        /* Empty State */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -764,9 +724,6 @@
             margin: 0 auto 20px auto;
         }
 
-        /* ==========================================================================
-           FOOTER
-           ========================================================================== */
         .site-footer {
             border-top: 1px solid var(--color-border);
             background-color: var(--color-surface);
@@ -801,7 +758,6 @@
             color: var(--color-primary);
         }
 
-        /* Responsive Tablet & Small Laptop (Tránh vỡ dòng / Nav Wrap trên iPad và Laptop nhỏ) */
         @media (max-width: 1120px) and (min-width: 769px) {
             .nav-search-form {
                 max-width: 220px;
@@ -822,7 +778,6 @@
             }
         }
 
-        /* Responsive Mobile */
         @media (max-width: 768px) {
             :root {
                 --container-max-width: 100%;
@@ -858,7 +813,6 @@
             }
         }
 
-        /* Ẩn header và footer mặc định trên Home page để tập trung vào Logo, Slogan và nút duy nhất */
         body.home-page .site-header,
         body.home-page .site-footer {
             display: none !important;
@@ -869,9 +823,6 @@
             max-width: 100% !important;
         }
 
-        /* ==========================================================================
-           CINEMATIC PAGE TRANSITION OVERLAY (Học tập từ rophim10.tv)
-           ========================================================================== */
         .cinematic-transition-overlay {
             position: fixed;
             inset: 0;
@@ -987,9 +938,6 @@
             }
         }
 
-        /* ==========================================================================
-           NOTIFICATION SYSTEM (Anti-Slop Design Taste Popover)
-           ========================================================================== */
         .notif-wrapper {
             position: relative;
             display: inline-flex;
@@ -1313,7 +1261,6 @@
             color: var(--color-primary);
         }
 
-        /* Admin Top-Bar Dropdown Menu */
         .admin-dropdown-wrapper {
             position: relative;
             display: inline-flex;
@@ -1361,10 +1308,6 @@
 
 <body>
 
-    <!-- =========================================================================
-         CINEMATIC PAGE TRANSITION OVERLAY (Học tập từ rophim10.tv)
-         Hiển thị Logo + Slogan và thanh tiến trình ngâm trong thời gian quy định
-         ========================================================================= -->
     <div id="cinematicTransitionOverlay" class="cinematic-transition-overlay" aria-hidden="true">
         <div class="cinematic-transition-backdrop"></div>
         <div class="cinematic-transition-content">
@@ -1379,9 +1322,8 @@
         </div>
     </div>
 
-    <!-- Header Navigation -->
     <header class="site-header">
-        <!-- Top Bar -->
+
         <div class="top-bar">
             <div class="top-menu">
                 <a th:href="@{/tickets}"><i class="fa-solid fa-tags"></i> Sàn vé</a>
@@ -1404,7 +1346,7 @@
                 </th:block>
 
                 <th:block th:if="${#authorization.expression('isAuthenticated()')}">
-                    <!-- Notification Bell & Dropdown Popover -->
+
                     <div class="notif-wrapper" id="notifWrapper">
                         <button type="button" class="notif-bell-btn" id="notifBellBtn" aria-expanded="false"
                             aria-label="Thông báo" title="Thông báo">
@@ -1457,18 +1399,15 @@
             </div>
         </div>
 
-        <!-- Dotted Separator -->
         <div class="header-separator"></div>
 
-        <!-- Main Nav -->
         <div class="main-nav">
-            <!-- Logo -->
+
             <a th:href="@{/tickets}" class="logo">
                 <span class="logo-text">TicketPass</span>
                 <i class="fa-solid fa-asterisk logo-icon"></i>
             </a>
 
-            <!-- Search Form -->
             <form th:action="@{/tickets}" method="get" class="nav-search-form" role="search" id="navSearchForm">
                 <i class="fa-solid fa-magnifying-glass nav-search-icon"></i>
                 <input type="text" name="keyword" th:value="${keyword}" placeholder="Tìm sự kiện, phim, tuyến xe..."
@@ -1479,11 +1418,9 @@
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
 
-                <!-- Autocomplete Dropdown -->
                 <div class="search-suggestions-dropdown" id="navSuggestionsDropdown" style="display: none;"></div>
             </form>
 
-            <!-- Menu Items: 3 loai ve chuan cua san -->
             <div class="nav-items">
                 <a th:href="@{/tickets(keyword=${keyword != null and !keyword.isEmpty() ? keyword : null})}"
                     th:classappend="${selectedType == null and tickets != null} ? 'active' : ''">Tất cả vé</a>
@@ -1501,19 +1438,16 @@
                 </a>
             </div>
 
-            <!-- Post Ticket CTA -->
             <a th:href="@{/tickets/new}" class="post-ticket-btn">
                 <i class="fa-solid fa-plus-circle"></i> Đăng vé ngay
             </a>
         </div>
     </header>
 
-    <!-- Main Content Injection -->
     <main class="site-main">
         <div th:replace="${content}"></div>
     </main>
 
-    <!-- Footer -->
     <footer class="site-footer">
         <div class="site-footer-inner">
             <div>
@@ -1525,12 +1459,11 @@
                 <a th:href="@{/tickets/new}">Đăng vé</a>
             </div>
             <div>
-                TicketPass &copy; 2026. Bảo vệ thanh toán ký quỹ và cọc 50%.
+                TicketPass &copy; 2026
             </div>
         </div>
     </footer>
 
-    <!-- Live Search Autocomplete Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             function setupLiveSearch(inputEl, dropdownEl, formEl) {
@@ -1594,7 +1527,6 @@
                     }, 250);
                 });
 
-                // Keyboard navigation
                 inputEl.addEventListener('keydown', function (e) {
                     const items = dropdownEl.querySelectorAll('.suggestion-item');
                     if (dropdownEl.style.display === 'none' || items.length === 0) return;
@@ -1628,14 +1560,12 @@
                     });
                 }
 
-                // Click outside to close
                 document.addEventListener('click', function (e) {
                     if (!inputEl.contains(e.target) && !dropdownEl.contains(e.target)) {
                         dropdownEl.style.display = 'none';
                     }
                 });
 
-                // Focus on input opens dropdown if keyword has value
                 inputEl.addEventListener('focus', function () {
                     if (this.value.trim() && dropdownEl.innerHTML.trim()) {
                         dropdownEl.style.display = 'flex';
@@ -1643,14 +1573,12 @@
                 });
             }
 
-            // Initialize for Navbar search
             setupLiveSearch(
                 document.getElementById('navSearchInput'),
                 document.getElementById('navSuggestionsDropdown'),
                 document.getElementById('navSearchForm')
             );
 
-            // Initialize for In-page search if present
             setupLiveSearch(
                 document.getElementById('pageSearchInput'),
                 document.getElementById('pageSuggestionsDropdown'),
@@ -1659,14 +1587,9 @@
         });
     </script>
 
-    <!-- =========================================================================
-         TRANSITION ENGINE SCRIPT (CẤU HÌNH 1 DÒNG DUY NHẤT)
-         ========================================================================= -->
     <script>
-        // =========================================================================
-        // CẤU HÌNH THỜI GIAN CHUYỂN CẢNH (ĐƠN VỊ: MILI-GIÂY) - SỬA TẠI DÒNG NÀY:
+
         const TRANSITION_HOLD_MS = 2000;
-        // =========================================================================
 
         (function () {
             const overlay = document.getElementById('cinematicTransitionOverlay');
@@ -1678,13 +1601,11 @@
                     return;
                 }
 
-                // Reset tiến trình
                 progressBar.style.transition = 'none';
                 progressBar.style.width = '0%';
                 overlay.classList.add('is-active');
                 overlay.setAttribute('aria-hidden', 'false');
 
-                // Kích hoạt animation thanh tiến trình chạy theo đúng thời gian cấu hình
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         progressBar.style.transition = `width ${TRANSITION_HOLD_MS}ms cubic-bezier(0.15, 0.6, 0.2, 1)`;
@@ -1692,7 +1613,6 @@
                     });
                 });
 
-                // Ngâm đúng TRANSITION_HOLD_MS rồi chuyển hướng mượt mà
                 setTimeout(() => {
                     if (onComplete) {
                         onComplete();
@@ -1703,13 +1623,8 @@
                 }, TRANSITION_HOLD_MS);
             }
 
-            // Expose hàm ra window để các nút hay template có thể gọi trực tiếp
             window.triggerCinematicTransition = triggerCinematicTransition;
 
-            // Tìm kiếm vé: submit tự nhiên tức thì, không ép delay slogan để tối ưu trải nghiệm người dùng
-            // (Đã loại bỏ delay 2s theo yêu cầu nghiệp vụ)
-
-            // Bắt sự kiện click vào các liên kết có gắn data-transition="true" (như nút Khám phá vé)
             document.addEventListener('click', function (e) {
                 const targetLink = e.target.closest('a[data-transition="true"]');
                 if (targetLink && targetLink.href) {
@@ -1724,12 +1639,9 @@
             });
         })();
 
-        /* ==========================================================================
-           NOTIFICATION SYSTEM JS (Polling & Dropdown Controller)
-           ========================================================================== */
         (function () {
             const notifWrapper = document.getElementById('notifWrapper');
-            if (!notifWrapper) return; // Khách chưa login -> return
+            if (!notifWrapper) return;
 
             const bellBtn = document.getElementById('notifBellBtn');
             const dropdown = document.getElementById('notifDropdown');
