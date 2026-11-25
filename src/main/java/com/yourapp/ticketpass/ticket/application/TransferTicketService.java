@@ -1,5 +1,7 @@
 package com.yourapp.ticketpass.ticket.application;
 
+import com.yourapp.ticketpass.notification.application.NotificationService;
+import com.yourapp.ticketpass.notification.domain.NotificationType;
 import com.yourapp.ticketpass.reputation.application.ReputationPolicyService;
 import com.yourapp.ticketpass.shared.event.TicketDepositLockedEvent;
 import com.yourapp.ticketpass.shared.event.TicketEscrowPaidEvent;
@@ -14,9 +16,11 @@ import com.yourapp.ticketpass.ticket.domain.TransferInstruction;
 import com.yourapp.ticketpass.ticket.domain.ValidationResult;
 import com.yourapp.ticketpass.ticket.web.dto.CreateTicketRequest;
 import com.yourapp.ticketpass.ticket.web.dto.TicketResponse;
+import com.yourapp.ticketpass.user.domain.StarredTicketRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -43,6 +47,12 @@ public class TransferTicketService {
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private ReputationPolicyService reputationPolicyService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private StarredTicketRepository starredTicketRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private NotificationService notificationService;
 
     @Transactional
     public TicketResponse createListing(CreateTicketRequest request, Long sellerId) {
@@ -163,6 +173,26 @@ public class TransferTicketService {
         }
 
         stateMachineService.transition(ticketId, TicketStatus.CANCELLED);
+
+        if (starredTicketRepository != null && notificationService != null) {
+            try {
+                List<Long> watchers = starredTicketRepository.findUserIdsByTicketId(ticketId);
+                if (watchers != null) {
+                    for (Long watcherId : watchers) {
+                        if (watcherId != null && !watcherId.equals(sellerId)) {
+                            notificationService.sendNotification(
+                                    watcherId,
+                                    "Vé theo dõi đã bị gỡ khỏi sàn",
+                                    String.format("Vé \"%s\" mà bạn đang theo dõi đã được người bán gỡ khỏi sàn.",
+                                            ticket.getTitle()),
+                                    NotificationType.SYSTEM,
+                                    "/tickets/" + ticketId);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     private String formatTransferInstruction(TransferInstruction instruction) {

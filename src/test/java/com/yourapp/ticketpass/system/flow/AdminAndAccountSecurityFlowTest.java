@@ -288,6 +288,8 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
 
         EscrowTransaction releasedEscrow = createAndSaveEscrow(
                 releasedTicket.getId(), buyer.getId(), new BigDecimal("1000000"), EscrowStatus.RELEASED);
+        releasedEscrow.setBuyerCommission(new BigDecimal("25000"));
+        releasedEscrow.setSellerCommission(new BigDecimal("25000"));
         releasedEscrow.setTotalCommission(new BigDecimal("50000"));
         releasedEscrow.setTaxWithheld(new BigDecimal("15000"));
         releasedEscrow.setAmountHeld(new BigDecimal("1000000"));
@@ -330,9 +332,9 @@ class AdminAndAccountSecurityFlowTest extends AbstractSystemIntegrationTest {
         AdminDashboardSummaryResponse actual =
                 (AdminDashboardSummaryResponse) dashResult.getModelAndView().getModel().get("summary");
         assertThat(actual.getTotalGmv()).isEqualByComparingTo(baseline.getTotalGmv().add(new BigDecimal("1000000")));
-        assertThat(actual.getTotalCommission()).isEqualByComparingTo(baseline.getTotalCommission().add(new BigDecimal("50000")));
+        assertThat(actual.getTotalCommission()).isEqualByComparingTo(baseline.getTotalCommission().add(new BigDecimal("25000")));
         assertThat(actual.getTotalForfeitCut()).isEqualByComparingTo(baseline.getTotalForfeitCut().add(new BigDecimal("35000")));
-        assertThat(actual.getTotalPlatformRevenue()).isEqualByComparingTo(baseline.getTotalPlatformRevenue().add(new BigDecimal("85000")));
+        assertThat(actual.getTotalPlatformRevenue()).isEqualByComparingTo(baseline.getTotalPlatformRevenue().add(new BigDecimal("60000")));
         assertThat(actual.getTotalTaxWithheld()).isEqualByComparingTo(baseline.getTotalTaxWithheld().add(new BigDecimal("15000")));
         assertThat(actual.getLiveHeldEscrowAmount()).isEqualByComparingTo(baseline.getLiveHeldEscrowAmount().add(new BigDecimal("450000")));
 

@@ -31,7 +31,7 @@ class DisputeSellerWinsPayoutFlowTest extends AbstractSystemIntegrationTest {
     private ReviewDisputeUseCase reviewDisputeUseCase;
 
     @Test
-    @DisplayName("Admin phán quyết SELLER_WINS: Tiền giải ngân cho Seller, Cọc hoàn trả, Buyer -15đ, Seller +1đ uy tín")
+    @DisplayName("Admin phán quyết SELLER_WINS: Tiền giải ngân cho Seller, Cọc hoàn trả, Buyer -2đ, Seller giữ nguyên điểm")
     void shouldExecuteSellerWinsDisputeResolutionFlow() {
         User seller = createAndSaveUser("honest_seller@test.com", "Password123@", UserRole.USER);
         User buyer = createAndSaveUser("malicious_buyer@test.com", "Password123@", UserRole.USER);

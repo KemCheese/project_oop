@@ -35,7 +35,7 @@ class HappyPathEscrowTransactionFlowTest extends AbstractSystemIntegrationTest {
     private TicketStateMachineService ticketStateMachineService;
 
     @Test
-    @DisplayName("Chu trình giao dịch vé thành công: Tiền giải ngân cho Seller, Cọc hoàn trả, Điểm uy tín 2 bên tăng +2.00")
+    @DisplayName("Chu trình giao dịch vé thành công: Tiền giải ngân cho Seller, Cọc hoàn trả, Điểm uy tín 2 bên tăng +1 (3 -> 4)")
     void shouldExecuteFullHappyPathTransactionLifecycleSuccessfully() {
         User seller = createAndSaveUser("happy_seller@test.com", "Password123@", UserRole.USER);
         User buyer = createAndSaveUser("happy_buyer@test.com", "Password123@", UserRole.USER);

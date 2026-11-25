@@ -32,6 +32,35 @@ public class TicketRepositoryImpl implements TicketRepository {
     }
 
     @Override
+    public Optional<Ticket> findByIdWithLock(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return ticketJpaRepository.findByIdWithLock(id);
+    }
+
+    @Override
+    public boolean existsActiveByProviderOrderCode(String providerOrderCode, Collection<TicketStatus> statuses) {
+        if (providerOrderCode == null || providerOrderCode.isBlank() || statuses == null || statuses.isEmpty()) {
+            return false;
+        }
+        return ticketJpaRepository.existsActiveByProviderOrderCode(providerOrderCode.trim(), statuses);
+    }
+
+    @Override
+    public boolean existsActiveByEventStartVenueAndSeat(Instant eventStartAt,
+                                                        String venue,
+                                                        String seatInfo,
+                                                        Collection<TicketStatus> statuses) {
+        if (eventStartAt == null || venue == null || venue.isBlank()
+                || seatInfo == null || seatInfo.isBlank() || statuses == null || statuses.isEmpty()) {
+            return false;
+        }
+        return ticketJpaRepository.existsActiveByEventStartVenueAndSeat(
+                eventStartAt, venue.trim(), seatInfo.trim(), statuses);
+    }
+
+    @Override
     public List<Ticket> findBySellerId(Long sellerId) {
         return ticketJpaRepository.findBySellerId(sellerId);
     }

@@ -138,11 +138,19 @@ public class FileDisputeUseCase {
                 DisputeStatus.OPEN,
                 DisputeStatus.AWAITING_SELLER_RESPONSE,
                 DisputeStatus.SELLER_RESPONDED,
-                DisputeStatus.UNDER_REVIEW
+                DisputeStatus.UNDER_REVIEW,
+                DisputeStatus.EXPIRED
         ));
         if (hasActiveDispute) {
             throw new BusinessRuleViolationException(
                     "Vé #" + ticketId + " đã có khiếu nại đang hiệu lực. Không thể mở thêm khiếu nại mới.");
+        }
+
+        boolean hasWithdrawnDispute = disputeRepository.existsByTicketIdAndStatusIn(
+                ticketId, List.of(DisputeStatus.WITHDRAWN));
+        if (hasWithdrawnDispute) {
+            throw new BusinessRuleViolationException(
+                    "Vé #" + ticketId + " đã từng có khiếu nại được rút trước đó. Không thể mở lại khiếu nại mới.");
         }
 
         DisputeWindowPolicy policy = resolvePolicy(ticket.getTicketType());

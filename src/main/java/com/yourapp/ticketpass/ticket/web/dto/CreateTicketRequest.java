@@ -50,7 +50,7 @@ public class CreateTicketRequest {
     private BigDecimal originalPrice;
 
     @NotNull
-    @DecimalMin("1000")
+    @DecimalMin("10000")
     private BigDecimal salePrice;
 
     @Size(max = 100)

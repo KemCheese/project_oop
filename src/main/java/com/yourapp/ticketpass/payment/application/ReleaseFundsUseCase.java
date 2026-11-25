@@ -72,6 +72,11 @@ public class ReleaseFundsUseCase {
         BigDecimal buyerCommission = commission.getBuyerShare();
 
         BigDecimal sellerGross = salePrice.subtract(sellerCommission);
+        if (sellerGross.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessRuleViolationException(
+                    "Số tiền giải ngân sau hoa hồng phải lớn hơn 0 (salePrice=" + salePrice
+                    + ", sellerCommission=" + sellerCommission + ").");
+        }
         TaxWithholding tax = taxWithholdingService.withhold(sellerGross, sellerId);
         BigDecimal taxWithheld = tax.getTaxAmount();
         BigDecimal sellerNetPayout = tax.getNetAmount();

@@ -29,6 +29,7 @@ public class TicketScheduleService {
             TicketStatus.PAYMENT_ESCROWED,
             TicketStatus.DEPOSIT_LOCKED,
             TicketStatus.AWAITING_USE,
+            TicketStatus.DISPUTE_UNDER_REVIEW,
             TicketStatus.AUTO_COMPLETE,
             TicketStatus.RESOLVED_SELLER_WINS
     ));
@@ -153,6 +154,7 @@ public class TicketScheduleService {
             case PAYMENT_ESCROWED -> "Đã ký quỹ (chờ người bán khóa cọc)";
             case DEPOSIT_LOCKED -> "Người bán đã khóa cọc";
             case AWAITING_USE -> "Đã mở mã vé QR · Chờ sự kiện";
+            case DISPUTE_UNDER_REVIEW -> "Đang trong quá trình xử lý khiếu nại";
             case AUTO_COMPLETE -> "Giao dịch đã hoàn tất";
             case RESOLVED_SELLER_WINS -> "Đã chốt sở hữu (tranh chấp đã đóng)";
             default -> status.name();

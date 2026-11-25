@@ -358,7 +358,7 @@ class UpdateReputationUseCaseTest {
         }
 
         @Test
-        @DisplayName("14. recordDepositTimeout: trừ 1 điểm (3 -> 2) và tăng disputesLost")
+        @DisplayName("14. recordDepositTimeout: trừ 1 điểm (3 -> 2) và tăng cancelledListings")
         void depositTimeout_minus1Point() {
             Long sellerId = 1L;
             UserReputationScore sellerScore = createSampleScore(sellerId, new BigDecimal("3.00"), 5, 5);
@@ -367,7 +367,8 @@ class UpdateReputationUseCaseTest {
             updateReputationUseCase.recordDepositTimeout(sellerId, 101L);
 
             assertThat(sellerScore.getScore()).isEqualByComparingTo("2.00");
-            assertThat(sellerScore.getDisputesLost()).isEqualTo(1);
+            assertThat(sellerScore.getCancelledListings()).isEqualTo(1);
+            assertThat(sellerScore.getDisputesLost()).isEqualTo(0);
             verify(reputationRepository).save(sellerScore);
             verify(eventPublisher, never()).publishEvent(any(ReputationDepletedEvent.class));
         }

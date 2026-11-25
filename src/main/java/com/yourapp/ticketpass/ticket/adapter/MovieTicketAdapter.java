@@ -47,11 +47,6 @@ public class MovieTicketAdapter implements TicketAdapter {
     }
 
     @Override
-    public boolean requiresEmailForwardProof() {
-        return false;
-    }
-
-    @Override
     public ValidationResult validateListing(Ticket ticket) {
         List<String> errors = new ArrayList<>();
 
