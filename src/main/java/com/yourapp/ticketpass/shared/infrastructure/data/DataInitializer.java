@@ -113,15 +113,15 @@ public class DataInitializer implements CommandLineRunner {
         User seller = userRepository.save(createUser(
                 "seller@test.com", encodedPassword, "Nguyễn Văn Bán", "0901234567",
                 UserRole.USER, UserStatus.ACTIVE, "Vietcombank", "0071001234567", "NGUYEN VAN BAN"));
-        createReputation(seller.getId(), new BigDecimal("4.00"), 3, 3, 0,
-                new BigDecimal("3500000.00"), now.minus(Duration.ofDays(2)));
+        createReputation(seller.getId(), new BigDecimal("4.00"), 1, 1, 0,
+                new BigDecimal("1200000.00"), now.minus(Duration.ofDays(2)));
         walletService.topUp(seller.getId(), new BigDecimal("2000000.00"), "Số dư ban đầu phục vụ nộp cọc bán vé");
 
         User buyer = userRepository.save(createUser(
                 "buyer@test.com", encodedPassword, "Trần Thị Mua", "0912345678",
                 UserRole.USER, UserStatus.ACTIVE, "Techcombank", "19036543210987", "TRAN THI MUA"));
-        createReputation(buyer.getId(), new BigDecimal("3.00"), 1, 1, 0,
-                BigDecimal.ZERO, now.minus(Duration.ofDays(2)));
+        createReputation(buyer.getId(), new BigDecimal("3.00"), 0, 0, 0,
+                BigDecimal.ZERO, null);
         walletService.topUp(buyer.getId(), new BigDecimal("5000000.00"), "Số dư ban đầu phục vụ mua vé ký quỹ");
 
         User vipSeller = userRepository.save(createUser(
@@ -140,7 +140,7 @@ public class DataInitializer implements CommandLineRunner {
         User riskyUser = userRepository.save(createUser(
                 "risky_user@test.com", encodedPassword, "Phạm Văn Rủi Ro", "0933111222",
                 UserRole.USER, UserStatus.ACTIVE, "VPBank", "123456789012", "PHAM VAN RUI RO"));
-        createReputation(riskyUser.getId(), new BigDecimal("1.00"), 3, 1, 2,
+        createReputation(riskyUser.getId(), new BigDecimal("1.00"), 4, 2, 2,
                 new BigDecimal("400000.00"), now.minus(Duration.ofDays(3)));
         walletService.topUp(riskyUser.getId(), new BigDecimal("500000.00"), "Số dư kiểm thử cảnh báo & thanh lý ví");
 
@@ -216,7 +216,7 @@ public class DataInitializer implements CommandLineRunner {
 
         Instant completedAt = now.minus(Duration.ofDays(2));
         Ticket t6 = buildTicket(
-                vipSeller.getId(), buyer.getId(), TicketType.CONCERT, TicketStatus.AUTO_COMPLETE,
+                vipSeller.getId(), seller.getId(), TicketType.CONCERT, TicketStatus.AUTO_COMPLETE,
                 "Vé Concert Acoustic Mùa Thu 2026 - Hàng Ghế Đầu (Đã hoàn tất)",
                 "Acoustic Mùa Thu Live Show 2026",
                 "Cung Văn Hóa Hữu Nghị Việt Xô, Hà Nội", "Khu A - Hàng 02 - Ghế 08",
@@ -229,7 +229,7 @@ public class DataInitializer implements CommandLineRunner {
         t6.setDisputeWindowClosesAt(t6.getEventStartAt().plus(Duration.ofMinutes(30)));
         t6.setCompletedAt(completedAt);
         t6 = ticketRepository.save(t6);
-        EscrowTransaction e6 = createReleasedEscrow(t6, buyer.getId(), vipSeller.getId(), completedAt);
+        EscrowTransaction e6 = createReleasedEscrow(t6, seller.getId(), vipSeller.getId(), completedAt);
         Deposit d6 = createRefundedDeposit(t6, vipSeller.getId(), completedAt);
         t6.setEscrowTransactionId(e6.getId());
         t6.setDepositId(d6.getId());

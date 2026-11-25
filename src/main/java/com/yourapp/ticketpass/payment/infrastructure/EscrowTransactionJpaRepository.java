@@ -34,4 +34,10 @@ public interface EscrowTransactionJpaRepository extends JpaRepository<EscrowTran
     @Query("SELECT COALESCE(SUM(e.amountHeld), 0.00) FROM EscrowTransaction e " +
            "WHERE e.status = com.yourapp.ticketpass.payment.domain.EscrowStatus.HELD")
     BigDecimal sumHeldAmount();
+
+    @Query("SELECT COUNT(e) FROM EscrowTransaction e " +
+           "WHERE e.buyerId = :buyerId AND e.status = com.yourapp.ticketpass.payment.domain.EscrowStatus.PENDING " +
+           "AND e.createdAt >= :activeSince")
+    long countActivePendingByBuyerId(@Param("buyerId") Long buyerId,
+                                     @Param("activeSince") Instant activeSince);
 }

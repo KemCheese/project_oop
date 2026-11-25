@@ -4,17 +4,41 @@ import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketStatus;
 import com.yourapp.ticketpass.ticket.domain.TicketType;
 import com.yourapp.ticketpass.ticket.domain.TicketTypeStatusCount;
+import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface TicketJpaRepository extends JpaRepository<Ticket, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM Ticket t WHERE t.id = :id")
+    Optional<Ticket> findByIdWithLock(@Param("id") Long id);
+
+    @Query("SELECT COUNT(t) > 0 FROM Ticket t " +
+           "WHERE t.status IN :statuses " +
+           "AND t.providerOrderCode IS NOT NULL " +
+           "AND LOWER(TRIM(t.providerOrderCode)) = LOWER(TRIM(:providerOrderCode))")
+    boolean existsActiveByProviderOrderCode(@Param("providerOrderCode") String providerOrderCode,
+                                            @Param("statuses") Collection<TicketStatus> statuses);
+
+    @Query("SELECT COUNT(t) > 0 FROM Ticket t " +
+           "WHERE t.status IN :statuses " +
+           "AND t.eventStartAt = :eventStartAt " +
+           "AND t.venue IS NOT NULL AND LOWER(TRIM(t.venue)) = LOWER(TRIM(:venue)) " +
+           "AND t.seatInfo IS NOT NULL AND LOWER(TRIM(t.seatInfo)) = LOWER(TRIM(:seatInfo))")
+    boolean existsActiveByEventStartVenueAndSeat(@Param("eventStartAt") Instant eventStartAt,
+                                                 @Param("venue") String venue,
+                                                 @Param("seatInfo") String seatInfo,
+                                                 @Param("statuses") Collection<TicketStatus> statuses);
 
     List<Ticket> findBySellerId(Long sellerId);
 

@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @Component
@@ -29,6 +31,9 @@ public class DepositTimeoutScheduler {
 
     @Autowired(required = false)
     private ApplicationEventPublisher eventPublisher;
+
+    @Autowired(required = false)
+    private PlatformTransactionManager transactionManager;
 
     @Value("${app.deposit.timeout-minutes:30}")
     private long timeoutMinutes = 30;
@@ -55,9 +60,10 @@ public class DepositTimeoutScheduler {
                         "[DepositTimeoutScheduler] Vé #{} quá hạn nạp cọc (escrowedAt={}). Tiến hành hoàn tiền, huỷ vé và phạt người bán.",
                         ticketId, ticket.getEscrowedAt());
 
-                refundBuyerUseCase.refundFull(ticketId, "Quá hạn nạp cọc 30 phút (Seller Deposit Timeout - UC-04b)");
-
-                ticketStateMachineService.transition(ticketId, TicketStatus.CANCELLED);
+                runInTransaction(() -> {
+                    refundBuyerUseCase.refundFull(ticketId, "Quá hạn nạp cọc 30 phút (Seller Deposit Timeout - UC-04b)");
+                    ticketStateMachineService.transition(ticketId, TicketStatus.CANCELLED);
+                });
 
                 updateReputationUseCase.recordDepositTimeout(sellerId, ticketId);
 
@@ -76,6 +82,14 @@ public class DepositTimeoutScheduler {
                 log.error("[DepositTimeoutScheduler] Lỗi khi xử lý timeout nạp cọc cho vé #{}: {}", ticketId,
                         e.getMessage(), e);
             }
+        }
+    }
+
+    private void runInTransaction(Runnable action) {
+        if (transactionManager != null) {
+            new TransactionTemplate(transactionManager).executeWithoutResult(status -> action.run());
+        } else {
+            action.run();
         }
     }
 }

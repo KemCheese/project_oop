@@ -105,7 +105,7 @@ class TicketScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("Loại trừ LISTED, CANCELLED, RESOLVED_BUYER_WINS, DISPUTE_UNDER_REVIEW và chính vé đang xem")
+        @DisplayName("Loại trừ LISTED, CANCELLED, RESOLVED_BUYER_WINS và chính vé đang xem")
         void testExcludesNonEffectiveStatusesAndSelfTicket() {
                 Instant t13 = Instant.parse("2026-11-18T06:00:00Z");
                 Instant t15 = Instant.parse("2026-11-18T08:00:00Z");
@@ -116,24 +116,24 @@ class TicketScheduleServiceTest {
                 Ticket listed = ticket(104L, TicketType.MOVIE, TicketStatus.LISTED, t13, t15);
                 Ticket cancelled = ticket(101L, TicketType.MOVIE, TicketStatus.CANCELLED, t13, t15);
                 Ticket buyerWon = ticket(102L, TicketType.MOVIE, TicketStatus.RESOLVED_BUYER_WINS, t13, t15);
-                Ticket dispute = ticket(103L, TicketType.MOVIE, TicketStatus.DISPUTE_UNDER_REVIEW, t13, t15);
 
                 when(ticketRepository.findPotentialScheduleConflicts(eq(200L), any(), eq(t15), eq(t13), eq(100L)))
-                                .thenReturn(List.of(self, listed, cancelled, buyerWon, dispute));
+                                .thenReturn(List.of(self, listed, cancelled, buyerWon));
 
                 assertThat(scheduleService.findConflictingTickets(200L, target)).isEmpty();
         }
 
         @Test
-        @DisplayName("Chạm biên 5 trạng thái buyer hiệu lực đều phát hiện trùng và format khung giờ VN")
+        @DisplayName("Chạm biên 6 trạng thái buyer hiệu lực đều phát hiện trùng và format khung giờ VN")
         void testAllActiveBuyerStatusesAreDetected() {
                 Instant t13 = Instant.parse("2026-11-18T06:00:00Z");
                 Instant t15 = Instant.parse("2026-11-18T08:00:00Z");
                 Ticket target = ticket(999L, TicketType.CONCERT, TicketStatus.LISTED, t13, t15);
 
-                List<Ticket> activeFive = List.of(
+                List<Ticket> activeSix = List.of(
                                 ticket(1L, TicketType.MOVIE, TicketStatus.PAYMENT_ESCROWED, t13, t15),
                                 ticket(2L, TicketType.MOVIE, TicketStatus.DEPOSIT_LOCKED, t13, t15),
+                                ticket(3L, TicketType.MOVIE, TicketStatus.DISPUTE_UNDER_REVIEW, t13, t15),
                                 ticket(4L, TicketType.MOVIE, TicketStatus.AWAITING_USE, t13, t15),
                                 ticket(5L, TicketType.MOVIE, TicketStatus.AUTO_COMPLETE, t13, t15),
                                 ticket(6L, TicketType.MOVIE, TicketStatus.RESOLVED_SELLER_WINS, t13, t15));
@@ -141,10 +141,10 @@ class TicketScheduleServiceTest {
                 when(ticketRepository.findPotentialScheduleConflicts(
                                 eq(200L), eq(TicketScheduleService.ACTIVE_BUYER_SCHEDULE_STATUSES), eq(t15), eq(t13),
                                 eq(999L)))
-                                .thenReturn(activeFive);
+                                .thenReturn(activeSix);
 
                 List<ConflictingTicketInfo> conflicts = scheduleService.findConflictingTickets(200L, target);
-                assertThat(conflicts).hasSize(5);
+                assertThat(conflicts).hasSize(6);
                 assertThat(conflicts.get(0).getFormattedTimeRange()).isEqualTo("13:00 - 15:00 18/11/2026");
         }
 }

@@ -21,14 +21,14 @@ import com.yourapp.ticketpass.user.domain.UserRole;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("Hệ Thống - Luồng 4: Seller Quá Hạn Nạp Cọc 30 Phút (UC-04b -> Tự Hủy Vé, Hoàn 100% Tiền Buyer, Phạt -15đ Seller)")
+@DisplayName("Hệ Thống - Luồng 4: Seller Quá Hạn Nạp Cọc 30 Phút (UC-04b -> Tự Hủy Vé, Hoàn 100% Tiền Buyer, Phạt -1đ Seller)")
 class DepositTimeoutCancellationFlowTest extends AbstractSystemIntegrationTest {
 
     @Autowired
     private DepositTimeoutScheduler depositTimeoutScheduler;
 
     @Test
-    @DisplayName("Scheduler quét vé quá hạn cọc 30p: Vé chuyển CANCELLED, Escrow hoàn tiền, Seller bị phạt -15đ uy tín")
+    @DisplayName("Scheduler quét vé quá hạn cọc 30p: Vé chuyển CANCELLED, Escrow hoàn tiền, Seller bị phạt -1đ uy tín")
     void shouldCancelTicketAndRefundBuyerWhenSellerDepositTimesOut() {
         User seller = createAndSaveUser("flaky_seller@test.com", "Password123@", UserRole.USER);
         User buyer = createAndSaveUser("waiting_buyer@test.com", "Password123@", UserRole.USER);

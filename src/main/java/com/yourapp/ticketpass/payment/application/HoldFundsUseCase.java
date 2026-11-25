@@ -55,6 +55,11 @@ public class HoldFundsUseCase {
         if (reputationPolicyService != null) {
             reputationPolicyService.assertCanTransact(buyerId, salePrice, "mua vé");
         }
+        Instant activePendingCutoff = Instant.now().minus(java.time.Duration.ofMinutes(15));
+        if (escrowTransactionRepository.countActivePendingByBuyerId(buyerId, activePendingCutoff) >= 2) {
+            throw new BusinessRuleViolationException(
+                    "Bạn đang có tối đa 2 phiên thanh toán chờ xử lý. Vui lòng hoàn tất hoặc hủy phiên trước khi giữ thêm vé mới.");
+        }
         Optional<EscrowTransaction> existingOpt = escrowTransactionRepository.findByTicketId(ticketId);
         EscrowTransaction tx;
         if (existingOpt.isPresent()) {

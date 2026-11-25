@@ -67,4 +67,12 @@ public class EscrowTransactionRepositoryImpl implements EscrowTransactionReposit
         BigDecimal total = jpaRepository.sumHeldAmount();
         return total != null ? total : BigDecimal.ZERO;
     }
+
+    @Override
+    public long countActivePendingByBuyerId(Long buyerId, Instant activeSince) {
+        if (buyerId == null || activeSince == null) {
+            return 0L;
+        }
+        return jpaRepository.countActivePendingByBuyerId(buyerId, activeSince);
+    }
 }

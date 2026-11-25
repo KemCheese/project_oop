@@ -72,6 +72,8 @@ class AdminDashboardServiceTest {
                 released.setTicketId(11L);
                 released.setStatus(EscrowStatus.RELEASED);
                 released.setSalePrice(new BigDecimal("1000000"));
+                released.setBuyerCommission(new BigDecimal("25000"));
+                released.setSellerCommission(new BigDecimal("25000"));
                 released.setTotalCommission(new BigDecimal("50000"));
                 released.setTaxWithheld(new BigDecimal("15000"));
                 released.setAmountHeld(new BigDecimal("1000000"));
@@ -139,11 +141,11 @@ class AdminDashboardServiceTest {
                 AdminDashboardSummaryResponse summary = service.getDashboardSummary(from, to);
 
                 assertThat(summary.getTotalGmv()).isEqualByComparingTo("1000000");
-                assertThat(summary.getTotalCommission()).isEqualByComparingTo("50000");
+                assertThat(summary.getTotalCommission()).isEqualByComparingTo("25000");
                 assertThat(summary.getTotalForfeitCut()).isEqualByComparingTo("35000");
                 assertThat(summary.getTotalLiquidationFee()).isEqualByComparingTo("50000");
                 assertThat(summary.getLiquidationCount()).isEqualTo(1);
-                assertThat(summary.getTotalPlatformRevenue()).isEqualByComparingTo("135000");
+                assertThat(summary.getTotalPlatformRevenue()).isEqualByComparingTo("110000");
                 assertThat(summary.getTotalTaxWithheld()).isEqualByComparingTo("15000");
                 assertThat(summary.getLiveHeldEscrowAmount()).isEqualByComparingTo("450000");
 

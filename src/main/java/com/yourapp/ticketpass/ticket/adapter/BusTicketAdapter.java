@@ -47,11 +47,6 @@ public class BusTicketAdapter implements TicketAdapter {
     }
 
     @Override
-    public boolean requiresEmailForwardProof() {
-        return false;
-    }
-
-    @Override
     public ValidationResult validateListing(Ticket ticket) {
         List<String> errors = new ArrayList<>();
 
@@ -78,9 +73,9 @@ public class BusTicketAdapter implements TicketAdapter {
         List<String> steps = List.of(
                 "San da mo khoa anh QR an cua ve cho ban.",
                 "Vao muc 'Ve da mua' de xem anh QR.",
-                "Su dung anh QR nay de len xe tai " + (ticket.getVenue() != null ? ticket.getVenue() : "diem don") + ".",
-                "Mang theo CCCD/CMND de doi chieu voi thong tin hanh khach tren ve."
-        );
+                "Su dung anh QR nay de len xe tai " + (ticket.getVenue() != null ? ticket.getVenue() : "diem don")
+                        + ".",
+                "Mang theo CCCD/CMND de doi chieu voi thong tin hanh khach tren ve.");
 
         String note = "Han su dung: truoc gio xe xuat ben ghi tren ve. "
                 + "Nen co mat truoc gio xuat ben it nhat 15 phut. "

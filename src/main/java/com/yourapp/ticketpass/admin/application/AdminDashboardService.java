@@ -104,7 +104,7 @@ public class AdminDashboardService {
         BigDecimal totalTaxWithheld = BigDecimal.ZERO;
         for (EscrowTransaction escrow : releasedEscrows) {
             totalGmv = totalGmv.add(nullSafeZero(escrow.getSalePrice()));
-            totalCommission = totalCommission.add(nullSafeZero(escrow.getTotalCommission()));
+            totalCommission = totalCommission.add(nullSafeZero(escrow.getSellerCommission()));
             totalTaxWithheld = totalTaxWithheld.add(nullSafeZero(escrow.getTaxWithheld()));
         }
 
@@ -300,7 +300,7 @@ public class AdminDashboardService {
                     .ticketTitle(title)
                     .ticketType(ticket != null ? ticket.getTicketType() : null)
                     .gmv(nullSafeZero(escrow.getSalePrice()))
-                    .platformRevenue(nullSafeZero(escrow.getTotalCommission()))
+                    .platformRevenue(nullSafeZero(escrow.getSellerCommission()))
                     .taxWithheld(nullSafeZero(escrow.getTaxWithheld()))
                     .note(note)
                     .build());

@@ -10,6 +10,7 @@ import com.yourapp.ticketpass.payment.domain.EscrowTransaction;
 import com.yourapp.ticketpass.payment.domain.EscrowTransactionRepository;
 import com.yourapp.ticketpass.shared.event.ReputationDepletedEvent;
 import com.yourapp.ticketpass.shared.event.TicketAutoCancelledDueToBanEvent;
+import com.yourapp.ticketpass.shared.event.UserAccountModeratedEvent;
 import com.yourapp.ticketpass.ticket.application.TicketStateMachineService;
 import com.yourapp.ticketpass.ticket.domain.Ticket;
 import com.yourapp.ticketpass.ticket.domain.TicketRepository;
@@ -70,6 +71,26 @@ public class AccountLiquidationOrchestrator {
                 ? event.getDescription()
                 : "Điểm uy tín giảm về 0.";
         executeZeroReputationLiquidation(event.getUserId(), triggerReason);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void onUserAccountModerated(UserAccountModeratedEvent event) {
+        if (event == null || event.getUserId() == null || event.getAdminId() == null) {
+            return;
+        }
+        if (!"BANNED".equals(event.getTargetStatusName())) {
+            return;
+        }
+        List<Ticket> sellerTickets = ticketRepository.findBySellerId(event.getUserId());
+        if (sellerTickets == null || sellerTickets.isEmpty()) {
+            return;
+        }
+        for (Ticket ticket : sellerTickets) {
+            if (ticket != null && ticket.getId() != null && ticket.getStatus() == TicketStatus.LISTED) {
+                ticketStateMachineService.transition(ticket.getId(), TicketStatus.CANCELLED);
+            }
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

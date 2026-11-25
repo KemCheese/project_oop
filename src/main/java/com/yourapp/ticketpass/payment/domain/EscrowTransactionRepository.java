@@ -24,4 +24,6 @@ public interface EscrowTransactionRepository {
     List<EscrowTransaction> findReleasedBetween(Instant startInclusive, Instant endExclusive);
 
     BigDecimal sumHeldAmount();
+
+    long countActivePendingByBuyerId(Long buyerId, Instant activeSince);
 }

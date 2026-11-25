@@ -13,6 +13,15 @@ public interface TicketRepository {
 
     Optional<Ticket> findById(Long id);
 
+    Optional<Ticket> findByIdWithLock(Long id);
+
+    boolean existsActiveByProviderOrderCode(String providerOrderCode, Collection<TicketStatus> statuses);
+
+    boolean existsActiveByEventStartVenueAndSeat(Instant eventStartAt,
+                                                 String venue,
+                                                 String seatInfo,
+                                                 Collection<TicketStatus> statuses);
+
     List<Ticket> findBySellerId(Long sellerId);
 
     List<Ticket> findByBuyerId(Long buyerId);

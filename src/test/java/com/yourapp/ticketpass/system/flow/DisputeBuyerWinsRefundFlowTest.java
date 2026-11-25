@@ -32,7 +32,7 @@ class DisputeBuyerWinsRefundFlowTest extends AbstractSystemIntegrationTest {
     private ReviewDisputeUseCase reviewDisputeUseCase;
 
     @Test
-    @DisplayName("Admin phán quyết BUYER_WINS: Escrow hoàn trả, Cọc bị tịch thu bồi thường, Seller -15đ, Buyer +1đ uy tín")
+    @DisplayName("Admin phán quyết BUYER_WINS: Escrow hoàn trả, Cọc bị tịch thu bồi thường, Seller -2đ, Buyer giữ nguyên điểm")
     void shouldExecuteBuyerWinsDisputeResolutionFlow() {
         User seller = createAndSaveUser("dishonest_seller@test.com", "Password123@", UserRole.USER);
         User buyer = createAndSaveUser("victimized_buyer@test.com", "Password123@", UserRole.USER);

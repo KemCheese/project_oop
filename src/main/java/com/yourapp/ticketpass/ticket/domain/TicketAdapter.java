@@ -12,8 +12,6 @@ public interface TicketAdapter {
 
     boolean requiresSeatInfo();
 
-    boolean requiresEmailForwardProof();
-
     ValidationResult validateListing(Ticket ticket);
 
     Duration defaultEventDuration();

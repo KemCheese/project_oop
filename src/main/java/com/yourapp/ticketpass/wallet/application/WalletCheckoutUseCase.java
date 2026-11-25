@@ -82,7 +82,7 @@ public class WalletCheckoutUseCase {
 
     @Transactional
     public CheckoutResult payEscrowWithWallet(Long ticketId, Long buyerId, boolean confirmOverlap) {
-        Ticket ticket = ticketRepository.findById(ticketId)
+        Ticket ticket = ticketRepository.findByIdWithLock(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         if (buyerId.equals(ticket.getSellerId())) {
@@ -137,7 +137,7 @@ public class WalletCheckoutUseCase {
 
     @Transactional
     public CheckoutResult payDepositWithWallet(Long ticketId, Long sellerId) {
-        Ticket ticket = ticketRepository.findById(ticketId)
+        Ticket ticket = ticketRepository.findByIdWithLock(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", ticketId));
 
         if (!sellerId.equals(ticket.getSellerId())) {
@@ -194,7 +194,7 @@ public class WalletCheckoutUseCase {
                                 + ", không thể thanh toán lặp lại.");
             }
 
-            Ticket ticket = ticketRepository.findById(escrow.getTicketId())
+            Ticket ticket = ticketRepository.findByIdWithLock(escrow.getTicketId())
                     .orElseThrow(() -> new ResourceNotFoundException("Ticket", escrow.getTicketId()));
             if (ticket.getStatus() != TicketStatus.LISTED) {
                 throw new BusinessRuleViolationException(
@@ -244,7 +244,7 @@ public class WalletCheckoutUseCase {
                                 + ", không thể thanh toán lặp lại.");
             }
 
-            Ticket ticket = ticketRepository.findById(deposit.getTicketId())
+            Ticket ticket = ticketRepository.findByIdWithLock(deposit.getTicketId())
                     .orElseThrow(() -> new ResourceNotFoundException("Ticket", deposit.getTicketId()));
             if (ticket.getStatus() != TicketStatus.PAYMENT_ESCROWED) {
                 throw new BusinessRuleViolationException(

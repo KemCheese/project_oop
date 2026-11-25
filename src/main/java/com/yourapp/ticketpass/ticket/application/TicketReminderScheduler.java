@@ -27,7 +27,6 @@ public class TicketReminderScheduler {
     public static final Set<TicketStatus> REMINDABLE_STATUSES = Collections.unmodifiableSet(EnumSet.of(
             TicketStatus.DEPOSIT_LOCKED,
             TicketStatus.AWAITING_USE,
-            TicketStatus.AUTO_COMPLETE,
             TicketStatus.RESOLVED_SELLER_WINS
     ));
 

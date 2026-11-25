@@ -250,7 +250,7 @@ public class UpdateReputationUseCase {
                 ticketId,
                 null,
                 Instant.now(),
-                rep -> rep.setDisputesLost(getOrDefault(rep.getDisputesLost()) + 1));
+                rep -> rep.setCancelledListings(getOrDefault(rep.getCancelledListings()) + 1));
     }
 
     public void recordDepositTimeout(Long sellerId) {
