@@ -100,7 +100,7 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        log.info("[DataInitializer] Bắt đầu khởi tạo dữ liệu mẫu tối thiểu (6 tài khoản + 6 vé)...");
+        log.info("[DataInitializer] Bắt đầu khởi tạo dữ liệu mẫu (6 tài khoản + 26 vé)...");
         String encodedPassword = passwordEncoder.encode(DEFAULT_PASSWORD);
         Instant now = Instant.now();
 
@@ -235,7 +235,191 @@ public class DataInitializer implements CommandLineRunner {
         t6.setDepositId(d6.getId());
         ticketRepository.save(t6);
 
-        log.info("[DataInitializer] Hoàn tất khởi tạo 6 tài khoản & 6 vé tối thiểu phục vụ kiểm thử.");
+        seedAdditionalListedTickets(seller.getId(), vipSeller.getId(), now);
+
+        log.info("[DataInitializer] Hoàn tất khởi tạo 6 tài khoản & 26 vé phục vụ kiểm thử.");
+    }
+
+    private void seedAdditionalListedTickets(Long sellerId, Long vipSellerId, Instant now) {
+        ticketRepository.save(buildTicket(
+                sellerId, null, TicketType.MOVIE, TicketStatus.LISTED,
+                "Vé Xem Phim 'Lật Mặt 8: Vòng Tay Nắng' - Suất Tối Cuối Tuần",
+                "Lật Mặt 8: Vòng Tay Nắng",
+                "CGV Aeon Mall Long Biên, Hà Nội", "Phòng 5 - Hàng F - Ghế 08",
+                now.plus(Duration.ofDays(3)), Duration.ofHours(2),
+                new BigDecimal("140000.00"), new BigDecimal("110000.00"),
+                "CGV Cinemas", "CGV-LM8-007", IMG_MOVIE_1, now.minus(Duration.ofMinutes(45))));
+
+        ticketRepository.save(buildTicket(
+                vipSellerId, null, TicketType.MOVIE, TicketStatus.LISTED,
+                "Vé Xem Phim 'Đào, Phở và Piano' - Suất Chiếu Đặc Biệt 2D",
+                "Đào, Phở và Piano",
+                "Trung tâm Chiếu phim Quốc gia, Hà Nội", "Phòng 1 - Hàng G - Ghế 11",
+                now.plus(Duration.ofDays(4)), Duration.ofHours(2),
+                new BigDecimal("100000.00"), new BigDecimal("80000.00"),
+                "NCC Cinema", "NCC-DPP-008", IMG_MOVIE_2, now.minus(Duration.ofMinutes(50))));
+
+        ticketRepository.save(buildTicket(
+                sellerId, null, TicketType.MOVIE, TicketStatus.LISTED,
+                "Vé Xem Phim 'Avatar: Fire and Ash' - Phòng IMAX 3D",
+                "Avatar: Fire and Ash IMAX 3D",
+                "CGV SC VivoCity, Quận 7, TP. Hồ Chí Minh", "Phòng IMAX - Hàng J - Ghế 14",
+                now.plus(Duration.ofDays(5)), Duration.ofHours(3),
+                new BigDecimal("310000.00"), new BigDecimal("260000.00"),
+                "CGV Cinemas", "CGV-AVA3-009", IMG_MOVIE_3, now.minus(Duration.ofMinutes(55))));
+
+        ticketRepository.save(buildTicket(
+                vipSellerId, null, TicketType.MOVIE, TicketStatus.LISTED,
+                "Vé Xem Phim 'Thám Tử Lừng Danh Conan' - Suất Lồng Tiếng",
+                "Thám Tử Lừng Danh Conan: Ngôi Sao 5 Cánh",
+                "Lotte Cinema West Lake, Tây Hồ, Hà Nội", "Phòng 4 - Hàng E - Ghế 07",
+                now.plus(Duration.ofDays(6)), Duration.ofHours(2),
+                new BigDecimal("135000.00"), new BigDecimal("105000.00"),
+                "Lotte Cinema", "LTC-CONAN-010", IMG_MOVIE_1, now.minus(Duration.ofMinutes(60))));
+
+        ticketRepository.save(buildTicket(
+                sellerId, null, TicketType.MOVIE, TicketStatus.LISTED,
+                "Vé Xem Phim 'Spider-Man: Brand New Day' - Phòng 4DX",
+                "Spider-Man: Brand New Day 4DX",
+                "CGV Giga Mall Thủ Đức, TP. Hồ Chí Minh", "Phòng 4DX - Hàng D - Ghế 05",
+                now.plus(Duration.ofDays(7)), Duration.ofHours(2),
+                new BigDecimal("260000.00"), new BigDecimal("210000.00"),
+                "CGV Cinemas", "CGV-SPIDEY-011", IMG_MOVIE_2, now.minus(Duration.ofMinutes(65))));
+
+        ticketRepository.save(buildTicket(
+                vipSellerId, null, TicketType.MOVIE, TicketStatus.LISTED,
+                "Vé Xem Phim 'Inside Out 3' - Ghế Đôi Sweetbox",
+                "Inside Out 3 (2D Phụ Đề)",
+                "Galaxy Nguyễn Du, Quận 1, TP. Hồ Chí Minh", "Phòng 2 - Hàng L - Sweetbox 03",
+                now.plus(Duration.ofDays(8)), Duration.ofHours(2),
+                new BigDecimal("240000.00"), new BigDecimal("195000.00"),
+                "Galaxy Cinema", "GLX-IO3-012", IMG_MOVIE_3, now.minus(Duration.ofMinutes(70))));
+
+        ticketRepository.save(buildTicket(
+                sellerId, null, TicketType.MOVIE, TicketStatus.LISTED,
+                "Vé Xem Phim 'Interstellar' - Suất Chiếu Lại IMAX",
+                "Interstellar Anniversary IMAX",
+                "BHD Star Bitexco Icon68, Quận 1, TP. Hồ Chí Minh", "Phòng 1 - Hàng H - Ghế 10",
+                now.plus(Duration.ofDays(9)), Duration.ofHours(3),
+                new BigDecimal("220000.00"), new BigDecimal("175000.00"),
+                "BHD Star Cineplex", "BHD-INTER-013", IMG_MOVIE_1, now.minus(Duration.ofMinutes(75))));
+
+        ticketRepository.save(buildTicket(
+                vipSellerId, null, TicketType.CONCERT, TicketStatus.LISTED,
+                "Vé Concert 'Hà Anh Tuấn - Sketch A Rose' Hạng Hạnh Phúc",
+                "Hà Anh Tuấn Live Concert: Sketch A Rose",
+                "Nhà hát Hòa Bình, Quận 10, TP. Hồ Chí Minh", "Khu A - Hàng 05 - Ghế 12",
+                now.plus(Duration.ofDays(6)), Duration.ofHours(3),
+                new BigDecimal("3800000.00"), new BigDecimal("3200000.00"),
+                "Ticketbox", "TB-HAT-014", IMG_CONCERT_1, now.minus(Duration.ofMinutes(80))));
+
+        ticketRepository.save(buildTicket(
+                sellerId, null, TicketType.CONCERT, TicketStatus.LISTED,
+                "Vé Live Concert 'Show Của Đen' - Khu Đứng Fanzone A",
+                "Show Của Đen 2026 Hà Nội",
+                "Cung Điền Kinh Mỹ Đình, Hà Nội", "Fanzone A - Khu Đứng Cổng 2",
+                now.plus(Duration.ofDays(7)), Duration.ofHours(3),
+                new BigDecimal("1500000.00"), new BigDecimal("1250000.00"),
+                "Ticketbox", "TB-DEN-015", IMG_CONCERT_2, now.minus(Duration.ofMinutes(85))));
+
+        ticketRepository.save(buildTicket(
+                vipSellerId, null, TicketType.CONCERT, TicketStatus.LISTED,
+                "Vé Đêm Nhạc 'Mỹ Tâm - My Soul 1981' Hạng VIP Biển Xanh",
+                "Mỹ Tâm Live Show: My Soul 1981",
+                "Bãi biển Hồ Tràm, Bà Rịa - Vũng Tàu", "Khu VIP - Hàng 03 - Ghế 18",
+                now.plus(Duration.ofDays(10)), Duration.ofHours(3),
+                new BigDecimal("4500000.00"), new BigDecimal("3900000.00"),
+                "Ticketbox", "TB-MYTAM-016", IMG_CONCERT_3, now.minus(Duration.ofMinutes(90))));
+
+        ticketRepository.save(buildTicket(
+                sellerId, null, TicketType.CONCERT, TicketStatus.LISTED,
+                "Vé Lễ Hội Âm Nhạc 'GENfest 2026' - Vé GA 1 Ngày",
+                "GENfest Music Festival 2026",
+                "The Global City, TP. Thủ Đức, TP. Hồ Chí Minh", "Khu GA Standing - Cổng B",
+                now.plus(Duration.ofDays(11)), Duration.ofHours(4),
+                new BigDecimal("950000.00"), new BigDecimal("780000.00"),
+                "Ticketbox", "TB-GENFEST-017", IMG_CONCERT_1, now.minus(Duration.ofMinutes(95))));
+
+        ticketRepository.save(buildTicket(
+                vipSellerId, null, TicketType.CONCERT, TicketStatus.LISTED,
+                "Vé Concert 'Sơn Tùng M-TP Sky Tour' Hạng SVIP Soundcheck",
+                "Sơn Tùng M-TP Sky Tour 2026",
+                "Sân vận động Quân khu 7, TP. Hồ Chí Minh", "Khu SVIP - Hàng 01 - Ghế 06",
+                now.plus(Duration.ofDays(12)), Duration.ofHours(3),
+                new BigDecimal("6500000.00"), new BigDecimal("5800000.00"),
+                "VinID Tickets", "VID-MTP-018", IMG_CONCERT_2, now.minus(Duration.ofMinutes(100))));
+
+        ticketRepository.save(buildTicket(
+                sellerId, null, TicketType.CONCERT, TicketStatus.LISTED,
+                "Vé Minishow Acoustic 'Vũ. - Bảo Tàng Của Nuối Tiếc'",
+                "Vũ. Live Acoustic Night",
+                "Phòng trà Không Tên, Quận 1, TP. Hồ Chí Minh", "Tầng 1 - Bàn B04 - Ghế 02",
+                now.plus(Duration.ofDays(8)), Duration.ofHours(3),
+                new BigDecimal("850000.00"), new BigDecimal("700000.00"),
+                "Ticketbox", "TB-VU-019", IMG_CONCERT_3, now.minus(Duration.ofMinutes(105))));
+
+        ticketRepository.save(buildTicket(
+                vipSellerId, null, TicketType.CONCERT, TicketStatus.LISTED,
+                "Vé Concert Quốc Tế 'Coldplay Asia Encore' Hạng Platinum VIP",
+                "Coldplay Music Of The Spheres Encore",
+                "Sân vận động Quốc gia Mỹ Đình, Hà Nội", "Khán đài VIP Trung tâm - Hàng A - Ghế 09",
+                now.plus(Duration.ofDays(15)), Duration.ofHours(3),
+                new BigDecimal("12000000.00"), new BigDecimal("10800000.00"),
+                "Live Nation VN", "LN-COLDPLAY-020", IMG_CONCERT_1, now.minus(Duration.ofMinutes(110))));
+
+        ticketRepository.save(buildTicket(
+                sellerId, null, TicketType.BUS, TicketStatus.LISTED,
+                "Vé Xe Cabin Đôi VIP Hà Nội đi Sa Pa (Chuyến Đêm)",
+                "Tuyến Xe Khách Hà Nội - Sa Pa Cabin VIP",
+                "Bến xe Mỹ Đình, Hà Nội → Thị xã Sa Pa, Lào Cai", "Cabin Đôi Tầng 1 - Phòng 04",
+                now.plus(Duration.ofDays(3)), Duration.ofHours(5),
+                new BigDecimal("450000.00"), new BigDecimal("380000.00"),
+                "Nhà xe Sao Việt", "SV-HN-SP-021", IMG_BUS_1, now.minus(Duration.ofMinutes(115))));
+
+        ticketRepository.save(buildTicket(
+                vipSellerId, null, TicketType.BUS, TicketStatus.LISTED,
+                "Vé Xe Limousine 9 Chỗ Hà Nội đi Hải Phòng",
+                "Tuyến Limousine Cao Tốc Hà Nội - Hải Phòng",
+                "72 Trần Nhân Tông, Hà Nội → Bến xe Thượng Lý, Hải Phòng", "Ghế giữa massage - Ghế 03",
+                now.plus(Duration.ofDays(4)), Duration.ofHours(2),
+                new BigDecimal("250000.00"), new BigDecimal("195000.00"),
+                "Hải Phòng Travel", "HPT-HN-HP-022", IMG_BUS_1, now.minus(Duration.ofMinutes(120))));
+
+        ticketRepository.save(buildTicket(
+                sellerId, null, TicketType.BUS, TicketStatus.LISTED,
+                "Vé Xe Giường Nằm Cao Cấp Sài Gòn đi Nha Trang",
+                "Tuyến Xe Khách Sài Gòn - Nha Trang Chuyến Tối",
+                "Bến xe Miền Đông Mới, TP.HCM → Bến xe phía Nam Nha Trang", "Tầng 1 - Giường A08",
+                now.plus(Duration.ofDays(5)), Duration.ofHours(6),
+                new BigDecimal("340000.00"), new BigDecimal("280000.00"),
+                "Phương Trang FUTA Bus Lines", "FUTA-SGN-NT-023", IMG_BUS_1, now.minus(Duration.ofMinutes(125))));
+
+        ticketRepository.save(buildTicket(
+                vipSellerId, null, TicketType.BUS, TicketStatus.LISTED,
+                "Vé Xe Limousine Phòng Riêng Đà Nẵng đi Huế",
+                "Tuyến Limousine Đà Nẵng - Huế Qua Hầm Hải Vân",
+                "Bến xe Trung tâm Đà Nẵng → Bến xe phía Nam Huế", "Ghế VIP 02 - Khởi hành 08:30",
+                now.plus(Duration.ofDays(6)), Duration.ofHours(3),
+                new BigDecimal("220000.00"), new BigDecimal("170000.00"),
+                "Hoàng Đức Limousine", "HD-DN-HUE-024", IMG_BUS_1, now.minus(Duration.ofMinutes(130))));
+
+        ticketRepository.save(buildTicket(
+                sellerId, null, TicketType.BUS, TicketStatus.LISTED,
+                "Vé Xe Giường Nằm Sài Gòn đi Cần Thơ (Cao Tốc)",
+                "Tuyến Xe Khách Sài Gòn - Cần Thơ",
+                "Bến xe Miền Tây, TP.HCM → Bến xe Trung tâm Cần Thơ", "Tầng 1 - Giường B05",
+                now.plus(Duration.ofDays(7)), Duration.ofHours(4),
+                new BigDecimal("200000.00"), new BigDecimal("155000.00"),
+                "Phương Trang FUTA Bus Lines", "FUTA-SGN-CT-025", IMG_BUS_1, now.minus(Duration.ofMinutes(135))));
+
+        ticketRepository.save(buildTicket(
+                vipSellerId, null, TicketType.BUS, TicketStatus.LISTED,
+                "Vé Xe Cabin VIP Hà Nội đi Đà Nẵng (Giường Phòng Đơn)",
+                "Tuyến Xe Cabin VIP Hà Nội - Đà Nẵng",
+                "Bến xe Nước Ngầm, Hà Nội → Bến xe Trung tâm Đà Nẵng", "Cabin Đơn Tầng 1 - Phòng 09",
+                now.plus(Duration.ofDays(9)), Duration.ofHours(12),
+                new BigDecimal("580000.00"), new BigDecimal("490000.00"),
+                "Tân Kim Chi", "TKC-HN-DN-026", IMG_BUS_1, now.minus(Duration.ofMinutes(140))));
     }
 
     private User createUser(String email, String passwordHash, String fullName, String phoneNumber,

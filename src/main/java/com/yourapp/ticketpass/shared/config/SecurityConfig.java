@@ -19,59 +19,53 @@ import com.yourapp.ticketpass.shared.security.SmartAuthenticationSuccessHandler;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/register", "/login", "/error").permitAll()
-                        .requestMatchers("/tickets/new").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/tickets", "/tickets/*").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/reputation/**").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/files/**").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/wallet/**", "/payment/wallet/**").authenticated()
-                        .anyRequest().authenticated()
-                )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .successHandler(new SmartAuthenticationSuccessHandler("/tickets"))
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutSuccessUrl("/")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
-                        .permitAll()
-                )
-                .sessionManagement(session -> session
-                        .maximumSessions(-1)
-                        .sessionRegistry(sessionRegistry())
-                        .expiredUrl("/login?expired")
-                )
-                .headers(headers -> headers
-                        .frameOptions(frame -> frame.sameOrigin())
-                )
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/h2-console/**", "/api/notifications/**")
-                )
-                .addFilterAfter(new CsrfDeferredTokenInitFilter(), CsrfFilter.class);
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                http
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/", "/register", "/login", "/logout", "/error").permitAll()
+                                                .requestMatchers("/tickets/new").authenticated()
+                                                .requestMatchers(HttpMethod.GET, "/tickets", "/tickets/*").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/reputation/**").permitAll()
+                                                .requestMatchers("/css/**", "/js/**", "/images/**", "/files/**")
+                                                .permitAll()
+                                                .requestMatchers("/h2-console/**").permitAll()
+                                                .requestMatchers("/admin/**").hasRole("ADMIN")
+                                                .requestMatchers("/wallet/**", "/payment/wallet/**").authenticated()
+                                                .anyRequest().authenticated())
+                                .formLogin(form -> form
+                                                .loginPage("/login")
+                                                .successHandler(new SmartAuthenticationSuccessHandler("/tickets"))
+                                                .permitAll())
+                                .logout(logout -> logout
+                                                .logoutSuccessUrl("/tickets")
+                                                .invalidateHttpSession(true)
+                                                .deleteCookies("JSESSIONID"))
+                                .sessionManagement(session -> session
+                                                .maximumSessions(-1)
+                                                .sessionRegistry(sessionRegistry())
+                                                .expiredUrl("/login?expired"))
+                                .headers(headers -> headers
+                                                .frameOptions(frame -> frame.sameOrigin()))
+                                .csrf(csrf -> csrf
+                                                .ignoringRequestMatchers("/h2-console/**", "/api/notifications/**"))
+                                .addFilterAfter(new CsrfDeferredTokenInitFilter(), CsrfFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    public SessionRegistry sessionRegistry() {
-        return new SessionRegistryImpl();
-    }
+        @Bean
+        public SessionRegistry sessionRegistry() {
+                return new SessionRegistryImpl();
+        }
 
-    @Bean
-    public HttpSessionEventPublisher httpSessionEventPublisher() {
-        return new HttpSessionEventPublisher();
-    }
+        @Bean
+        public HttpSessionEventPublisher httpSessionEventPublisher() {
+                return new HttpSessionEventPublisher();
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 }

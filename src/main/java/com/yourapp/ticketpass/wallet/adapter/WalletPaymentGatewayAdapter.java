@@ -26,7 +26,7 @@ public class WalletPaymentGatewayAdapter implements PaymentGateway {
     private final EscrowTransactionRepository escrowTransactionRepository;
 
     public WalletPaymentGatewayAdapter(WalletService walletService,
-                                      @Lazy EscrowTransactionRepository escrowTransactionRepository) {
+            @Lazy EscrowTransactionRepository escrowTransactionRepository) {
         this.walletService = walletService;
         this.escrowTransactionRepository = escrowTransactionRepository;
     }
@@ -77,7 +77,8 @@ public class WalletPaymentGatewayAdapter implements PaymentGateway {
 
         Long recipientUserId = null;
         if (gatewayTransactionId != null && !gatewayTransactionId.isBlank()) {
-            Optional<EscrowTransaction> escrowOpt = escrowTransactionRepository.findByGatewayTransactionId(gatewayTransactionId);
+            Optional<EscrowTransaction> escrowOpt = escrowTransactionRepository
+                    .findByGatewayTransactionId(gatewayTransactionId);
             if (escrowOpt.isEmpty()) {
                 try {
                     Long fallbackEscrowId = Long.parseLong(gatewayTransactionId.trim());
@@ -91,7 +92,8 @@ public class WalletPaymentGatewayAdapter implements PaymentGateway {
         }
 
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            log.error("[WalletGateway][REFUND] Số tiền hoàn không hợp lệ (amount={}) cho transId={}.", amount, gatewayTransactionId);
+            log.error("[WalletGateway][REFUND] Số tiền hoàn không hợp lệ (amount={}) cho transId={}.", amount,
+                    gatewayTransactionId);
             PaymentResult fail = new PaymentResult();
             fail.setSuccess(false);
             fail.setGatewayStatus("REFUND_FAILED");
@@ -100,7 +102,8 @@ public class WalletPaymentGatewayAdapter implements PaymentGateway {
         }
 
         if (recipientUserId == null) {
-            log.error("[WalletGateway][REFUND] Không xác định được người nhận cho gatewayTransactionId={} — từ chối xác nhận hoàn tiền rỗng.",
+            log.error(
+                    "[WalletGateway][REFUND] Không xác định được người nhận cho gatewayTransactionId={} — từ chối xác nhận hoàn tiền rỗng.",
                     gatewayTransactionId);
             PaymentResult fail = new PaymentResult();
             fail.setSuccess(false);
@@ -110,7 +113,7 @@ public class WalletPaymentGatewayAdapter implements PaymentGateway {
         }
 
         walletService.credit(recipientUserId, amount, WalletTransactionType.ESCROW_REFUND,
-                gatewayTransactionId, "Hoàn tiền ký quỹ: " + reason);
+                gatewayTransactionId, "Hoàn tiền: " + reason);
 
         PaymentResult result = new PaymentResult();
         result.setSuccess(true);
@@ -124,16 +127,16 @@ public class WalletPaymentGatewayAdapter implements PaymentGateway {
     public PaymentResult payout(Long recipientUserId, BigDecimal amount, String reference) {
         log.info("[WalletGateway][PAYOUT] Giải ngân/chi trả vào ví: userId={}, amount={}, ref={}",
                 recipientUserId, amount, reference);
-
         WalletTransactionType type = WalletTransactionType.PAYOUT_RECEIVE;
-        String desc = "Nhận tiền giải ngân bán vé / hoàn cọc bảo đảm (" + reference + ")";
+        String desc = "Nhận tiền giải ngân bán vé / hoàn cọc";
 
         if (reference != null && (reference.contains("REFUND_DEPOSIT") || reference.contains("REFUND-DEPOSIT"))) {
             type = WalletTransactionType.DEPOSIT_REFUND;
-            desc = "Hoàn cọc bảo đảm 50% (" + reference + ")";
-        } else if (reference != null && (reference.contains("BUYER_COMPENSATION") || reference.contains("FORFEIT-COMPENSATION"))) {
+            desc = "Hoàn cọc";
+        } else if (reference != null
+                && (reference.contains("BUYER_COMPENSATION") || reference.contains("FORFEIT-COMPENSATION"))) {
             type = WalletTransactionType.COMPENSATION_RECEIVE;
-            desc = "Nhận tiền bồi thường khiếu nại (" + reference + ")";
+            desc = "Nhận tiền bồi thường khiếu nại";
         }
 
         walletService.credit(recipientUserId, amount, type, reference, desc);
@@ -142,7 +145,7 @@ public class WalletPaymentGatewayAdapter implements PaymentGateway {
         result.setSuccess(true);
         result.setGatewayTransactionId("PAYOUT_WALLET_" + reference + "_" + Instant.now().toEpochMilli());
         result.setGatewayStatus("PAID");
-        result.setMessage("Tiền đã được tự động cộng vào ví điện tử TicketPass của bạn.");
+        result.setMessage("Tiền đã được tự động cộng vào ví của bạn.");
         return result;
     }
 }

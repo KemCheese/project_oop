@@ -15,6 +15,10 @@ import com.yourapp.ticketpass.shared.event.TicketTransactionCompletedEvent;
 import com.yourapp.ticketpass.shared.event.TicketUpcomingReminderEvent;
 import com.yourapp.ticketpass.shared.event.UserAccountModeratedEvent;
 import com.yourapp.ticketpass.user.domain.StarredTicketRepository;
+import com.yourapp.ticketpass.user.domain.User;
+import com.yourapp.ticketpass.user.domain.UserRepository;
+import com.yourapp.ticketpass.user.domain.UserRole;
+import com.yourapp.ticketpass.user.domain.UserStatus;
 import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -35,6 +39,9 @@ public class NotificationEventListener {
 
     private final NotificationService notificationService;
     private final StarredTicketRepository starredTicketRepository;
+
+    @Autowired(required = false)
+    private UserRepository userRepository;
 
     @Autowired
     public NotificationEventListener(NotificationService notificationService,
@@ -126,6 +133,13 @@ public class NotificationEventListener {
                 NotificationType.DISPUTE_FILED,
                 "/disputes/" + event.getDisputeId()
         );
+        notifyActiveAdmins(
+                "Có tranh chấp mới cần theo dõi!",
+                String.format("Tranh chấp #%d cho vé \"%s\" vừa được mở với lý do: \"%s\".",
+                        event.getDisputeId(), event.getTicketTitle(), event.getReason()),
+                NotificationType.DISPUTE_FILED,
+                "/admin/disputes/" + event.getDisputeId()
+        );
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
@@ -142,6 +156,13 @@ public class NotificationEventListener {
                 content,
                 NotificationType.DISPUTE_RESPONDED,
                 "/disputes/" + event.getDisputeId()
+        );
+        notifyActiveAdmins(
+                "Tranh chấp đã có giải trình — Sẵn sàng phân xử",
+                String.format("Người bán đã gửi giải trình cho tranh chấp #%d (vé \"%s\"). Vui lòng kiểm tra bằng chứng và đưa ra phán quyết.",
+                        event.getDisputeId(), event.getTicketTitle()),
+                NotificationType.DISPUTE_RESPONDED,
+                "/admin/disputes/" + event.getDisputeId()
         );
     }
 
@@ -381,6 +402,26 @@ public class NotificationEventListener {
                     NotificationType.ACCOUNT_LIQUIDATED,
                     "/wallet"
             );
+        }
+    }
+
+    private void notifyActiveAdmins(String title, String content,
+                                    NotificationType type, String targetUrl) {
+        if (userRepository == null) {
+            return;
+        }
+        try {
+            List<User> admins = userRepository.findByRole(UserRole.ADMIN);
+            if (admins == null) {
+                return;
+            }
+            for (User admin : admins) {
+                if (admin != null && admin.getId() != null && admin.getStatus() == UserStatus.ACTIVE) {
+                    safeSendNotification(admin.getId(), title, content, type, targetUrl);
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Không thể gửi thông báo {} tới quản trị viên: {}", type, ex.getMessage(), ex);
         }
     }
 

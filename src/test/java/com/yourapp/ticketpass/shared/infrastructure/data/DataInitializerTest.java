@@ -104,7 +104,7 @@ class DataInitializerTest {
     }
 
     @Nested
-    @DisplayName("Kiểm thử khởi tạo bộ dữ liệu tối thiểu (6 users + 6 tickets)")
+    @DisplayName("Kiểm thử khởi tạo bộ dữ liệu mẫu (6 users + 26 tickets)")
     class InitialSeedingTests {
 
         @BeforeEach
@@ -194,24 +194,25 @@ class DataInitializerTest {
         }
 
         @Test
-        @DisplayName("Khởi tạo đúng 6 vé tối thiểu phủ đủ các trạng thái kiểm thử web (không sinh 50 vé rác)")
-        void shouldCreateSixMinimalTicketsCoveringAllWebFlows() {
+        @DisplayName("Khởi tạo đúng 26 vé (6 vé kịch bản + 20 vé đang đăng bán phủ đủ 3 loại vé)")
+        void shouldCreateTwentySixSeedTicketsCoveringAllWebFlows() {
             dataInitializer.run();
 
-            verify(ticketRepository, times(9)).save(ticketCaptor.capture());
+            verify(ticketRepository, times(29)).save(ticketCaptor.capture());
             List<Ticket> distinctTickets = ticketCaptor.getAllValues().stream()
                     .collect(java.util.stream.Collectors.toMap(Ticket::getId, t -> t, (a, b) -> b))
                     .values().stream().toList();
 
-            assertThat(distinctTickets).hasSize(6);
-            assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.LISTED).count()).isEqualTo(3);
+            assertThat(distinctTickets).hasSize(26);
+            assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.LISTED).count()).isEqualTo(23);
             assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.DISPUTE_UNDER_REVIEW).count()).isEqualTo(1);
             assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.AWAITING_USE).count()).isEqualTo(1);
             assertThat(distinctTickets.stream().filter(t -> t.getStatus() == TicketStatus.AUTO_COMPLETE).count()).isEqualTo(1);
 
             assertThat(distinctTickets.stream()
                     .filter(t -> t.getStatus() == TicketStatus.LISTED)
-                    .map(Ticket::getTicketType))
+                    .map(Ticket::getTicketType)
+                    .distinct())
                     .containsExactlyInAnyOrder(TicketType.MOVIE, TicketType.CONCERT, TicketType.BUS);
 
             verify(escrowTransactionRepository, times(3)).save(any(EscrowTransaction.class));

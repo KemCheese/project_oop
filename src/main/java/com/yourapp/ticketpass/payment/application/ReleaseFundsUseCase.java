@@ -60,7 +60,7 @@ public class ReleaseFundsUseCase {
         if (tx.getStatus() != EscrowStatus.HELD) {
             throw new BusinessRuleViolationException(
                     "Giao dịch ký quỹ #" + tx.getId() + " đang ở trạng thái " + tx.getStatus()
-                    + ", không thể giải ngân. Chỉ cho phép giải ngân khi status = HELD.");
+                            + ", không thể giải ngân. Chỉ cho phép giải ngân khi status = HELD.");
         }
 
         BigDecimal salePrice = tx.getSalePrice();
@@ -75,7 +75,7 @@ public class ReleaseFundsUseCase {
         if (sellerGross.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessRuleViolationException(
                     "Số tiền giải ngân sau hoa hồng phải lớn hơn 0 (salePrice=" + salePrice
-                    + ", sellerCommission=" + sellerCommission + ").");
+                            + ", sellerCommission=" + sellerCommission + ").");
         }
         TaxWithholding tax = taxWithholdingService.withhold(sellerGross, sellerId);
         BigDecimal taxWithheld = tax.getTaxAmount();
@@ -85,7 +85,8 @@ public class ReleaseFundsUseCase {
         PaymentResult payoutResult = paymentGateway.payout(sellerId, sellerNetPayout, payoutRef);
         if (payoutResult == null || !payoutResult.isSuccess()) {
             String msg = (payoutResult != null && payoutResult.getMessage() != null)
-                    ? payoutResult.getMessage() : "Cổng thanh toán không phản hồi hoặc trả về lỗi";
+                    ? payoutResult.getMessage()
+                    : "Cổng thanh toán không phản hồi hoặc trả về lỗi";
             throw new BusinessRuleViolationException(
                     "Payout cho người bán thất bại (escrowId=" + tx.getId() + "): " + msg);
         }
@@ -151,7 +152,7 @@ public class ReleaseFundsUseCase {
         if (deposit.getStatus() != DepositStatus.LOCKED) {
             throw new BusinessRuleViolationException(
                     "Khoản cọc #" + deposit.getId() + " đang ở trạng thái " + deposit.getStatus()
-                    + ", không thể hoàn. Chỉ cho phép hoàn khi status = LOCKED.");
+                            + ", không thể hoàn. Chỉ cho phép hoàn khi status = LOCKED.");
         }
 
         String refundRef = "REFUND-DEPOSIT-" + deposit.getId();
@@ -159,9 +160,10 @@ public class ReleaseFundsUseCase {
                 deposit.getSellerId(), deposit.getAmount(), refundRef);
         if (payoutResult == null || !payoutResult.isSuccess()) {
             String msg = (payoutResult != null && payoutResult.getMessage() != null)
-                    ? payoutResult.getMessage() : "Cổng thanh toán không phản hồi hoặc trả về lỗi";
+                    ? payoutResult.getMessage()
+                    : "Cổng thanh toán không phản hồi hoặc trả về lỗi";
             throw new BusinessRuleViolationException(
-                    "Hoàn cọc thất bại (depositId=" + deposit.getId() + "): " + msg);
+                    "Hoàn cọc thất bại");
         }
 
         deposit.setStatus(DepositStatus.REFUNDED);

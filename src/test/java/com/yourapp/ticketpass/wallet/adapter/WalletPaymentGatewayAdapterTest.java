@@ -115,7 +115,7 @@ class WalletPaymentGatewayAdapterTest {
                     eq(amount),
                     eq(WalletTransactionType.ESCROW_REFUND),
                     eq(gatewayTxId),
-                    eq("Hoàn tiền ký quỹ: " + reason)
+                    eq("Hoàn tiền: " + reason)
             );
         }
 
@@ -136,7 +136,7 @@ class WalletPaymentGatewayAdapterTest {
                     eq(new BigDecimal("300000.00")),
                     eq(WalletTransactionType.ESCROW_REFUND),
                     eq("55"),
-                    eq("Hoàn tiền ký quỹ: Hoàn tiền kỹ thuật")
+                    eq("Hoàn tiền: Hoàn tiền kỹ thuật")
             );
         }
 
@@ -177,7 +177,7 @@ class WalletPaymentGatewayAdapterTest {
                     eq(amount),
                     eq(WalletTransactionType.PAYOUT_RECEIVE),
                     eq(ref),
-                    eq("Nhận tiền giải ngân bán vé / hoàn cọc bảo đảm (" + ref + ")")
+                    eq("Nhận tiền giải ngân bán vé / hoàn cọc")
             );
         }
 
@@ -196,7 +196,7 @@ class WalletPaymentGatewayAdapterTest {
                     eq(amount),
                     eq(WalletTransactionType.DEPOSIT_REFUND),
                     eq(ref),
-                    eq("Hoàn cọc bảo đảm 50% (" + ref + ")")
+                    eq("Hoàn cọc")
             );
         }
 
@@ -215,7 +215,7 @@ class WalletPaymentGatewayAdapterTest {
                     eq(amount),
                     eq(WalletTransactionType.COMPENSATION_RECEIVE),
                     eq(ref),
-                    eq("Nhận tiền bồi thường khiếu nại (" + ref + ")")
+                    eq("Nhận tiền bồi thường khiếu nại")
             );
         }
         @Test
@@ -227,7 +227,7 @@ class WalletPaymentGatewayAdapterTest {
                     eq(new BigDecimal("250000.00")),
                     eq(WalletTransactionType.DEPOSIT_REFUND),
                     eq("REFUND-DEPOSIT-12"),
-                    eq("Hoàn cọc bảo đảm 50% (REFUND-DEPOSIT-12)")
+                    eq("Hoàn cọc")
             );
 
             adapter.payout(77L, new BigDecimal("200000.00"), "FORFEIT-COMPENSATION-99");
@@ -236,7 +236,7 @@ class WalletPaymentGatewayAdapterTest {
                     eq(new BigDecimal("200000.00")),
                     eq(WalletTransactionType.COMPENSATION_RECEIVE),
                     eq("FORFEIT-COMPENSATION-99"),
-                    eq("Nhận tiền bồi thường khiếu nại (FORFEIT-COMPENSATION-99)")
+                    eq("Nhận tiền bồi thường khiếu nại")
             );
         }
     }

@@ -19,9 +19,9 @@ public enum WalletTransactionType {
 
     ESCROW_REFUND("Hoàn tiền ký quỹ vé", true),
 
-    COMPENSATION_RECEIVE("Nhận tiền bồi thường khiếu nại", true),
+    COMPENSATION_RECEIVE("Nhận tiền ", true),
 
-    LIQUIDATION_FEE("Phí thanh lý tài khoản bị khóa (Uy tín = 0)", false),
+    LIQUIDATION_FEE("Phí thanh lý tài khoản bị khóa", false),
 
     LIQUIDATION_PAYOUT("Thanh lý hoàn trả số dư về tài khoản ngân hàng", false);
 
